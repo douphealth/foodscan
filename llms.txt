@@ -1,0 +1,19 @@
+# FoodScan
+
+> A free web app that turns a packaged-food barcode into plain-English facts: Nutri-Score and NOVA exactly as Open Food Facts publishes them, sugar in teaspoons, allergen and diet flags from the package record, and better choices in the same aisle. No account. Published by GearUpToFit.
+
+## Pages
+- [FoodScan](https://food-scan.gearuptofit.com/): barcode lookup, product-name search, saved foods, a shopping list, a pantry review and a compare view (a single-page app)
+- [How FoodScan works](https://food-scan.gearuptofit.com/demo/): a short live walkthrough: scan, understand, swap
+
+## Method and sources
+- Product data: Open Food Facts and contributors (ODbL 1.0); product images CC BY-SA 3.0. Community data can be incomplete, so the package label overrides it.
+- Nutri-Score, NOVA, allergens, labels and additives appear as the source gives them. FoodScan does not invent a score.
+- Colour bands follow the UK FSA front-of-pack thresholds; daily percentages use the EU 1169/2011 reference intakes (2,000 kcal adult); one teaspoon of sugar is counted as 4 g.
+- Not medical advice. Allergen and diet flags come from package records, which can be wrong or out of date.
+
+## Privacy
+- No account. Profiles, lists, the pantry and photos stay on the device; a lookup sends only the barcode digits or the search words.
+
+## Publisher
+- [GearUpToFit](https://gearuptofit.com/): fitness, running and nutrition guides, calculators and tools, including its [nutrition guides](https://gearuptofit.com/nutrition/).

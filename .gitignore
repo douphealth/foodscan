@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+node_modules/
+.env
+.env.*
+!.env.example
+.wrangler/
+.dev.vars
+.dev.vars.*
+coverage/
+playwright-report/
+test-results/
