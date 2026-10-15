@@ -1,9 +1,9 @@
-/* FoodScan 11.4.0 shell. API and personal data never cached. */
-const CACHE='foodscan-shell-11.4.0';
-const BASE='/assets/release-11.3.0/';
+/* FoodScan 11.5.0: cache complete module graph, including import-map wrappers. */
+const CACHE='foodscan-shell-11.5.0';
+const BASE='/assets/release-11.3.0/',NEW='/assets/release-11.5.0/';
 const LIBS=['api','art','barcode','commerce','components','connection-view','decision-ui','decision','demo','features','grocery-ui','grocery','icons','ingredient-parser','meal-diary','model','nutrition','photos','policy','profile','scanner','share','store','swaps','today','transactions','views'];
-const PRECACHE=['/','/index.html','/manifest.webmanifest','/art/produce.webp','/icon.svg','/icon-192.png','/icon-512.png','/icon-maskable-512.png',BASE+'app.css',BASE+'redesign.css',BASE+'app.js',BASE+'boot.js','/assets/release-11.4.0/reference.css',...LIBS.map(name=>BASE+'lib/'+name+'.js')];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(PRECACHE))));
+const PRECACHE=['/','/index.html','/manifest.webmanifest','/art/produce.webp','/icon.svg','/icon-192.png','/icon-512.png','/icon-maskable-512.png',BASE+'app.css',BASE+'app.js',...LIBS.map(x=>BASE+'lib/'+x+'.js'),...['app.css','app.js','boot.js','views.js','result.js','model.js'].map(x=>NEW+x),...['views','decision-ui','model'].map(x=>BASE+'lib/'+x+'.js?engine=11.5.0')];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE))));
 self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
-self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>(key.startsWith('foodscan-shell-')||key==='foodscan-v1')&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim();})()));
-self.addEventListener('fetch',event=>{const request=event.request,url=new URL(request.url);if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/'))return;if(request.mode==='navigate'){event.respondWith((async()=>{try{return await fetch(request);}catch{return await (await caches.open(CACHE)).match('/index.html')||new Response('You are offline. Reconnect and open FoodScan once.',{status:503,headers:{'Content-Type':'text/plain'}});}})());return;}if(PRECACHE.includes(url.pathname))event.respondWith(caches.open(CACHE).then(cache=>cache.match(url.pathname)).then(cached=>cached||fetch(request)));});
+self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(x=>(x.startsWith('foodscan-shell-')||x==='foodscan-v1')&&x!==CACHE).map(x=>caches.delete(x)));await self.clients.claim();})()));
+self.addEventListener('fetch',event=>{const r=event.request,u=new URL(r.url);if(r.method!=='GET'||u.origin!==self.location.origin||u.pathname.startsWith('/api/'))return;if(r.mode==='navigate'){event.respondWith(fetch(r).catch(async()=>await (await caches.open(CACHE)).match('/index.html')||new Response('Reconnect to open FoodScan.',{status:503})));return;}if(PRECACHE.includes(u.pathname+u.search))event.respondWith(caches.open(CACHE).then(c=>c.match(r)).then(cached=>cached||fetch(r)));});
