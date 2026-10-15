@@ -1,8 +1,8 @@
-/* FoodScan 11.5.0: cache complete module graph, including import-map wrappers. */
-const CACHE='foodscan-shell-11.5.0';
-const BASE='/assets/release-11.3.0/',NEW='/assets/release-11.5.0/';
+/* FoodScan 11.6.0 versioned shell; API and personal data are never cached. */
+const CACHE='foodscan-shell-11.6.0';
+const BASE='/assets/release-11.3.0/';
 const LIBS=['api','art','barcode','commerce','components','connection-view','decision-ui','decision','demo','features','grocery-ui','grocery','icons','ingredient-parser','meal-diary','model','nutrition','photos','policy','profile','scanner','share','store','swaps','today','transactions','views'];
-const PRECACHE=['/','/index.html','/manifest.webmanifest','/art/produce.webp','/icon.svg','/icon-192.png','/icon-512.png','/icon-maskable-512.png',BASE+'app.css',BASE+'app.js',...LIBS.map(x=>BASE+'lib/'+x+'.js'),...['app.css','app.js','boot.js','views.js','result.js','model.js'].map(x=>NEW+x),...['views','decision-ui','model'].map(x=>BASE+'lib/'+x+'.js?engine=11.5.0')];
+const PRECACHE=['/','/index.html','/manifest.webmanifest','/art/produce.webp','/icon.svg','/icon-192.png','/icon-512.png','/icon-maskable-512.png',BASE+'app.css',BASE+'app.js',...LIBS.map(x=>BASE+'lib/'+x+'.js'),...['11.5.0','11.6.0'].flatMap(v=>['app.css','app.js','boot.js','views.js','result.js','model.js'].map(x=>'/assets/release-'+v+'/'+x)),...['views','decision-ui','model'].map(x=>BASE+'lib/'+x+'.js?engine=11.5.0')];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE))));
 self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
 self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(x=>(x.startsWith('foodscan-shell-')||x==='foodscan-v1')&&x!==CACHE).map(x=>caches.delete(x)));await self.clients.claim();})()));
