@@ -1,0 +1,53 @@
+/* An intentionally light, editorial workspace in either surrounding app theme. */
+html body .studio-page{--paper:#fff;--paper-2:#f1f5f3;--ink:#172c26;--ink-2:#29463c;--bark:#4f665c;--taupe:#586e63;--line:#d6e1db;--terra:#146347;--terra-soft:#e5f3eb;--cream:#f7f9f7;--ui-bg:#f7f9f7;--ui-card:#fff;--ui-soft:#f1f5f3;--ui-text:#172c26;--ui-muted:#4f665c;--ui-border:#d6e1db;--ui-accent:#146347;--ui-accent-text:#fff;--ui-alert:#fff1eb;--ui-alert-text:#872e1e;--fs12-ink:#172c26;--fs12-muted:#4f665c;--fs12-line:#d6e1db;--fs12-paper:#fff;color-scheme:light;color:#172c26;max-width:1200px;font-size:16px;line-height:1.6}
+html body .studio-page :is(h1,h2,h3){color:#172c26;font-family:ui-sans-serif,system-ui,sans-serif;font-style:normal}
+html body .studio-page :is(.fs12-result,.fs12-portion,.d8-ing-preview,.d8-profile){background:#fff;color:#172c26;border:1px solid #d6e1db;border-radius:20px;box-shadow:0 10px 30px -24px #14382d55}
+html body .studio-page .fs11-launch{background:#fff;border:1px solid #d6e1db;border-radius:28px;padding:40px;gap:40px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+html body .studio-page #fs-home-title{font-size:clamp(2.4rem,5vw,4rem);line-height:1.08;letter-spacing:-.05em;max-width:15ch}
+html body .studio-page .fs11-scan-panel{background:#f1f5f3;box-shadow:none;border:0;padding:24px}
+html body .studio-page .fs-scan-primary{background:#146347;color:#fff;border-radius:14px;min-height:80px}
+html body .studio-page .fs11-launch-copy>p{color:#4f665c;font-size:1.08rem;max-width:45ch}
+html body .studio-page .studio-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0 32px;padding:18px 24px;background:#fff;border:1px solid #d6e1db;border-radius:16px;color:#29463c}
+.studio-guide span{display:flex;align-items:center;gap:12px;font-size:.9rem}.studio-guide b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#e5f3eb;color:#146347;font-size:.75rem;flex-shrink:0}
+html body .studio-page .fs12-hero{background:#fff;padding:32px}
+html body .studio-page .fs12-hero-grid{grid-template-columns:180px minmax(0,1fr);gap:32px}
+html body .studio-page .fs12-executive{background:#fff;border:0;box-shadow:none;padding:0}
+html body .studio-page #decision-title{font-size:clamp(1.9rem,3.4vw,2.8rem);line-height:1.13;max-width:30ch;color:#172c26}
+html body .studio-page .fs12-verdict-lead{font:inherit;color:#4f665c;line-height:1.7}
+html body .studio-page .fs12-identity{background:#f1f5f3;color:#172c26;border:0}
+html body .studio-page .fs12-traffic{background:#f1f5f3;border:0;padding:18px}
+html body .studio-page .light{background:#fff;color:#172c26;border-color:#d6e1db;border-top-width:4px;padding:16px}
+html body .studio-page .light :is(.light-name,.light-val,.light-word,.light-note){color:#172c26}
+html body .studio-page .fs12-score{background:#f1f5f3;border:1px solid #d6e1db;color:#172c26}
+html body .studio-page .fs12-score small,html body .studio-page .fs12-score>span{color:#29463c}
+html body .studio-page :is(.fs12-hero-primary,.fs12-portion-submit button){background:#146347;color:#fff}
+html body .studio-page .fs12-hero-secondary{background:#fff;color:#172c26;border-color:#b7c9bf}
+html body .studio-page .fs12-portion{margin-top:24px;padding:32px;border-top:5px solid #146347}
+html body .studio-page .fs11-portion-intro h2{font-size:2rem}
+html body .studio-page .fs12-portion-grid{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:24px}
+html body .studio-page :is(.fs12-portion-control,.fs12-portion-output){background:#f1f5f3;border:0;border-radius:16px;padding:24px}
+html body .studio-page .fs12-macro-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+html body .studio-page .fs12-macro{padding:16px;background:#fff;border:1px solid #d6e1db}
+html body .studio-page .fs12-sugar-focus{background:#fff1eb;color:#872e1e}
+html body .studio-page .fs12-sugar-focus :is(strong,small){color:#872e1e}
+html body .studio-page .studio-disclosure{background:#fff;color:#172c26;border:1px solid #d6e1db;border-radius:14px;margin:14px 0;overflow:hidden}
+html body .studio-page .studio-disclosure>summary{padding:18px 20px;cursor:pointer;font-weight:650;font-size:.95rem;min-height:52px;color:#29463c}
+html body .studio-page .studio-disclosure[open]>summary{border-bottom:1px solid #d6e1db;background:#f1f5f3}
+html body .studio-page .studio-disclosure>.d8-profile{border:0;margin:0;box-shadow:none}
+html body .studio-page #fs-ingredients{background:#fff;color:#172c26}
+html body .studio-page #fs-ingredients :is(h2,h3,h4,p,small){color:#29463c}
+html body .studio-page .fs12-ingredient-list .fs12-ing-row{background:#f7f9f7;border:1px solid #d6e1db;border-left:4px solid #b7c9bf;border-radius:12px;padding:18px;grid-template-columns:36px minmax(0,1fr) 90px}
+html body .studio-page .fs12-ingredient-list .fs12-ing-allergen{border-left-color:#be6650}
+html body .studio-page .fs12-ing-content strong{font-size:1.05rem;color:#172c26}
+html body .studio-page .fs12-ing-label{background:#fff;color:#4f665c}
+html body .studio-page .fs12-ing-right{color:#4f665c}
+html body .studio-page .d8-ing-preview li{background:#f1f5f3;color:#172c26}
+html body .studio-page .d8-ing-preview .ing-name{color:#172c26}
+html body .studio-page .fs12-raw-label{background:#f1f5f3;color:#172c26}
+html body .studio-page .qr{background:#fff;color:#172c26}
+html body .studio-page .qr-text strong{color:#172c26}
+html body .studio-page .qr-text small{color:#4f665c}
+html body .studio-page .button-primary,html body .studio-page .button-dark{background:#146347;color:#fff}
+html body .studio-page .button-outline{background:#fff;color:#172c26;border-color:#b7c9bf}
+@media(max-width:850px){html body .studio-page .fs11-launch{grid-template-columns:1fr;padding:24px}html body .studio-page .fs12-hero-grid{grid-template-columns:1fr}html body .studio-page .fs12-portion-grid{grid-template-columns:1fr}html body .studio-page .studio-guide{grid-template-columns:1fr;gap:12px}html body .studio-page :is(.fs12-hero,.fs12-portion){padding:20px}}
+@media(max-width:520px){html body .studio-page .fs12-ingredient-list .fs12-ing-row{padding:12px;grid-template-columns:28px minmax(0,1fr) 65px;gap:10px}html body .studio-page .lights{grid-template-columns:repeat(2,minmax(0,1fr))}html body .studio-page :is(.fs12-portion-control,.fs12-portion-output){padding:16px}}
