@@ -1,3 +1,4 @@
+import {initMealDiary,renderMealDiary,clearMealDiary} from './lib/meal-diary.js';
 import {escapeHTML as e,cleanBarcode,barcodeError,validBarcode,VERSION,setLocale} from './lib/model.js';
 import {loadStore,saveStore,deleteStore,EMPTY,parseImport,exportStore,mergeProducts,addActivity,uid,currencyForLocale} from './lib/store.js';
 import {lookupProduct,LookupError,probeBackend,getLastLookup,searchCategory} from './lib/api.js';
@@ -16,13 +17,18 @@ const initial=loadStore();
 const state={quickSetupOpen:false,demo:{code:DEMO_CODES.spread,phase:'done'},swaps:{code:'',status:'idle'},portionAmount:null,portionFor:'',onboarding:false,onboardingStep:1,extraProducts:[],tripScan:false,alternatives:{baseCode:'',category:'',items:[],loading:false,checked:null,error:''},store:initial.store,route:'home',active:null,requested:'',input:'',busy:false,error:null,tab:'nutrition',portion:'100',snapshotNotice:'',online:navigator.onLine,filter:'',sort:'recent',compare:['','','',''],intentCompareSlot:null,installPrompt:null,lookupProgress:null,connection:{barcode:'',busy:false,health:null,report:null,error:''}};
 if(!initial.hadData){try{state.store.settings.locale=Intl.getCanonicalLocales(navigator.language||'en-GB')[0];state.store.grocery.currency=currencyForLocale(state.store.settings.locale);}catch{}}
 const header=document.getElementById('header'),main=document.getElementById('main'),footer=document.getElementById('footer');
+const visitDay=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+function recordDailyUse(){const day=visitDay(),habit=state.store.habit||(state.store.habit={activeDays:[],bestStreak:0,lastVisitDay:''});if(habit.lastVisitDay===day)return;habit.activeDays=[...new Set([...(habit.activeDays||[]),day])].slice(-90);habit.lastVisitDay=day;let best=0,run=0,prev=null;for(const key of [...habit.activeDays].sort()){const t=Date.parse(key+'T00:00:00Z');run=prev!==null&&t-prev===86400000?run+1:1;best=Math.max(best,run);prev=t;}habit.bestStreak=Math.max(habit.bestStreak||0,best);saveStore(state.store);}
+function measure(name,properties={}){if(!state.store.settings?.telemetry)return;const body=JSON.stringify({name,properties,version:VERSION,path:state.route});const blob=new Blob([body],{type:'application/json'});if(!navigator.sendBeacon?.('/api/events',blob))fetch('/api/events',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:true}).catch(()=>{});}
+recordDailyUse();
+
 let diagnosticController=null;
 let requestController=null,requestSequence=0,toastTimer=0,toastAction=null,dialog=null,dialogKind='',returnFocus=null,cameraController=null,torchControl=null,torchOn=false,confirmAction=null,scannerModule=null;
 let activeAttempt=null,firstResultAt=0;const sessionStarted=performance.now();
 function beginAttempt(method='manual'){if(activeAttempt)finishAttempt('cancelled');activeAttempt={id:uid(),method,start:performance.now()};addActivity(state.store,'scan_start',{id:activeAttempt.id,method});persist();}
 function finishAttempt(kind,product=null,{cached=false}={}){
- if(!activeAttempt)return;const a=activeAttempt;activeAttempt=null;const durationMs=Math.round(performance.now()-a.start);
- if(product){const assessment=assess(product,state.store.profile);if(!firstResultAt)firstResultAt=performance.now();addActivity(state.store,'scan_success',{id:a.id,method:a.method,durationMs,cached,repeat:state.store.recent.some(p=>p.barcode===product.barcode),firstValueMs:Math.round(firstResultAt-sessionStarted),profileSignature:profileSignature(state.store.profile),ruleVersion:assessment.ruleVersion,matches:assessment.matches,known:assessment.flags.filter(x=>x.status!=='unknown').length,checks:assessment.flags.filter(x=>['sugars','protein','fiber','sodium'].includes(x.key)).map(x=>({key:x.key,status:x.status})),profiled:state.store.profile.complete,grade:product.nutriScore||'',nova:product.nova||0,reds:trafficLights(product).items.filter(x=>x.level==='high').length});}
+ if(!activeAttempt)return;const a=activeAttempt;activeAttempt=null;const durationMs=Math.round(performance.now()-a.start);if(!product)measure('scan_outcome',{method:a.method,kind,durationMs});
+ if(product){measure('scan_success',{method:a.method,cached,durationMs});const assessment=assess(product,state.store.profile);if(!firstResultAt)firstResultAt=performance.now();addActivity(state.store,'scan_success',{id:a.id,method:a.method,durationMs,cached,repeat:state.store.recent.some(p=>p.barcode===product.barcode),firstValueMs:Math.round(firstResultAt-sessionStarted),profileSignature:profileSignature(state.store.profile),ruleVersion:assessment.ruleVersion,matches:assessment.matches,known:assessment.flags.filter(x=>x.status!=='unknown').length,checks:assessment.flags.filter(x=>['sugars','protein','fiber','sodium'].includes(x.key)).map(x=>({key:x.key,status:x.status})),profiled:state.store.profile.complete,grade:product.nutriScore||'',nova:product.nova||0,reds:trafficLights(product).items.filter(x=>x.level==='high').length});}
  else addActivity(state.store,'scan_failed',{id:a.id,method:a.method,durationMs,kind});persist();
 }
 addActivity(state.store,'session_start');
@@ -62,6 +68,7 @@ function render({focus=false,preserve=null}={}){
   if(screen!==lastScreen){lastScreen=screen;main.classList.remove('enter');}
   if(focus){main.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}
   postRenderDelights();
+  renderMealDiary();
   if(state.route==='food'&&shown.active){
     if(state.portionFor!==shown.active.barcode){state.portionFor=shown.active.barcode;state.portionAmount=null;}
     // Category searches are explicit, never a background cost on every result.
@@ -103,13 +110,37 @@ async function ensureSwaps(product,{force=false}={}){
     if(betterChoices(product,result.products,state.store.profile,category).items.length){addActivity(state.store,'alternative_shown',{known:1});persist();}
   }catch(error){
     if(error?.name==='AbortError'||state.swaps!==mine)return;
-    Object.assign(mine,{status:'error',error:error.message||'Better choices are unavailable right now.'});
+    Object.assign(mine,{status:'error',error:error.message||'Better choices are unavailable right now.',retryAfter:error.retryAfter||0,retryAt:error.retryAfter?Date.now()+error.retryAfter*1000:0});
   }
   refreshSwapsSlot();
 }
 function postRenderDelights(){
   // Content is always visible: no intersection observers or repeated count animations.
   document.querySelectorAll('.reveal,[data-reveal]').forEach(el=>el.classList.add('in'));
+  // Swap retry countdown: ticks down rate-limit pauses, then re-enables
+  document.querySelectorAll('.swap-retry[data-retry-at]:not([data-ticking])').forEach(btn=>{
+    btn.dataset.ticking='1';
+    const label=btn.querySelector('span'),retryAt=+btn.dataset.retryAt;
+    (function tick(){
+      const left=Math.max(0,Math.ceil((retryAt-Date.now())/1000));
+      if(left>0){btn.disabled=true;if(label)label.textContent=`Try again in ${left}s`;setTimeout(tick,1000);}
+      else{btn.disabled=false;if(label)label.textContent='Try again';}
+    })();
+  });
+  // WOW: count-up hero numbers (skipped if reduced motion)
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.querySelectorAll('[data-countup]:not([data-done])').forEach(el=>{
+      const target=parseInt(el.textContent,10);
+      if(!Number.isFinite(target)||target<=0)return;
+      el.dataset.done='1';
+      const t0=performance.now(),dur=1100;
+      (function tick(t){
+        const k=Math.min(1,(t-t0)/dur),e2=1-Math.pow(1-k,3);
+        el.textContent=Math.round(target*e2);
+        if(k<1)requestAnimationFrame(tick);
+      })(t0);
+    });
+  }
   if(!main.querySelector('h1')){
     const first=main.querySelector('.section-head h2');
     if(first){const heading=document.createElement('h1');heading.className='page-title';heading.innerHTML=first.innerHTML;first.replaceWith(heading);}
@@ -293,13 +324,11 @@ function demoScan(code){
   demoTimer=setTimeout(()=>{if(state.route!=='demo'||state.demo.code!==code)return;state.demo.phase='done';draw();document.querySelector('.live-stage')?.classList.remove('pop');void document.querySelector('.live-stage')?.offsetWidth;document.querySelector('.live-stage')?.classList.add('pop');},1100);
 }
 function focusSearch(){
- const focus=()=>{const panel=document.querySelector('details[data-panel="home-manual"]');if(panel)panel.open=true;document.getElementById('barcode-input')?.focus({preventScroll:true});document.getElementById('scan-box')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
+ const focus=()=>{document.getElementById('quick-find-input')?.focus({preventScroll:false});};
  if(state.route!=='home'){go('home');setTimeout(focus,80);}else focus();
 }
-function focusNameSearch(){
- const focus=()=>{const panel=document.querySelector('details[data-panel="home-manual"]');if(panel)panel.open=true;const search=document.querySelector('details.name-disclosure');if(search)search.open=true;document.getElementById('name-search-input')?.focus({preventScroll:false});};
- if(state.route!=='home'){go('home');setTimeout(focus,80);}else focus();
-}
+function focusNameSearch(){focusSearch();}
+
 document.addEventListener('submit',event=>{if(event.target.id==='connection-form'){event.preventDefault();if(!state.connection.busy)void runConnection(new FormData(event.target).get('barcode'));}});
 document.addEventListener('submit',event=>{if(event.target.id==='lookup-form'){event.preventDefault();void lookup(new FormData(event.target).get('barcode'));}});
 document.getElementById('toast')?.addEventListener('click',event=>{if(!event.target.closest('[data-action="toast-action"]'))clearToast();});
@@ -338,7 +367,7 @@ document.addEventListener('click',async event=>{
     case 'portion-set':setPortion(Number(control.dataset.amount));break;
     case 'scroll-to':document.getElementById(control.dataset.target)?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});break;
     case 'demo-scan':demoScan(control.dataset.code);break;
-    case 'load-swaps':{const p=projectState(state).active;if(p)void ensureSwaps(p,{force:true});break;}
+    case 'load-swaps':{const p=projectState(state).active;if(p){void ensureSwaps(p,{force:true});if(control.closest('.fs11-result'))document.getElementById('sw-h')?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}break;}
     case 'share-image':void shareImage(control.dataset.code);break;
     case 'share-save':void shareImage(control.dataset.code,true);break;
     case 'share-link':void shareLink(control.dataset.code);break;
@@ -355,7 +384,7 @@ document.addEventListener('click',async event=>{
     case 'portion':state.portion=control.dataset.value==='serving'?'serving':'100';render();document.querySelector(`[data-action="portion"][data-value="${state.portion}"]`)?.focus({preventScroll:true});break;
     case 'clear-filter':state.filter='';render();document.getElementById('saved-filter')?.focus();break;
     case 'clear-history':confirm('Clear recent discoveries?','This removes your recent lookup history on this device. Your saved foods are not affected.',()=>{state.store.recent=[];const ok=persist();render();if(ok)toast('Recent history cleared.');},'Clear history');break;
-    case 'clear-all':confirm('Delete your local food data?','This deletes your profile, lists, pantry, saved foods, recent history, activity and private label photos from this browser. Export a backup first. This cannot be undone.',()=>{stopRequest();const error=deleteStore();if(error){toast(error);return;}void clearPhotos().catch(()=>toast('Text data cleared, but this browser could not clear private photos. Clear this site storage in browser settings.'));if('caches' in window)void caches.delete('foodscan-images-v1');state.store=EMPTY();state.extraProducts=[];state.active=null;state.compare=['','','',''];state.input='';state.intentCompareSlot=null;go('home');applyTheme();toast('FoodScan saved foods and preferences have been deleted.');},'Delete local data');break;
+    case 'clear-all':confirm('Delete your local food data?','This deletes your profile, meal diary, lists, pantry, saved foods, recent history, activity and private label photos from this browser. Export a backup first. This cannot be undone.',()=>{stopRequest();const error=deleteStore();if(error){toast(error);return;}void clearPhotos().catch(()=>toast('Text data cleared, but this browser could not clear private photos. Clear this site storage in browser settings.'));if('caches' in window)void caches.delete('foodscan-images-v1');state.store=EMPTY();clearMealDiary();state.extraProducts=[];state.active=null;state.compare=['','','',''];state.input='';state.intentCompareSlot=null;go('home');applyTheme();toast('FoodScan saved foods and preferences have been deleted.');},'Delete local data');break;
     case 'export':exportFoods();break;
     case 'import':document.getElementById('import-input').click();break;
     case 'theme':if(['light','dark','system'].includes(control.dataset.value)){state.store.theme=control.dataset.value;persist();applyTheme();dialog.querySelectorAll('[data-action="theme"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.value===state.store.theme)));}break;
@@ -407,3 +436,5 @@ if('serviceWorker' in navigator&&globalThis.isSecureContext){
     }catch{toast('Offline installation is unavailable in this browser. Online lookup still works.');}
   },{once:true});
 }
+
+initMealDiary({notify:toast,getCurrentProduct:()=>{if(state.route!=='food')return null;const p=projectState(state).active;return p&&eligibility(p,state.store.profile).allowed?p:null;}});

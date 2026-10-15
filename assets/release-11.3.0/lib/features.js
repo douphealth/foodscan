@@ -72,14 +72,14 @@ export function installDailyFeatures(c){
   stopVoice();closeDialog();
   const btn=document.querySelector('[data-action="voice-search"]');btn?.classList.add('listening');
   recognition=new SR();recognition.lang=navigator.language||'en-US';recognition.interimResults=false;recognition.maxAlternatives=1;
-  recognition.onresult=event=>{const text=event.results?.[0]?.[0]?.transcript||'';stopVoice();const input=document.getElementById('name-search-input');if(input&&text.trim()){input.value=text.trim();state.nameQuery=text.trim();void runNameSearch(text.trim());}};
+  recognition.onresult=event=>{const text=event.results?.[0]?.[0]?.transcript||'';stopVoice();const input=document.getElementById('quick-find-input')||document.getElementById('name-search-input');if(input&&text.trim()){input.value=text.trim();state.nameQuery=text.trim();void runNameSearch(text.trim());}};
   recognition.onerror=()=>{stopVoice();toast('Voice search didn\u2019t catch that. Try typing instead.');};
   recognition.onend=()=>stopVoice();
   try{recognition.start();toast('Listening… speak the food name.');}catch{stopVoice();toast('Voice search could not start. Type your search instead.');}
  }
  let nameSearchController=null;
  async function runNameSearch(q){
-  const box=document.getElementById('name-search-results');
+  const box=document.getElementById('quick-find-results')||document.getElementById('name-search-results');
   nameSearchController?.abort();const controller=nameSearchController=new AbortController();
   state.nameQuery=q;
   if(q.trim().length<2){state.nameResults={query:q,items:[],error:'Type at least 2 characters to search.'};if(box)box.innerHTML=`<div class="notice error" role="alert">${i('info')}<div>Type at least 2 characters to search.</div></div>`;return;}
@@ -124,6 +124,7 @@ export function installDailyFeatures(c){
   if(t.id==='country-setting'){state.store.settings.country=t.value;persist();state.swaps={code:'',status:'idle'};toast(t.value?'Swaps will favor products sold in your country.':'Country is now detected from your language.');}
   if(t.id==='reminders-setting'){state.store.settings.reminders=t.checked;persist();}
   if(t.id==='recap-setting'){state.store.settings.recap=t.checked;if(!t.checked)state.store.events=[];persist();render();toast(t.checked?'Local recap starts now. Nothing is sent to an analytics service.':'Local recap is off and its activity log has been deleted.');}
+  if(t.id==='telemetry-setting'){state.store.settings.telemetry=t.checked;persist();render();toast(t.checked?'Anonymous usage counts are on. No food names, barcodes or profile choices are sent.':'Anonymous usage counts are off.');}
   if(t.id==='label-photo-input'&&t.files?.[0]){const file=t.files[0];t.value='';try{await savePhoto(photoCode,file);toast('Label photo saved privately on this device. No facts were extracted.');}catch(err){toast(err.message);}}
   if(t.id==='import-input'&&t.files?.[0]){const file=t.files[0];t.value='';if(file.size>3_000_000){toast('Choose a FoodScan backup smaller than 3 MB.');return;}
    try{pendingBackup=parseBackup(await file.text());const b=pendingBackup.store;openDialog(`<div class="modal-head"><h2>Restore a private backup.</h2><button class="icon-button" data-action="close-dialog" aria-label="Cancel import">${i('close')}</button></div><p>${b.saved.length} favorites, ${b.shopping.length} list items and ${b.pantry.length} pantry entries can be merged with this device. Matching IDs are updated. Private label photos are not part of JSON backups.</p><label class="check-label"><input id="restore-profile" type="checkbox">Also replace my Food Profile and display preferences</label><button class="button button-primary" data-action="confirm-import">Import this backup</button>`,'general');}catch(err){toast(err.message);}
@@ -131,6 +132,7 @@ export function installDailyFeatures(c){
  });
  document.addEventListener('submit',event=>{
   if(event.target.id==='name-search-form'){event.preventDefault();void runNameSearch(String(new FormData(event.target).get('q')||''));}
+  if(event.target.id==='quick-find-form'){event.preventDefault();const q=String(new FormData(event.target).get('query')||'').trim();if(/^[\d\s-]+$/.test(q))void lookup(q,{method:'manual'});else void runNameSearch(q);}
  });
  document.addEventListener('submit',async event=>{
   const form=event.target,id=form.getAttribute('id');if(!['profile-form','shopping-form','today-add-form','pantry-form','reminder-form','manual-food-form','report-form','g8-review-form','g8-item-form','g8-budget-form'].includes(id))return;event.preventDefault();const f=new FormData(form);

@@ -29,9 +29,17 @@ export function todaySnapshot(s,now=Date.now()){
  const favorites=(s.store.saved||[]).filter(p=>!pendingCodes.has(p.barcode)).slice(0,2);
  return {shopping,dated,low,favorites,allLow:(s.store.pantry||[]).filter(x=>x.runningLow).length,allPantry:(s.store.pantry||[]).length,saved:(s.store.saved||[]).length,dayLabel:new Intl.DateTimeFormat(s.store.settings?.locale||'en-GB',{weekday:'long',month:'short',day:'numeric'}).format(d)};
 }
+
+function streakData(s){
+ const days=[...new Set(s.store.habit?.activeDays||[])].sort(),set=new Set(days);let current=0;
+ const d=new Date();d.setHours(0,0,0,0);
+ for(let offset=0;offset<90;offset++){const x=new Date(d);x.setDate(d.getDate()-offset);const key=`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;if(set.has(key))current++;else if(offset>0)break;}
+ return {current,best:Math.max(current,s.store.habit?.bestStreak||0)};
+}
+
 export function todayView(s,primary=false){
  const heading=primary?'h1':'h2';
- const data=todaySnapshot(s),{shopping,dated,low,favorites}=data;
+ const data=todaySnapshot(s),{shopping,dated,low,favorites}=data,streak=streakData(s);
  const strict=hasRestrictions(s.store.profile), hasList=shopping.length>0;
  const featuredOnline=shopping.map(x=>({item:x,product:x.barcode?resolveProduct(s,x.barcode):null})).map(x=>({...x,merchant:x.product?amazonSearchLink(x.product,s.store.settings.country):null})).find(x=>x.merchant);
  const attention=dated.slice(0,2).map(({item,days})=>`<a class="tdy-date-row" href="#pantry"><span class="tdy-dot" aria-hidden="true"></span><span><strong>${e(item.name)}</strong><small>${e(relativeDate(days))} · ${e(item.dateKind==='use-by'?'Use-by':item.dateKind==='best-before'?'Best-before':'Unspecified date')}</small></span>${i('chevron')}</a>`).join('');
@@ -39,6 +47,7 @@ export function todayView(s,primary=false){
  const favoritesHtml=favorites.map(p=>`<button class="tdy-fav" data-action="list-add" data-code="${e(p.barcode)}" aria-label="Add ${e(p.name)} to your list">${i('plus')} <span>${e(p.name)}</span></button>`).join('');
  return `<section class="tdy" aria-labelledby="tdy-title">
   <div class="tdy-top"><div><span class="tdy-eyebrow">YOUR EVERYDAY FOOD COMPANION <span aria-hidden="true">·</span> ${e(data.dayLabel)}</span><${heading} id="tdy-title">Everything for <em>today.</em></${heading}><p>Your list, your kitchen, and your next useful action — in one place.</p></div><div class="tdy-top-cta">${primary?`<button data-action="camera" class="tdy-scan-primary">${i('scan')} Scan a food</button>`:''}<a href="#shopping" class="tdy-open-list">Open full list ${i('arrow')}</a></div></div>
+  <div class="d10-daily-line"><span>${i('spark')} <strong>${streak.current||1}-day food-smart rhythm</strong><small>Best ${streak.best||1} days · private on this device</small></span><a href="#insights">See my week ${i('arrow')}</a></div>
   <div class="tdy-totals" aria-label="Your local daily summary">
    <a href="#shopping" class="tdy-total"><span class="tdy-total-icon">${i('list')}</span><strong>${shopping.length}</strong><span>To buy</span></a>
    <a href="#pantry" class="tdy-total"><span class="tdy-total-icon">${i('package')}</span><strong>${data.allLow}</strong><span>Running low</span></a>

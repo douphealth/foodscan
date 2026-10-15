@@ -1,78 +1,44 @@
-# FoodScan 9.1.0 — Everyday Companion Upgrade
+# FoodScan 11.1.0 - Insight Release
 
-**Deliverable:** `FoodScan-9.1.0-Cloudflare-Pages-Upload.zip`  
-**Source:** user-supplied FoodScan 9.0.0 Cloudflare Pages Direct Upload ZIP  
-**Target:** Cloudflare Pages, preserving the existing advanced-mode `_worker.js` routing and the `foodscan:v3` browser storage key.
+Release date: 2026-10-14
+Platform: Cloudflare Pages Direct Upload (advanced-mode `_worker.js`)
+Source: user's FoodScan 11.0.0 release. This archive is the entire deployable app, not a UI mockup.
 
-## What changed
+## Shipped
 
-### 1. A dashboard for regular users
+1. Precision ingredient parser (`assets/release-11.1.0/lib/ingredient-parser.js`): protects decimal commas such as `7,4%`, bracketed ingredient lists, semicolon separators, and source ordering. Supports English reading hints and role labels without inventing quantity percentages. Preserves the original, escaped label transcription and provides an explicit statement for separately reported claims.
+2. First-screen result: actual product identity; evidence-led conclusion; reported Nutri-Score and NOVA, when provided; four UK-style per-100 nutrition traffic lights; primary links to ingredient details, consumed quantity, and sharing. Unknown or internally conflicting values remain unknown. Safety decisions and personal hard-restriction gating are preserved.
+3. Ingredients: source-order numbered cards, only actual printed percentages and actual reported allergens, high-contrast category cues, full unedited transcription, and explanations that ingredient categories do not prove allergen safety. Percentage bars represent ONLY source-declared percentages; no relative guesses for unquantified ingredients.
+4. Unified consumed amount: starts with a compatible source-reported serving, otherwise a clearly labeled 100 g/ml calculation starting point; stepper, range input, and quick presets; complete known totals for calories, sugars, saturated fat, fat, carbohydrates, protein, fiber and salt. Very small amounts such as 0.02 g salt remain visible. Underlying nutrient calculations are derived from the actual source per-100 values. Contradictions are suppressed; missing values are never silently replaced with zeros or Nutella constants.
+5. Sugar display: grams plus approximate teaspoons equivalent using 4 g per teaspoon. This is an equivalence of total sugars, not an assertion of added or free sugar. A logged-food summary compares known total sugars with the EU adult reference intake of 90 g only; it never calls the WHO 25 g free-sugars goal a total-sugars limit.
+6. Homepage: put scan/search before the explanatory heading on phone layouts, consolidate camera and photo entry, add 3 live sample lookup buttons (product availability not guaranteed), show calorie/total-sugar progress rings when the user has logged foods, including missing-data counts. Existing recent report cards retain reported Nutri-Score/NOVA and nutrient chips.
+7. Visual: add responsive 12-column result bento, consistent spacing, stronger foreground/background contrast, explicit dark theme colors, 320 px+ responsive breakpoints and reduced-motion preference.
+8. Release integrity: versioned 11.1.0 module assets, `/demo/` corrected from broken 9.0.0 links, release-scoped immutable CSS/JS paths, service-worker pre-cache version, health endpoint version.
 
-The home page now distinguishes a first visit from a returning shopper. A first visit still leads with barcode scanning. Returning users land on **Everything for today**, a summary driven by their own local shopping and pantry records, rather than another large introductory scanner panel.
+## Verification done locally
 
-It surfaces pending groceries, running-low pantry items, package dates to check, saved foods, and context-appropriate next actions. Date prompts quote the entered package date and its type; they make **no claim of food safety**. The home page updates the date-dependent data on reopening on a new local day.
+- JavaScript syntax for worker, service worker and the full frontend module tree.
+- 15 logic/render checks for European decimal commas, nested ingredients, percentage fidelity, escaped label text, all known portion nutrients, small salt, missing data, source conflicts, 100g baseline, safety route, first-screen conclusion and homepage sample actions.
+- Returning-user meal diary/ring state check with a mixture of known and unknown nutrition.
+- Cloudflare Worker local route responses: `/api/health` 200 with version 11.1.0; malformed barcode 400; nonexistent route 404; cross-origin API read 403.
+- Real frontend module-generated markup rendered into isolated Chromium HTML previews at 320 px, 390 px and 1440 px, both light and dark, without horizontal overflow. These previews use illustrative fixture data, NOT results fetched live from Open Food Facts.
+- ZIP CRC and all linked release asset paths checked.
 
-### 2. Faster routine interactions
+## Not verified
 
-- One-field grocery addition directly on Today. New entries persist in the existing local list.
-- One-tap grocery checkboxes. Bought items go through the existing purchase transaction to add a pantry lot with Undo.
-- One-tap restock from pantry; no silent duplicates and no unverified automatic purchasing.
-- Repeat a favorite from saved foods without navigating through its product page.
-- Immediate barcode camera, barcode-photo, manual barcode, and product-name search actions.
-- Reach the existing local grocery suggestion dialog, shopping calendar reminder, and share-list flow directly from Today.
-- Home-screen installation guidance appears once a visitor has ongoing local data (and when not already in standalone mode).
+- End-to-end browser navigation in this environment: Chromium administrator policies blocked all navigations including localhost. Isolated HTML rendering is NOT a successful end-to-end camera or API test.
+- Real camera scanning, network performance on mobile data, live Open Food Facts responses, installed-PWA upgrade/offline behavior, merchant outbound clicks, and Cloudflare Pages production deployment must be verified in staging.
+- No basis for guaranteed traffic, revenue, improvement multiplier, health outcome, or sub-second load claims.
 
-### 3. Trust-respecting monetization and sharing
+## How to deploy safely
 
-- A **single optional** Amazon search link is offered when a pending grocery is backed by an eligible, sourced, full product record.
-- Uses existing per-market Associates tags from FoodScan 9.0.0. No affiliate IDs were invented or changed.
-- Displays `paid link`, the existing Associates disclosure, and a warning that search results are not confirmed exact product listings, prices, or stock.
-- Records only a local `amazon_search_opened` event with placement `today` when users deliberately select a merchant link. Weekly Insights shows local merchant-search clicks, clearly labeled **not sales or earnings**.
-- Shared grocery-list text now includes a link back to the currently visited FoodScan site. Nothing is shared until the user initiates sharing.
+1. Retain the original FoodScan 11.0.0 ZIP, and preferably export current Cloudflare Pages deployment state.
+2. Deploy this archive with all files at the root of a Cloudflare Pages STAGING project. No build step. Keep `_worker.js`, `_routes.json`, `_headers`, `sw.js`, `index.html`, and `assets/` at the site root.
+3. Confirm `GET /api/health` returns a JSON version of `11.1.0`. Confirm the app loads `assets/release-11.1.0/insight.css` and `lib/ingredient-parser.js` without 404s.
+4. Test on an actual iOS and Android phone: camera denied/allowed, three live barcodes, incomplete OFF record, foreign decimal ingredient label (including 7,4%), restriction exclusion, size presets and slider, logging to the diary, total sugars display and offline revisit.
+5. Test the `/demo/` route and dark theme. Check CSP/security headers after Cloudflare upload.
+6. Promote only after staging tests pass. Rollback by redeploying the unmodified FoodScan 11.0.0 ZIP; preserve user local data under the existing localStorage keys.
 
-### 4. Existing functionality preserved
+## Security and nutrition cautions
 
-Product records still come from Open Food Facts, with missing values and uncertainty treated as missing. Profile restrictions still gate products across lists and saved foods. With restrictions enabled, the Today's free-text food quick-add is replaced with a prompt to scan an eligible product. Hidden items due to restrictions are counted without revealing excluded product details. Source lookups, pantry dates, comparison, history, offline-local storage, exports, imports, and the worker cache retain their existing contracts.
-
-### 5. Search and progressive-web-app support
-
-- Updated the landing title and description for both barcode scanning and grocery-list intent.
-- Added accurate WebApplication feature descriptions, refreshed the home page sitemap modification date, and adjusted the app manifest wording and home shortcut.
-- Versioned the immutable asset path to `assets/release-9.1.0/` and service worker cache to `foodscan-shell-9.1.0`.
-- All 36 declared precache paths exist, including the new Today module. The backend reports version 9.1.0.
-
-## Validation completed
-
-| Validation | Outcome |
-|---|---|
-| Syntax checks of application ES modules, worker, service worker, and boot script | Passed |
-| Local worker `GET /api/health` | 200; reports 9.1.0 |
-| Worker invalid-barcode rejection and cross-origin blocking | Passed |
-| Browser-rendered modules, 320px / 390px / 1440px layouts | Passed; zero horizontal overflow observed |
-| Adding an item, marking bought, creating pantry item, then Undo | Passed |
-| Restocking from pantry, direct name-search focus, and reminder dialog | Passed |
-| Existing list state round-trip through browser storage | Passed |
-| HTML escaping of untrusted custom item text | Passed |
-| Hard food-restriction gate and withheld-item display | Passed |
-| Affiliate eligibility/disclosure/URL tags and local click counts | Passed using a synthetic product record |
-| Dark theme and extra-large text on 320px viewport | Passed |
-| Root references, precache paths, routes JSON, app manifest, sitemap XML | Passed |
-
-**Test-environment limitation:** Browser QA mounted the actual HTML, CSS, and ES modules into Chromium using local blob URLs because this environment's Chromium blocks HTTP(S) navigation. Accordingly, the tests **did not** exercise Cloudflare deployment, a real camera, real Open Food Facts traffic, actual affiliate purchases, or offline service-worker operation on an installed production origin. No live-usage lift, retention improvement, search ranking, or revenue increase is claimed.
-
-## Release procedure
-
-1. Keep the supplied 9.0.0 ZIP as a rollback artifact. Back up any data you rely on with FoodScan's Settings → Export backup before testing with real devices.
-2. Upload the new **ZIP contents at the project root** to a **Cloudflare Pages preview/staging deployment**, using the same Direct Upload method as 9.0.0. Do not nest the build in an extra folder.
-3. Confirm `/api/health` returns `version: 9.1.0` and `/` loads CSS/JS with no missing `/assets/release-9.1.0/` requests.
-4. On mobile, add an item from Today; tick it off; confirm the pantry record and Undo. Check the date prompt against a manually entered package date. Then test product-name search and a real food barcode online.
-5. Test with a hard avoidance preference enabled and confirm unverified products are gated. Verify any optional Amazon link carries your own correct Associates market tag and disclosures. Check a repeated visit offline after the service worker installs.
-6. Only after staging validation, promote the preview to production. Track actual outcomes rather than assuming improvement.
-
-**Rollback:** redeploy the original `FoodScan-9.0.0-Cloudflare-Pages-Upload.zip`. The preexisting storage key and export format were retained; no storage migration or destructive update is required. Re-check the service worker and hard refresh after rollback.
-
-## Suggested 14-day scorecard
-
-Compare equivalent pre/post cohorts (or a controlled rollout) using: first successful barcode-to-result time; first grocery item added; list-to-pantry completion; 7-day returning-user share; merchant-search CTR per eligible shopping session; verified Associates orders/earnings; and organic visitors who use a non-scanning daily action. The **local** weekly recap cannot report sitewide conversion or actual Amazon earnings. Those require consent-aware aggregated analytics and authorized Associates reporting.
-
-**Highest-leverage next action:** stage the ZIP on Cloudflare Pages and conduct a real-device purchase-list/pantry loop before pushing it to the production domain.
+This tool cannot independently verify allergens or medical safety. Ingredient role tags are reading aids, not diagnoses. Data is community supplied, potentially stale or incomplete. Source categories, Nutri-Score and NOVA values are only shown when available. Source claims must be checked against actual packaging. Portion amounts are arithmetic based on stated values, not precise measurements of consumption. Cloudflare PWA caching does not cache profile/diary/API data in the app shell. No secrets, API credentials or new analytics defaults were added.

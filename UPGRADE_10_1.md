@@ -1,0 +1,3 @@
+# FoodScan 10.1 meal diary upgrade
+
+Added a local-only opt-in meal diary on the existing home page: user-entered macros, repeat meals, optional illustrative hidden-ingredient adjustments, text and supported browser speech transcription, targets, local export, weekly text share and contextual Daily Table link. It does not use AI meal recognition, calculate medical scores, or send meal data to a server. No changes to existing food barcode and restriction safeguards. Existing FoodScan export does not include meal diary: export separately from diary settings. Roll back by redeploying original 10.0.0 archive.

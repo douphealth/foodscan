@@ -10,13 +10,14 @@ import {projectState,visibleProducts,resolveProduct} from './policy.js';
 import {packArt,barcodeBars,ART} from './art.js';
 export {demoView,demoStage} from './demo.js';
 import {demoProduct,DEMO_CODES} from './demo.js';
-import {gradeStrip,gradeDot,novaBar,scoreCards,realStoryPillars,quickReadList,lightTiles,miniLights,compositionBar,portionPanel,portionStart,swapSkeleton,swapCard} from './components.js';
+import {gradeStrip,gradeDot,novaBar,scoreCards,realStoryPillars,quickReadList,lightTiles,miniLights,compositionBar,portionPanel,portionStart,swapSkeleton,swapCard ,ingredientsList} from './components.js';
 import {quickRead,betterChoices,swapsWorthOffering,swapMetrics,usableCategories,basketSummary,tipOfTheDay,COUNTRIES,swapCountry,GRADE_STYLE,NOVA_INFO,trafficLights} from './nutrition.js';
 import {amazonSearchLink,ASSOCIATE_DISCLOSURE} from './commerce.js';
 import {shoppingViewV8,pantryBanner} from './grocery-ui.js';
 import {todayView} from './today.js';
 import {pantryReview,decisionFor} from './decision.js';
 import {resultSummary,gatePanel,pantryNudge,reviewPage,swapChoiceCard,savedFails} from './decision-ui.js';
+import {productDiaryPanel,getDiarySummary} from './meal-diary.js';
 
 export const allProducts=s=>visibleProducts(s);
 const stamp=(ts,locale='en-GB')=>ts?new Date(ts).toLocaleDateString(locale,{day:'numeric',month:'short',year:'numeric'}):'Not supplied';
@@ -91,7 +92,7 @@ export function footer(){
 
 /* ---------- home ---------- */
 export function scanForm(s){
- return `<div class="scan-card-head"><span class="section-kicker">THE QUICK LOOKUP</span><h2>Have the barcode?</h2><p>Type or paste the digits from your package.</p></div>
+ return `<div class="scan-card-head"><span class="section-kicker">TYPE THE DIGITS</span><h2>No camera? No problem.</h2><p>Enter the number printed below the barcode.</p></div>
  <form id="lookup-form" aria-label="Barcode lookup"><label class="field-label" for="barcode-input">Barcode number</label><div class="barcode-entry"><span aria-hidden="true">${i('scan')}</span><input id="barcode-input" name="barcode" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="e.g. 3017624010701" value="${e(s.input||'')}" maxlength="40" aria-describedby="barcode-help"><button class="lookup-submit" type="submit" aria-label="Look up this barcode">${i('arrow')}</button></div><p class="field-hint" id="barcode-help">Use the numbers underneath the barcode.</p></form>
  ${s.error&&s.route==='home'?noticeBox(e(s.error.message),'error'):''}
  <details class="name-disclosure"><summary>${i('search')}<span>Search by product name</span>${i('chevron')}</summary><form id="name-search-form" class="name-search" role="search"><label class="sr-only" for="name-search-input">Product name</label><div class="field">${i('search')}<input id="name-search-input" name="q" type="search" placeholder="Oat milk, yogurt..." autocomplete="off" value="${e(s.nameQuery||'')}"><button type="button" class="voice-btn" data-action="voice-search" aria-label="Search by voice">${i('mic')}</button></div><button class="button button-dark" type="submit">Search</button></form></details>
@@ -187,27 +188,81 @@ function firstRunDemo(s){
  <p class="fd-note">This is exactly what a real scan looks like — a decision, not a data dump.</p>
  <div class="button-row"><button class="button button-primary" data-action="camera">${i('scan')} Scan my first food</button><a class="button button-outline" href="#demo">Try more examples ${i('arrow')}</a></div></section>`;
 }
-function _home(s){
- const recent=s.store.recent.slice(0,4),returning=Boolean(recent.length||s.store.shopping.length||s.pantryDecisionReview?.checked);
- const fresh=`<section class="home-lead d8-first-home" aria-label="Scan your food"><div class="welcome-card"><div class="welcome-photo" aria-hidden="true"><img src="/art/produce.webp" alt="" width="816" height="330" fetchpriority="high"></div><div class="welcome-content"><span class="welcome-kicker">YOUR NEXT FOOD DECISION</span><h1>Scan it.<br><em>Shop your way.</em></h1><p>The facts that matter to you.<br>A next step you can use.</p><button class="scan-now" data-action="camera"><span class="scan-now-icon">${i('scan')}</span><span>Scan now<small>Point at a package barcode</small></span>${i('arrow')}</button><div class="scan-shortcuts"><button data-action="photo">${i('camera')} Barcode photo</button><button data-action="manual">${i('keyboard')} Type a barcode</button><button data-action="search-name">${i('search')} Search by name</button></div></div></div><div class="scan-card" id="scan-box">${scanForm(s)}</div></section>`;
- const returningScan=`<section class="tdy-scan-strip" aria-label="Check a new packaged food"><span class="tdy-scan-copy"><strong>Checking something new?</strong><small>Choose how to look up a food.</small></span><div class="tdy-scan-actions"><button data-action="camera" class="tdy-scan-solid">${i('scan')} Scan barcode</button><button data-action="photo">${i('camera')} Photo</button><button data-action="manual">${i('keyboard')} Type digits</button><button data-action="search-name">${i('search')} Search name</button></div></section>`;
- return `<div class="container home-shell d8-home">${returning?`${pantryNudge(s.pantryDecisionReview,savedFails(s).length)}${todayView(s,true)}${returningScan}`:`${fresh}${pantryNudge(s.pantryDecisionReview,savedFails(s).length)}${todayView(s)}${firstRunDemo(s)}`}
- ${returning?`<details class="d8-home-manual" data-panel="home-manual"><summary>Type a barcode or search a food ${i('search')}</summary><div class="scan-card" id="scan-box">${scanForm(s)}</div></details>`:''}
- ${recent.length?`<section class="page-section" aria-label="Recent scans">${pageHead('PICK UP WHERE YOU LEFT OFF','Recent <em>scans.</em>','',`<a class="link-button" href="#saved">View all ${i('arrow')}</a>`)}<div class="food-grid">${recent.map(p=>productCard(p,s)).join('')}</div></section>`:''}
- <section class="page-section tools-section" aria-label="Daily tools">${pageHead('YOUR EVERYDAY TOOLS','From basket <em>to kitchen.</em>','',`<a class="link-button" href="#pantry">Pantry ${i('arrow')}</a>`)}${tiles(s)}</section></div>`;
+/* v10.3: Health Impact Hero — zero-friction proof of health power.
+   Every number is computed from the user's REAL scans and decisions.
+   No invented scores, no estimates of what they ate. */
+function healthImpactHero(s){
+ const recent=s.store.recent||[];
+ if(!recent.length)return '';
+ let left=0,fine=0;
+ for(const prod of recent.slice(0,20)){
+  if(!prod||!prod.barcode)continue;
+  let d; try{d=decisionFor(prod,s.store.profile);}catch{d=null;}
+  if(!d)continue;
+  if(d.kind==='check')left++;
+  else if(d.kind==='match')fine++;
+ }
+ const r=localRecap(s.store);
+ const swaps=r.swaps||0;
+ const daySet=new Set(s.store.habit?.activeDays||[]);
+ let streak=0; const d0=new Date(); d0.setHours(0,0,0,0);
+ for(let off=0;off<90;off++){const x=new Date(d0);x.setDate(d0.getDate()-off);
+  const k=`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+  if(daySet.has(k))streak++;else if(off>0)break;}
+ if(!left&&!fine&&!swaps&&!streak)return '';
+ return `<section class="hi-hero" aria-label="Your health impact"><div class="hi-glow" aria-hidden="true"></div>
+  <div class="hi-head"><span class="eyebrow">YOUR HEALTH, BY THE NUMBERS</span><h2>Your food choices, <em>in focus.</em></h2></div>
+  <div class="hi-stats">
+   ${left?`<div class="hi-stat"><span class="hi-num hi-red" data-countup>${left}</span><span class="hi-label">products flagged<br>to skip</span></div>`:''}
+   ${swaps?`<div class="hi-stat"><span class="hi-num hi-amber" data-countup>${swaps}</span><span class="hi-label">smarter swaps<br>saved</span></div>`:''}
+   ${fine?`<div class="hi-stat"><span class="hi-num hi-green" data-countup>${fine}</span><span class="hi-label">recorded<br>preference matches</span></div>`:''}
+   ${streak?`<div class="hi-stat"><span class="hi-num hi-blue" data-countup>${streak}</span><span class="hi-label">consecutive<br>days active</span></div>`:''}
+  </div>
+  <p class="hi-foot">Counts reflect your recorded scans and list actions, not health outcomes.</p></section>`;
 }
-
+function _home(s){
+ const recent=s.store.recent.slice(0,4),ready=s.store.shopping.filter(x=>!x.checked).length,day=getDiarySummary();
+ return `<div class="container home-shell fs-home fs11-home">
+ <section class="fs-command fs11-launch" aria-labelledby="fs-home-title">
+  <div class="fs-command-copy fs11-launch-copy">
+   <span class="fs11-eyebrow"><span class="fs11-live-dot" aria-hidden="true"></span> THE FOOD LABEL, MADE CLEAR</span>
+   <h1 id="fs-home-title">Scan it.<br><em>Know what matters.</em></h1>
+   <p>Scan a barcode or type a food. See the key findings, ingredient list and reported nutrition together—without digging through tabs.</p>
+   <div class="fs11-proof-row" aria-label="FoodScan essentials"><span>${i('check')} Label-backed facts</span><span>${i('check')} No account needed</span><span>${i('check')} Private food diary</span></div>
+  </div>
+  <div class="fs-command-controls fs11-scan-panel" id="scan-box">
+   <div class="fs11-scan-panel-top"><div><span class="fs11-step">01 / START HERE</span><strong>Check a food</strong></div><span class="fs11-ready">Ready when you are</span></div>
+   <div class="fs-command-actions fs11-scan-buttons"><button type="button" class="fs-scan-primary" data-action="camera">${i('scan')} <span>Scan barcode <small>Use your camera</small></span>${i('arrow')}</button><button type="button" data-action="photo" class="fs-scan-alt">${i('camera')} <span>Use a photo</span></button></div>
+   <div class="fs11-separator"><span>or search by name or barcode</span></div>
+   <form id="quick-find-form" class="fs-quick-find" role="search"><label class="sr-only" for="quick-find-input">Search a food by product name or barcode</label><div class="fs-quick-find-row"><span aria-hidden="true">${i('search')}</span><input id="quick-find-input" type="search" name="query" autocomplete="off" placeholder="e.g. Greek yogurt or 3017624010701" value="${e(s.nameQuery||s.input||'')}" required maxlength="120"><button type="button" data-action="voice-search" class="fs-voice-search" aria-label="Search a product using voice">${i('mic')}</button><button type="submit">Search ${i('arrow')}</button></div></form>
+   ${s.error&&s.route==='home'?noticeBox(e(s.error.message),'error'):''}<div id="quick-find-results" class="fs-quick-find-results" aria-live="polite">${nameResults(s)}</div>
+   <div class="fs12-instant-try" aria-label="Try a live product lookup"><span>Try a live report</span><div class="fs12-try-chips"><button type="button" data-action="sample" data-code="3017620422003">Chocolate hazelnut spread ${i('arrow')}</button><button type="button" data-action="sample" data-code="5449000131805">Cola ${i('arrow')}</button><button type="button" data-action="sample" data-code="8076800195057">Pasta ${i('arrow')}</button></div><small>Fetches a community-maintained record when online; availability and facts vary.</small></div>
+   <p class="fs-command-note">Allergen information can be incomplete. Always confirm against the package.</p>
+  </div>
+ </section>
+ ${day.count?`<section class="fs12-today-peek" aria-label="Today's quick snapshot"><div class="fs12-day-name"><span class="fs11-tag">TODAY IN ONE GLANCE</span><strong>${day.count} food ${day.count===1?'entry':'entries'}</strong><small>Based on what you've logged</small></div>
+ <div class="fs12-gauge-cell"><div class="fs12-donut" role="img" aria-label="${Math.round(day.knownCalories/Math.max(1,day.goal)*100)} percent of your editable calorie target from known entries" style="--fs12-fill:${Math.min(100,Math.round(day.knownCalories/Math.max(1,day.goal)*100))}%"><strong>${Math.round(day.knownCalories/Math.max(1,day.goal)*100)}%</strong></div><div><span>Known calories</span><strong>${formatNumber(day.knownCalories)} kcal</strong><small>of ${formatNumber(day.goal)} kcal target${day.missingCalories?` · ${day.missingCalories} unknown`:''}</small></div></div>
+ <div class="fs12-gauge-cell">${day.knownSugars!=null?`<div class="fs12-donut fs12-donut-sugar" role="img" aria-label="${Math.round(day.knownSugars/90*100)} percent of the EU adult total-sugars reference intake from known entries" style="--fs12-fill:${Math.min(100,Math.round(day.knownSugars/90*100))}%"><strong>${Math.round(day.knownSugars/90*100)}%</strong></div>`:`<div class="fs12-donut fs12-donut-empty" role="img" aria-label="No total-sugars data logged"><strong>—</strong></div>`}<div><span>Known total sugars</span><strong>${day.knownSugars!=null?`${formatNumber(day.knownSugars)} g`:'Not logged'}</strong><small>${day.knownSugars!=null?'EU adult RI 90 g (total sugars)':'Not enough data'}${day.missingSugars?` · ${day.missingSugars} unknown`:''}</small></div></div>
+ <a href="#meal-diary">Full daily report ${i('arrow')}</a><p class="fs12-day-clarity">These are logged values only. The 90 g EU reference is for <strong>total sugars</strong>, not a 25 g added/free-sugar limit. Unknown amounts are excluded.</p></section>`:''}
+ <div class="fs11-journey-line" aria-label="How it works"><span><b>01</b> Scan or search</span><span class="fs11-journey-sep" aria-hidden="true">${i('arrow')}</span><span><b>02</b> Read the verdict</span><span class="fs11-journey-sep" aria-hidden="true">${i('arrow')}</span><span><b>03</b> Decide with facts</span></div>
+ <section id="meal-diary" class="fs-diary" aria-label="Your private daily food diary"></section>
+ ${pantryNudge(s.pantryDecisionReview,savedFails(s).length)}
+ ${todayView(s,false)}
+ ${recent.length?`<section class="page-section fs-recent-products" aria-label="Your recent food reports">${pageHead('YOUR RECENT REPORTS','Pick up where you left off.','No need to scan the same product twice.',`<a class="link-button" href="#saved">View all foods ${i('arrow')}</a>`)}<div class="food-grid">${recent.map(p=>productCard(p,s)).join('')}</div></section>`:`<section class="fs-demo-link"><div><strong>See a real label report in action.</strong><p>Take a look before you scan your first product.</p></div><button type="button" data-action="sample" data-code="3017624010701">Explore a sample report ${i('arrow')}</button><span>Community-maintained data · availability varies</span></section>`}
+ <section class="page-section tools-section" aria-label="Shopping and pantry tools">${pageHead('ALL IN ONE PLACE','The rest of your food routine.','')}${tiles(s)}</section>
+ </div>`;
+}
 export function home(state,...args){const s={...projectState(state),pantryDecisionReview:pantryReview(state)};return _home(s,...args);}
 export const pantryReviewView=reviewPage;
 
 /* ---------- product page ---------- */
 function nutrientCards(p,s){
   const pri=priorityMetrics(s.store.profile);
-  const keys=[...pri,...FIELDS.map(([k])=>k).filter(k=>!pri.includes(k)&&k!=='salt')];
+  const keys=[...new Set([...pri,...FIELDS.map(([k])=>k)])];
   const bad=new Set(nutrientConflicts(p));
   return `<div class="nutrient-grid">${keys.map(k=>{
     const meta=METRICS[k],v=p.nutrition?.[k],isPri=pri.includes(k);
-    const sv=servingValue(p,k);
+    const sv=bad.has(k)?{value:null}:servingValue(p,k);
     const rule=PRIORITIES.find(r=>r.metric===k);
     let flag='',bar='';
     if(v==null||bad.has(k))flag=`<span class="nc-flag na">${bad.has(k)?'Conflicting data':'Not reported'}</span>`;
@@ -220,33 +275,21 @@ function nutrientCards(p,s){
     }
     return `<div class="nutrient-card${isPri?' is-priority':''}"><div class="nc-name">${meta.name}</div>
       <div class="nc-value">${v==null?'—':formatNumber(v)} <small>${meta.unit} / 100${p.basis==='ml'?'ml':'g'}</small></div>
-      <div class="nc-sub">${sv.value!=null?`≈ ${formatNumber(sv.value)} ${meta.unit} per serving${sv.estimated?' (estimated)':''}`:'Serving value not reported'}</div>${flag}${bar}</div>`;
+      <div class="nc-sub">${bad.has(k)?'Conflicting source value; do not use for portions':sv.value!=null?`≈ ${formatNumber(sv.value)} ${meta.unit} per serving${sv.estimated?' (calculated)':''}`:'Serving value not reported'}</div>${flag}${bar}</div>`;
   }).join('')}</div>`;
 }
-function productTabs(p,s){
-  const tab=s.tab||'nutrition';
-  const tabs=[['nutrition','Nutrition'],['ingredients','Ingredients'],['source','Source & trust']];
-  let body='';
-  if(tab==='ingredients'){
-    body=`<div class="ingredients-card"><h3>Ingredients</h3>
-      ${p.ingredients?`<p>${e(p.ingredients)}</p>`:`<p class="muted">Ingredient text not supplied for this record.</p>`}
-      ${p.allergens?.length?`<h3 class="mt-2">Allergens reported</h3><div class="allergen-chips">${p.allergens.map(a=>`<span class="allergen-chip">${e(a)}</span>`).join('')}</div>`:''}
-      ${p.traces?.length?`<h3 class="mt-2">May contain traces</h3><div class="allergen-chips">${p.traces.map(a=>`<span class="trace-chip">${e(a)}</span>`).join('')}</div>`:''}
-      ${p.additivesCount!=null?`<p class="mt-2"><strong>${p.additivesCount}</strong> additive${p.additivesCount===1?'':'s'} listed in the source record. <span class="muted">A count is not a safety rating.</span></p>`:''}
-    </div>`;
-  }else if(tab==='source'){
-    body=`<div class="source-strip" style="margin-top:1.4rem"><span><strong>Source:</strong> ${p.provenance==='local'?'Your manual entry (unverified)':`<a href="${e(p.sourceUrl)}" target="_blank" rel="noopener">Open Food Facts record</a>`}</span>
-      <span><strong>Snapshot:</strong> ${stamp(p.fetchedAt)}</span>
-      ${p.sourceModified?`<span><strong>Source updated:</strong> ${stamp(p.sourceModified)}</span>`:''}
-      <span><strong>What we show:</strong> ${dqBadges(p)}</span></div>
-      <div class="button-row">${button('report','Report an issue','alert',p.barcode)}${p.provenance!=='local'?button('reload','Reload latest','refresh',p.barcode):''}${button('capture-label','Save label photo','camera',p.barcode)}${button('view-label','View my label photo','camera',p.barcode)}</div>
-      <p class="small muted mt-2">Spotted something wrong? Your correction draft downloads to this device — nothing is submitted without you. Label photos never leave this device.</p>`;
-  }else{
-    body=`${nutrientCards(p,s)}
-    ${nutrientConflicts(p).length?noticeBox('Some values in this record conflict with each other (e.g. sugars above carbohydrates). Conflicting values are shown for reference but never used for matching or ranking.','warning'):''}
-    <p class="small muted mt-2">${e(basisLabel(p))}. Missing values are shown as —, never treated as zero.</p>`;
-  }
-  return `<div class="tabs" role="tablist" aria-label="Product details">${tabs.map(([id,label])=>`<button role="tab" id="tab-${id}" aria-selected="${tab===id}" aria-controls="product-tab-panel" tabindex="${tab===id?0:-1}" data-action="tab" data-tab="${id}">${label}</button>`).join('')}</div><div id="product-tab-panel" role="tabpanel" aria-labelledby="tab-${tab}" tabindex="0">${body}</div>`;
+/* Studio 11: visible-by-default, sectioned report; missing data remains unknown. */
+function productFullReport(p,s){
+ const nutrition=`${nutrientCards(p,s)}${nutrientConflicts(p).length?noticeBox('Some nutrition fields conflict. They are excluded from comparisons and portion calculations. Check the physical label.','warning'):''}<p class="fs11-basis-line">${i('info')} ${e(basisLabel(p))}. A dash means not reported, never zero. Serving values may be calculated from the label.</p>${compositionBar(p)?`<div class="fs11-composition-panel"><h4>Composition recorded per 100 ${p.basis==='ml'?'ml':'g'}</h4>${compositionBar(p)}</div>`:''}`;
+ const ingredients=`<div class="fs12-ingredient-header"><div><span class="fs11-tag">FROM THE PACKAGE RECORD</span><h4>Ingredients as reported</h4><p>Clear order, exact reported percentages, no invented quantities.</p></div><span class="fs12-transparency">Community transcription · verify on pack</span></div>
+ <div class="fs12-allergen-notice"><div class="fs12-allergen-icon">${i('alert')}</div><div><strong>Allergens in the source record</strong>${p.allergens?.length?`<div class="allergen-chips">${p.allergens.map(a=>`<span class="allergen-chip">${e(a)}</span>`).join('')}</div>`:'<p>None listed — this does not establish allergen safety.</p>'}${p.traces?.length?`<p>Possible traces: ${p.traces.map(e).join(', ')}</p>`:'<p>Trace information not provided or not listed.</p>'}<small>Verify against the physical package for every allergy or dietary restriction.</small></div></div>
+ ${ingredientsList(p)}${p.additivesCount!=null?`<p class="fs11-additives-fact">${i('info')} Source records ${p.additivesCount} additive${p.additivesCount===1?'':'s'}; this is not a safety score.</p>`:''}`;
+ const source=`<div class="source-strip fs-source-summary"><span><strong>Record</strong> ${p.provenance==='local'?'Your locally entered, unverified data':`<a href="${e(p.sourceUrl)}" target="_blank" rel="noopener noreferrer">Open Food Facts ${i('arrow')}</a>`}</span><span><strong>Retrieved</strong> ${stamp(p.fetchedAt)}</span><span><strong>Source updated</strong> ${stamp(p.sourceModified)}</span><span><strong>Known limitations</strong> ${dqBadges(p)}</span></div><div class="button-row">${button('report','Report an issue','alert',p.barcode)}${p.provenance!=='local'?button('reload','Refresh record','refresh',p.barcode):''}${button('capture-label','Save label photo','camera',p.barcode)}${button('view-label','View private photo','camera',p.barcode)}</div><p class="fs11-basis-line">${i('info')} Label photos stay on your device. Correction drafts are downloaded, not submitted automatically.</p>`;
+ return `<section id="fs-complete-report" class="fs-all-report fs11-report" aria-labelledby="fs-all-report-heading"><div class="fs-report-intro"><div><span class="fs11-tag">THE COMPLETE LABEL</span><h2 id="fs-all-report-heading">Everything behind the answer.</h2><p>No hidden panels. Review the numbers, ingredients, and source in one continuous report.</p></div><nav class="fs-report-links" aria-label="Jump to report section"><a href="#fs-nutrition">Nutrition ${i('arrow')}</a><a href="#fs-ingredients">Ingredients &amp; allergens ${i('arrow')}</a><a href="#fs-source">Data source ${i('arrow')}</a></nav></div>
+ <section class="fs-report-section" id="fs-nutrition" aria-labelledby="fs11-nutrition-title"><div class="fs-report-section-heading"><span class="fs11-section-number">01</span><div><span>WHAT'S INSIDE</span><h3 id="fs11-nutrition-title">Nutrition facts</h3></div><span class="fs11-section-context">Reported per 100 ${p.basis==='ml'?'ml':'g'}</span></div><div class="fs-report-body">${nutrition}</div></section>
+ <section class="fs-report-section" id="fs-ingredients" aria-labelledby="fs11-ingredients-title"><div class="fs-report-section-heading"><span class="fs11-section-number">02</span><div><span>READ THE LABEL</span><h3 id="fs11-ingredients-title">Ingredients &amp; allergens</h3></div><span class="fs11-section-context">As recorded by the source</span></div><div class="fs-report-body">${ingredients}</div></section>
+ <section class="fs-report-section" id="fs-source" aria-labelledby="fs11-source-title"><div class="fs-report-section-heading"><span class="fs11-section-number">03</span><div><span>BEHIND THE NUMBERS</span><h3 id="fs11-source-title">Source &amp; reliability</h3></div><span class="fs11-section-context">Verify what you see</span></div><div class="fs-report-body">${source}</div></section>
+ </section>`;
 }
 /** Better-choices slot. Re-rendered on its own when the async search settles. */
 export function swapsSection(s){
@@ -254,27 +297,29 @@ export function swapsSection(s){
   if(!p)return '';
   if(!sw||sw.code!==p.barcode||sw.status==='idle')return `<div class="swap-empty"><button class="button button-outline" data-action="load-swaps" data-code="${p.barcode}">${i('swap')} Find better choices</button></div>`;
   if(sw.status==='loading')return swapSkeleton();
-  if(sw.status==='error')return `<div class="notice warning">${i('info')}<div>${e(sw.error)} <button class="link-button" data-action="load-swaps" data-code="${p.barcode}">Try again</button></div></div>`;
+  if(sw.status==='error'){const rateLimited=/pause/i.test(sw.error||'');
+   return `<div class="swap-error-card" role="alert"><span class="swap-error-icon">${i('info')}</span><div class="swap-error-body"><strong>${rateLimited?'Taking a breather':'The food database did not answer'}</strong><p>${e(sw.error)}${rateLimited?'':' Your saved foods still work.'}</p><button class="swap-retry" data-action="load-swaps" data-code="${p.barcode}"${sw.retryAt?` data-retry-at="${sw.retryAt}"`:''}>${i('refresh')} <span>Try again</span></button></div></div>`;}
   const {items,plan}=betterChoices(p,sw.items,s.store.profile,sw.category);
   if(!items.length&&hasRestrictions(s.store.profile)&&sw.items.length&&sw.items.every(x=>x.partial))return `<div class="compact-empty">The food database only gave previews just now, which cannot be checked against your restrictions. <button class="link-button" data-action="load-swaps" data-code="${p.barcode}">Try again</button></div>`;
   const meta=`<p class="sec-sub">Same recorded category: ${e(tag(sw.category))}${sw.countryName?` · country tag: ${e(sw.countryName)}`:''}. Compared on ${e(plan.reason)}.${sw.mode==='local'?' Offline: only complete records stored on this device were checked.':''}</p>`;
-  if(!items.length)return `${meta}<div class="compact-empty">No supported improvement among the ${sw.checked} source records checked. That does not mean there is none: <a href="#alternatives/${p.barcode}">browse this category</a>.</div>`;
+  if(!items.length)return `${meta}<div class="swap-empty-card"><p><strong>Checked ${sw.checked} products</strong> in "${e(tag(sw.category))}" against your priorities — none beats this one on what matters to you.</p><p style="margin-bottom:1rem">That is a real answer, not a missing one. You can still explore the shelf yourself:</p><a class="button button-outline" href="#alternatives/${p.barcode}">${i('search')} Browse this category</a></div>`;
   return `${meta}<div class="swap7-list">${items.slice(0,3).map(x=>swapChoiceCard(x,p,s,sw.category)).join('')}</div><div class="affiliate-box"><span class="affiliate-badge">${i('swap')} Compare before you buy</span><p class="affiliate-note">These are nutrition comparisons among ${sw.checked} source records, not verified merchant listings. <a href="#alternatives/${p.barcode}">See category records</a>. No local stock or package equivalence is implied.</p></div>`;
 }
 function _productView(s){
  const p=s.active;if(s.excludedResult)return gatePanel(s);if(!p)return lookupState(s);
- const amount=s.portionAmount??portionStart(p),unit=p.basis==='ml'?'ml':p.basis==='g'?'g':'g / ml (basis unspecified)';
- const shop=amazonSearchLink(p,swapCountry(s.store.settings,p));
- return `<div class="container d8-page"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="#home">${i('back')} Back to scan</a><a href="#shopping">${i('list')} Today's list</a></nav>
+ const amount=s.portionAmount??portionStart(p),unit=p.basis==='ml'?'ml':p.basis==='g'?'g':'g / ml (basis unspecified)',shop=amazonSearchLink(p,swapCountry(s.store.settings,p));
+ return `<div class="container d8-page fs-product-page"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="#home">${i('back')} Back to Today</a><a href="#shopping">${i('list')} Shopping list</a></nav>
  ${resultSummary(p,s)}
- ${swapsWorthOffering(p,s.store.profile)?`<section class="d8-swaps" aria-labelledby="sw-h"><div class="d8-subhead"><div><span class="eyebrow">BEFORE IT GOES IN YOUR BASKET</span><h2 id="sw-h">A swap you can use.</h2></div>${i('swap')}</div><div id="swaps-slot">${swapsSection(s)}</div></section>`:''}
- <section class="d8-report" aria-label="Optional product details">
- <details data-panel="full-report"><summary><span>${i('list')} Full nutrition, ingredients &amp; source</span>${i('chevron')}</summary><div class="d8-panel-body">${productTabs(p,s)}</div></details>
- <details data-panel="quick-read"><summary><span>${i('info')} Other label observations</span>${i('chevron')}</summary><div class="d8-panel-body">${quickReadList(p)||'<p>Not enough source information.</p>'}${p.provenance==='local'?'':scoreCards(p)}${lightTiles(p)}</div></details>
- ${p.basis?`<details data-panel="portion"><summary><span>${i('cube')} Portion &amp; composition</span>${i('chevron')}</summary><div class="d8-panel-body"><p class="small muted">Uses the reported serving when available. Otherwise 100 ${unit} is a reference, not a recommended portion. Change to your measured amount.</p>${portionPanel(p,amount)}${compositionBar(p)}</div></details>`:''}
- ${shop?`<details data-panel="merchant"><summary><span>${i('search')} Optional merchant search</span>${i('chevron')}</summary><div class="d8-panel-body"><p>Amazon search results are not a verified match, price or stock check.</p><a class="button button-outline" data-commercial-link="amazon" data-placement="product" href="${e(shop.url)}" target="_blank" rel="${shop.sponsored?'sponsored ':''}noopener noreferrer">Search Amazon${shop.sponsored?' &middot; paid link':''}</a>${shop.sponsored?`<p class="small muted">${e(ASSOCIATE_DISCLOSURE)}</p>`:''}</div></details>`:''}
- </section><div class="d8-next-action"><button class="button button-dark" data-action="camera">${i('scan')} Scan next package</button><a class="button button-outline" href="#shopping">Continue today's list ${i('arrow')}</a></div></div>`;
+ <nav class="fs11-shortcuts" aria-label="Jump directly to a report section"><span>JUMP TO THE FACTS</span><a href="#fs-nutrition">${i('info')} Full nutrition ${i('arrow')}</a><a href="#fs-ingredients">${i('leaf')} Ingredients &amp; allergens ${i('arrow')}</a><a href="#fs-product-log-heading">${i('check')} Amount consumed ${i('arrow')}</a></nav>
+ ${productDiaryPanel(p)}
+ ${productFullReport(p,s)}
+ ${swapsWorthOffering(p,s.store.profile)?`<section class="d8-swaps fs-context-section fs-swaps-priority" aria-labelledby="sw-h"><div class="d8-subhead"><div><span class="fs-mini-kicker">YOUR BETTER OPTION</span><h2 id="sw-h">A better match for your preferences</h2></div>${i('swap')}</div><div id="swaps-slot">${swapsSection(s)}</div></section>`:''}
+ <section class="fs-context-section" aria-label="Additional report observations"><div class="fs-report-section-heading"><span>04 / CONTEXT</span><h3>What else stands out</h3></div>${quickReadList(p)||'<p>Not enough source information for further observations.</p>'}</section>
+
+ ${shop?`<section class="fs-context-section fs-merchant" aria-label="Optional shopping search"><div class="fs-report-section-heading"><span>OPTIONAL / SHOPPING</span><h3>Find this type of product</h3></div><p>Merchant results are not verified for exact match, price, or stock. You can search without leaving FoodScan's report until you choose.</p><a class="button button-outline" data-commercial-link="amazon" data-placement="product" href="${e(shop.url)}" target="_blank" rel="${shop.sponsored?'sponsored ':''}noopener noreferrer">Search Amazon${shop.sponsored?' · paid link':''} ↗</a>${shop.sponsored?`<p class="small muted">${e(ASSOCIATE_DISCLOSURE)}</p>`:''}</section>`:''}
+ <div class="d8-next-action fs-next-report"><button class="button button-dark" data-action="camera">${i('scan')} Scan another product</button><a class="button button-outline" href="#home">See my day ${i('arrow')}</a></div></div>`;
 }
+
 export function productView(state,...args){return _productView(projectState(state),...args);}
 
 /* ---------- lookup states ---------- */
@@ -297,8 +342,8 @@ export function lookupState(s){
     <a class="link-button" href="#home">${i('back')} Back to scan</a>
     <h1 class="mt-1">${e(title)}</h1><div class="barcode-chip">${i('scan')} ${e(code)}</div>
     <p class="muted">${e(s.error?.message||hint)}</p>
-    <div class="missing-actions">${button('retry','Try again','refresh',code,'button-primary')}${button('manual-food','Enter product details','keyboard',code)}${button('capture-label','Save a label photo','camera',code)}${button('report','Report missing product','alert',code)}</div>
-    <p class="small muted mt-2">Manual entries are clearly marked unverified. Nothing is invented.</p></div></div></div>`;
+    <div class="missing-actions">${button('manual-food','Create my private record','keyboard',code,'button-primary')}${button('capture-label','Save the label photo','camera',code)}${button('retry','Try lookup again','refresh',code)}${button('report','Help improve the public record','alert',code)}</div>
+    <p class="small muted mt-2">Fastest path: save what the package says. Your private record stays unverified and can still power your list and pantry.</p></div></div></div>`;
 }
 
 /* ---------- dialogs ---------- */
@@ -331,7 +376,8 @@ export function settingsDialog(s){
   <div class="settings-section"><h3>Gentle reminders</h3>
     <label class="check-label"><input id="reminders-setting" type="checkbox"${st.settings.reminders?' checked':''}> Pantry &amp; shopping reminders (in-app only)</label>
     <label class="check-label"><input id="recap-setting" type="checkbox"${st.settings.recap?' checked':''}> Keep activity on this device for my weekly recap</label>
-    <p class="small muted">No push, no tracking. Turning recap off deletes its event log.</p>
+    <label class="check-label"><input id="telemetry-setting" type="checkbox"${st.settings.telemetry?' checked':''}> Help improve FoodScan with anonymous usage counts</label>
+    <p class="small muted">No advertising profiles. Weekly recap stays local. Anonymous usage counts are optional and off by default.</p>
     <button class="button button-outline button-sm" data-action="persist-storage">${i('lock')} Ask browser to protect offline storage</button></div>
   <div class="settings-section"><h3>Your foods, on this device</h3>
     <p class="small muted">${st.saved.length} favorites · ${st.recent.length} recent · ${st.shopping.length} list items · ${st.pantry.length} pantry entries</p>

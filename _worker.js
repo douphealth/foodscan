@@ -8,7 +8,9 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '9.1.0';
+const VERSION = '11.3.0';
+const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
+const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
 const ORIGIN = 'https://world.openfoodfacts.org';
 const INDEX_ORIGIN = 'https://search.openfoodfacts.org/search';
 const FIELDS = 'code,product_name,product_name_en,product_name_el,brands,image_front_url,image_url,quantity,serving_size,nutriments,nutriscore_grade,nutrition_grades,nova_group,ingredients_text,ingredients_text_en,ingredients_text_el,allergens_tags,traces_tags,last_modified_t,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,additives_n,product_quantity_unit,serving_quantity,serving_quantity_unit,data_quality_errors_tags,product_type,obsolete';
@@ -63,7 +65,9 @@ async function staleCopy(cache, staleKey) {
 }
 
 /* ---------- rate budgets ---------- */
-function reserveRead(ip) {
+async function reserveRead(ip, env) {
+  if (env?.UPSTREAM_RATE_LIMITER?.limit) { const out = await env.UPSTREAM_RATE_LIMITER.limit({ key: 'open-food-facts' }); if (!out.success) return { code: 'local_rate_limited', wait: 10 }; }
+
   const now = Date.now();
   while (upstreamReads.length && upstreamReads[0] <= now - 60000) upstreamReads.shift();
   if (providerCooldown > now) return { code: 'rate_limited', wait: Math.ceil((providerCooldown - now) / 1000) };
@@ -112,7 +116,7 @@ async function fetchProduct(request, env, code) {
   };
   try {
     for (let hop = 0; hop < 4; hop++) {
-      const limit = reserveRead(ip);
+      const limit = await reserveRead(ip, env);
       if (limit) return fail(limit.code, limit.code === 'rate_limited'
         ? 'Open Food Facts asked us to pause requests. Please wait before trying again.'
         : 'This FoodScan server has reached its temporary request budget. Please wait before trying again.',
@@ -278,10 +282,26 @@ function textSearch(request, env, ctx) {
     async () => ({ ...(await firstWorking(full ? [viaOff, viaIndex] : [viaIndex, viaOff])), query }));
 }
 
+
+async function collectEvent(request, env) {
+  if (request.method !== 'POST') return error('method_not_allowed', 'Use POST.', 405);
+  if (!String(request.headers.get('Content-Type') || '').toLowerCase().startsWith('application/json')) return error('bad_event', 'Use JSON.', 400);
+  let body; try { const text = await request.text(); if (text.length > 2000) throw new Error(); body = JSON.parse(text); } catch { return error('bad_event', 'Invalid event.', 400); }
+  if (!EVENT_NAMES.has(body?.name)) return error('bad_event', 'Unknown event.', 400);
+  const properties = body.properties && typeof body.properties === 'object' && !Array.isArray(body.properties) ? Object.fromEntries(Object.entries(body.properties).filter(([k,v]) => EVENT_PROPERTIES.has(k) && ['string','number','boolean'].includes(typeof v)).slice(0,10).map(([k,v]) => [k, typeof v === 'string' ? v.slice(0,80) : v])) : {};
+  const event = { name: body.name, properties, version: String(body.version || '').slice(0,20), path: String(body.path || '').slice(0,40), at: Date.now() };
+  if (env?.ANALYTICS?.writeDataPoint) env.ANALYTICS.writeDataPoint({ blobs: [event.name,event.version,event.path,JSON.stringify(event.properties)], doubles: [1], indexes: [event.name] });
+  return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store', 'X-FoodScan-Version': VERSION } });
+}
+
 export default {
   async fetch(request, env = {}, ctx) {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+    if (url.pathname === '/api/events') {
+      if (request.headers.get('Sec-Fetch-Site') === 'cross-site' || (request.headers.get('Origin') && request.headers.get('Origin') !== url.origin)) return error('origin_not_allowed', 'Use the API from this FoodScan site.', 403);
+      return collectEvent(request, env);
+    }
     if (request.method !== 'GET') return error('method_not_allowed', 'Only GET requests are supported.', 405, {}, { Allow: 'GET' });
     if (request.headers.get('Sec-Fetch-Site') === 'cross-site' || (request.headers.get('Origin') && request.headers.get('Origin') !== url.origin))
       return error('origin_not_allowed', 'Use the API from this FoodScan site.', 403);

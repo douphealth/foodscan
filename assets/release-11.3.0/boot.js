@@ -30,7 +30,7 @@
     if (!window.__foodscan_booted) {
       show('FoodScan couldn\u2019t start.',
         'Its scripts were blocked or failed to load. Make sure you\u2019re opening the deployed https:// address ' +
-        '(not a file preview), check your connection, then reload. If it persists, the deployment may be missing the /assets/release-9.1.0/ folder.');
+        '(not a file preview), check your connection, then reload. If it persists, the deployment may be missing the /assets/release-11.3.0/ folder.');
     }
   }, 7000);
 })();

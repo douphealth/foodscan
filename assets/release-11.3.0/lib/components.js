@@ -4,6 +4,7 @@ import {packArt,sugarCubes} from './art.js';
 import {icon as i} from './icons.js';
 import {GRADE_STYLE,NOVA_INFO,trafficLights,lightWord,quickRead,composition,portionPlan,portionFacts,percentRI,formatPercent,formatTsp,unitWord,valuePer100} from './nutrition.js';
 import {amazonSearchLink} from './commerce.js';
+import {parseIngredientsAccurately} from './ingredient-parser.js';
 
 const LEVEL_ICON={high:'alert',medium:'info',low:'check'};
 
@@ -19,11 +20,14 @@ export function novaBar(group){
  return `<span class="novabar${info?'':' none'}" role="img" aria-label="${info?`NOVA group ${group}, ${e(info.title)}`:'NOVA not available'}">${[1,2,3,4].map(n=>`<span class="nv nv-${n}${n===group?' on':''}" aria-hidden="true">${n}</span>`).join('')}</span>`;
 }
 /** The two source-provided scores side by side, each with an honest caption. */
+/* v11.2: plain-language captions under each badge — no click needed to understand */
+const NS_CAPTION={A:'Best nutritional quality',B:'Good nutritional quality',C:'Average nutritional quality',D:'Poor nutritional quality',E:'Poorest nutritional quality'};
+const NOVA_CAPTION={1:'Minimally processed',2:'Processed culinary ingredient',3:'Processed food',4:'Ultra-processed'};
 export function scoreCards(p){
  const ns=p.nutriScore,nova=p.nova,info=NOVA_INFO[nova];
  return `<div class="score-cards">
-  <div class="score-card${ns?'':' is-empty'}"><div class="score-txt"><span class="score-k">Nutri-Score</span><span class="score-note">${ns?GRADE_STYLE[ns].word:'Not provided'}</span></div>${gradeStrip(ns)}</div>
-  <div class="score-card${info?'':' is-empty'}"><div class="score-txt"><span class="score-k">Processing (NOVA)</span><span class="score-note">${info?e(info.short):'Not provided'}</span></div>${novaBar(nova)}</div>
+  <div class="score-card${ns?'':' is-empty'}"><div class="score-txt"><span class="score-k">Nutri-Score</span><span class="score-note">${ns?GRADE_STYLE[ns].word:'Not provided'}</span></div>${gradeStrip(ns)}${ns?`<p class="score-caption">${NS_CAPTION[ns]} · A is best, E is poorest</p>`:'<p class="score-caption">No score in the source record</p>'}</div>
+  <div class="score-card${info?'':' is-empty'}"><div class="score-txt"><span class="score-k">Processing (NOVA)</span><span class="score-note">${info?e(info.short):'Not provided'}</span></div>${novaBar(nova)}${nova?`<p class="score-caption">${NOVA_CAPTION[nova]}</p>`:'<p class="score-caption">Processing level not reported</p>'}</div>
  </div>
  <details class="score-help"><summary>${i('info')}<span>What do these mean?</span></summary><div><p><strong>Nutri-Score</strong> (A to E) summarizes a food's nutrient profile. It comes from the source record and FoodScan never changes it. It is best used to compare similar foods.</p><p><strong>NOVA</strong> (1 to 4) describes how industrially a food is made, not how much of any nutrient it has. It is not a safety rating.</p></div></details>`;
 }
@@ -56,9 +60,9 @@ export function realStoryPillars(p){
     ${sugars!=null&&sugars>0?`<div class="rs-cubes-vis">${sugarCubes(Math.min(sugars,40))}</div>`:''}
    </div>
    <div class="rs-item rs-allergens">
-    <div class="rs-top"><span class="rs-title">Allergens Check</span><span class="rs-status ${allergens.length?'has-allergens':'clean-allergens'}">${allergens.length?i('alert')+' Reported':i('check')+' Declared clear'}</span></div>
-    <div class="rs-val"><strong>${allergens.length?allergens.slice(0,3).join(', '):'No declared allergens'}</strong></div>
-    <p class="rs-desc">${allergens.length?`Declared allergens: ${allergens.join(', ')}.`:(traces.length?`May contain traces of: ${traces.join(', ')}.`:'No allergens declared in source record. Always verify package.')}</p>
+    <div class="rs-top"><span class="rs-title">Allergens Check</span><span class="rs-status ${allergens.length?'has-allergens':'clean-allergens'}">${allergens.length?i('alert')+' Reported':i('info')+' Not listed'}</span></div>
+    <div class="rs-val"><strong>${allergens.length?allergens.slice(0,3).join(', '):'Not reported in this record'}</strong></div>
+    <p class="rs-desc">${allergens.length?`Declared allergens: ${allergens.join(', ')}.`:(traces.length?`May contain traces of: ${traces.join(', ')}.`:'No allergens listed in the source record. This does not establish allergen safety. Check the physical package.')}</p>
    </div>
   </div>
  </div>`;
@@ -114,6 +118,24 @@ export function portionBody(p,amount){
  const cubes=facts.sugars>0?`${sugarCubes(facts.sugars)}<p class="cube-cap">${facts.sugars<2?'a pinch of sugar':`${formatNumber(facts.sugars)} g of sugar. One cube is a 4 g teaspoon.`}</p>`:'';
  return `<p class="pf-head">${formatNumber(amount)} ${unit} gives you:</p>${cubes}<div class="pf-grid">${rows}</div>
  <p class="small muted pf-foot">% of an adult's daily reference intake on a 2,000 kcal diet (EU label standard). A general guide, not personal advice.</p>`;
+}
+/* Preserve the source's original label while displaying a faithful parsed reading aid. */
+export function ingredientsList(p){
+ const raw=p.ingredients;
+ if(!raw)return `<div class="fs11-ingredients-unknown" role="note">${i('info')}<div><strong>Ingredient list unavailable</strong><p>Missing ingredient text does not mean allergens are absent. Refer to the physical package.</p></div></div>`;
+ const {items,footnote}=parseIngredientsAccurately(raw);
+ if(!items.length)return `<p class="fs11-label-original">${e(raw)}</p>`;
+ return `<div class="fs12-ingredient-intro"><strong>${items.length} reported ingredients</strong><span>In source order · no quantities estimated</span></div>
+ <ol class="fs12-ingredient-list">${items.map(item=>{
+  const percentage=item.percentage;
+  return `<li class="fs12-ing-row fs12-ing-${item.tone}"><span class="fs12-ing-index" aria-label="Ingredient ${item.rank}">${String(item.rank).padStart(2,'0')}</span>
+   <div class="fs12-ing-content"><strong>${e(item.name)}</strong>${item.englishHint&&item.englishHint.toLowerCase()!==item.name.toLowerCase()?`<span class="fs12-ing-translation">${e(item.englishHint)}</span>`:''}<span class="fs12-ing-label">${e(item.tag)}${item.rank===1?' · Listed first':''}</span>
+    ${percentage!=null?`<div class="fs12-ing-bar" role="img" aria-label="${e(item.name)}: ${formatNumber(percentage)} percent declared on label"><span style="width:${Math.min(100,percentage)}%"></span></div>`:''}</div>
+   <div class="fs12-ing-right">${percentage!=null?`<span class="fs12-ing-percent">${formatNumber(percentage)}%</span><small>On label</small>`:`<span class="fs12-ing-unknown">Not given</span><small>Amount</small>`}</div></li>`;
+ }).join('')}</ol>
+ ${footnote?`<div class="fs12-label-footnote"><strong>Additional source statement</strong><span>${e(footnote)}</span><small>Reported wording; verify on the current package.</small></div>`:''}
+ <div class="fs12-raw-label"><div class="fs12-raw-head">${i('file-text')} <strong>Original label transcription</strong><span>Unedited</span></div><p>${e(raw)}</p></div>
+ <p class="fs12-ing-disclaimer">Ingredients are generally listed in descending order by weight. Colored tags help identify words in the text; they are not allergy-safety assessments. Only percentages printed in the source are shown.</p>`;
 }
 export function portionPanel(p,amount){
  const plan=portionPlan(p),value=Math.min(plan.max,Math.max(plan.min,amount??plan.start));

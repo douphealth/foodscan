@@ -14,7 +14,7 @@ export function decisionFor(product,rawProfile){
  const unknown=flags.filter(f=>f.status==='unknown');
  // Source quality and conflicting added-sugar claims must not become a green summary.
  const concerns=assessment.flags.filter(f=>!wanted.includes(f.key)&&['unknown','attention'].includes(f.status));
- if(!hasProfile(profile))return {kind:'neutral',title:'Your priorities come first.',summary:'Choose an avoid rule or one goal below. No personal fit is assumed.',flags:[],misses,unknown,gate};
+ if(!hasProfile(profile))return {kind:'neutral',title:'Your label, explained.',summary:'These are source-reported food facts, not a personal safety or health rating. See the key evidence below.',flags:[],misses,unknown,gate};
  if(product.provenance==='local')return {kind:'unconfirmed',title:'Check your unverified entry.',summary:'These are your notes, not a source-verified product match.',flags,misses,unknown,gate};
  if(unknown.length||concerns.length||product.partial||product.qualityWarnings?.length)return {kind:'unconfirmed',title:'Some details need checking.',summary:unknown[0]?.title||concerns[0]?.title||'A complete product record is needed.',flags:[...flags,...concerns],misses,unknown,gate};
  if(misses.length){const key=misses[0].key,rule=PRIORITIES.find(r=>r.id===key),n=product.nutrition?.[rule.metric],target=profile.thresholds[key],label=rule.metric==='saturatedFat'?'saturated fat':rule.metric;
