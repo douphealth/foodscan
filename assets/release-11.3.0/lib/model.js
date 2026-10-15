@@ -1,5 +1,5 @@
 /** Data normalization shared by the UI and tests. Never interpret absent facts as zero. */
-export const VERSION = '11.3.0';
+export const VERSION = '11.4.0';
 export const FIELDS = [
   ['kcal', 'Energy', 'kcal', 'energy-kcal'], ['protein', 'Protein', 'g', 'proteins'],
   ['carbohydrates', 'Carbohydrate', 'g', 'carbohydrates'], ['sugars', 'Sugars', 'g', 'sugars'],
