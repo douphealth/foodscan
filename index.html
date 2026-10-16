@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f7f2">
+<meta name="theme-color" content="#f5f6f2">
 <meta name="description" content="Scan packaged foods for source-backed nutrition, ingredients and allergens. Calculate your portion and keep a private food diary.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://food-scan.gearuptofit.com/">
@@ -28,16 +28,18 @@
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<script src="/assets/release-11.10.0/boot.js"></script>
-<link rel="stylesheet" href="/assets/release-11.10.0/app.css">
+<script src="/assets/release-11.11.0/boot.js" defer></script>
+<link rel="stylesheet" href="/assets/release-11.11.0/app.css">
 <link rel="preconnect" href="https://world.openfoodfacts.org" crossorigin>
-<script type="importmap">{"imports":{"/assets/release-11.3.0/lib/views.js":"/assets/release-11.10.0/views.js","/assets/release-11.3.0/lib/decision-ui.js":"/assets/release-11.10.0/result.js","/assets/release-11.3.0/lib/model.js":"/assets/release-11.10.0/model.js","/assets/release-11.3.0/lib/api.js":"/assets/release-11.10.0/api.js","/assets/release-11.3.0/lib/store.js":"/assets/release-11.10.0/store.js"}}</script>
-<script type="module" src="/assets/release-11.10.0/app.js"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FoodScan","url":"https://food-scan.gearuptofit.com/","applicationCategory":"HealthApplication","operatingSystem":"Any","isAccessibleForFree":true,"softwareVersion":"11.10.0","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<script type="importmap">{"imports":{"/assets/release-11.3.0/lib/views.js":"/assets/release-11.11.0/views.js","/assets/release-11.3.0/lib/decision-ui.js":"/assets/release-11.11.0/result.js","/assets/release-11.3.0/lib/model.js":"/assets/release-11.11.0/model.js"}}</script>
+<script type="module" src="/assets/release-11.11.0/app.js"></script>
+<script type="module" src="/assets/release-11.11.0/release-status.js"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FoodScan","url":"https://food-scan.gearuptofit.com/","applicationCategory":"HealthApplication","operatingSystem":"Any","isAccessibleForFree":true,"softwareVersion":"11.11.0","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="header"></div>
+<div id="release-check" class="release-status" role="status" aria-live="polite"><span id="release-check-text">App 11.11.0 · checking API version…</span><button id="release-check-retry" type="button">Check deployment</button><a href="#connection">Connection details</a></div>
 <main id="main" tabindex="-1" aria-label="FoodScan application"><div class="container startup"><h1>FoodScan</h1><p role="status">Opening FoodScan…</p></div></main>
 <div id="footer"></div>
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
