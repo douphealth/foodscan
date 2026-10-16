@@ -1,1 +1,0 @@
-(()=>{let mode='system';try{mode=localStorage.getItem('foodscan-display-mode')||mode;}catch{}document.documentElement.dataset.uiTheme=mode==='dark'||mode==='light'?mode:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';})();
