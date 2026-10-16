@@ -1,3 +1,7 @@
+# Latest update: FoodScan 11.15.0
+
+See [release notes](RELEASE_NOTES_11_15.md): responsive photo improvements, conservative nutrition-source validation and visible data completeness.
+
 # FoodScan 11.14.1 update
 
 The source-accurate Protein, Fat, and Carbs circular cards are restored in the product report. See [11.14.1 release notes](RELEASE_NOTES_11_14_1.md).

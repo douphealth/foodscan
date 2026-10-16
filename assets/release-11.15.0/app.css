@@ -1,0 +1,34 @@
+@layer prior,accuracy;
+@import url('/assets/release-11.14.1/app.css') layer(prior);
+@layer accuracy{
+ #main .fs16-report .v18-overview{align-items:start}
+ #main .fs16-report .fs16-photo-frame{width:100%;max-width:100%;min-width:0;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;align-self:start;padding:clamp(12px,2vw,18px);margin:0;border-radius:20px;background:var(--ui-soft);border:1px solid var(--ui-line);overflow:hidden}
+ #main .fs16-report .fs16-photo-frame>img.fs16-product-photo{display:block;position:static;width:min(100%,365px);max-width:100%;height:clamp(210px,29vw,355px);max-height:355px;object-fit:contain;object-position:center center;margin:0 auto;padding:clamp(8px,1.6vw,14px);background:#fff;border-radius:16px;border:1px solid var(--ui-line);box-sizing:border-box;box-shadow:0 8px 26px rgba(0,0,0,.045)}
+ #main .fs16-report .fs16-photo-frame>img.fs16-product-photo[hidden]{display:none}
+ #main .fs16-photo-caption{display:block;text-align:center;max-width:34ch;color:var(--ui-muted);font-size:.73rem;font-weight:600;line-height:1.45}
+ #main .fs16-photo-failed{min-height:180px;display:grid;place-items:center;text-align:center;color:var(--ui-ink);font-size:.85rem;padding:24px}
+ #main .fs16-data-panel{display:grid;gap:10px;padding:clamp(16px,2.5vw,24px) var(--fs15-pad);border-bottom:1px solid var(--ui-line);background:var(--ui-paper);color:var(--ui-ink)}
+ #main .fs16-data-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+ #main .fs16-data-head strong{font-size:clamp(.91rem,1.35vw,1.04rem);line-height:1.35}
+ #main .fs16-coverage-number{font-variant-numeric:tabular-nums;font-size:.78rem;font-weight:850;color:var(--ui-muted);text-align:right}
+ #main .fs16-coverage-track{height:8px;border-radius:100px;background:var(--ui-ring-track);overflow:hidden}
+ #main .fs16-coverage-track span{height:100%;display:block;background:var(--ui-protein);border-radius:100px}
+ #main .fs16-data-panel p{margin:0;line-height:1.55;font-size:.84rem;color:var(--ui-muted)}
+ #main .fs16-data-panel .fs16-calculated{font-size:.81rem;color:var(--ui-ink);font-weight:650}
+ #main .fs16-data-panel>a{color:var(--ui-ink);font-size:.82rem;font-weight:800;text-underline-offset:3px;justify-self:start}
+ #main .fs16-quality-warnings{padding:12px 14px;border-radius:13px;background:var(--ui-warning-bg);border:1px solid var(--ui-line);color:var(--ui-ink)}
+ #main .fs16-quality-warnings summary{font-weight:800;font-size:.81rem;cursor:pointer;line-height:1.4}
+ #main .fs16-quality-warnings ul{margin:10px 0 0;padding-left:18px;font-size:.8rem;line-height:1.55}
+ @media(max-width:760px){
+  #main .fs16-report .v18-overview{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+  #main .fs16-report .fs16-photo-frame{width:100%;justify-self:center;align-self:center;padding:14px}
+  #main .fs16-report .fs16-photo-frame>img.fs16-product-photo{width:min(100%,390px);height:clamp(190px,59vw,340px);margin:0 auto;object-fit:contain}
+  #main .fs16-report .fs15-findings{padding:6px 3px 16px}
+ }
+ @media(max-width:420px){
+  #main .fs16-report .v18-overview{padding:13px;gap:14px}
+  #main .fs16-report .fs16-photo-frame{padding:10px;border-radius:16px}
+  #main .fs16-report .fs16-photo-frame>img.fs16-product-photo{width:min(100%,340px);height:clamp(180px,57vw,245px);border-radius:13px;padding:8px}
+  #main .fs16-photo-caption{font-size:.72rem}
+ }
+}

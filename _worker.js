@@ -8,13 +8,13 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '11.12.0';
-const PRODUCT_CACHE_VERSION = '11.3.0';
+const VERSION = '11.15.0';
+const PRODUCT_CACHE_VERSION = '11.15.0';
 const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
 const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
 const ORIGIN = 'https://world.openfoodfacts.org';
 const INDEX_ORIGIN = 'https://search.openfoodfacts.org/search';
-const FIELDS = 'code,product_name,product_name_en,product_name_el,brands,image_front_url,image_url,quantity,serving_size,nutriments,nutriscore_grade,nutrition_grades,nova_group,ingredients_text,ingredients_text_en,ingredients_text_el,allergens_tags,traces_tags,last_modified_t,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,additives_n,product_quantity_unit,serving_quantity,serving_quantity_unit,data_quality_errors_tags,product_type,obsolete';
+const FIELDS = 'code,product_name,product_name_en,product_name_el,brands,image_front_url,image_front_small_url,image_url,selected_images,quantity,serving_size,nutrition_data_per,nutriments,nutriscore_grade,nutrition_grades,nova_group,ingredients_text,ingredients_text_en,ingredients_text_el,allergens_tags,traces_tags,last_modified_t,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,additives_n,product_quantity_unit,serving_quantity,serving_quantity_unit,data_quality_errors_tags,product_type,obsolete';
 // The search index stores a slimmer record: no ingredient text, traces, serving size or additive count.
 const INDEX_FIELDS = 'code,product_name,product_name_en,brands,image_front_url,image_url,quantity,product_quantity_unit,nutriments,nutriscore_grade,nutrition_grades,nova_group,allergens_tags,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,last_modified_t,unique_scans_n,obsolete';
 const SEARCH_LANGS = 'en,fr,de,es,it,el,pt,nl';
