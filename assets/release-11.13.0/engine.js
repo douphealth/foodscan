@@ -11,7 +11,7 @@ import {installDailyFeatures} from '/assets/release-11.3.0/lib/features.js';
 import {clearPhotos} from '/assets/release-11.3.0/lib/photos.js';
 import {usableCategories,betterChoices,swapCountry,swapsWorthOffering,COUNTRIES,trafficLights} from '/assets/release-11.3.0/lib/nutrition.js';
 import {portionBody} from '/assets/release-11.3.0/lib/components.js';
-import {bestLocalComparison} from './comparison-recovery.js';
+import {bestLocalComparison} from '/assets/release-11.12.0/comparison-recovery.js';
 import {shareCardBlob} from '/assets/release-11.3.0/lib/share.js';
 import {demoProduct,DEMO_CODES} from '/assets/release-11.3.0/lib/demo.js';
 const initial=loadStore();
