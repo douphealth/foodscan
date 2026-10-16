@@ -6,6 +6,10 @@ on:
     paths:
       - '.github/workflows/ui-audit.yml'
       - 'qa/ui-audit.mjs'
+      - 'assets/release-11.10.0/**'
+      - 'index.html'
+      - '_headers'
+      - 'sw.js'
 permissions:
   contents: read
 jobs:
