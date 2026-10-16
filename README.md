@@ -1,3 +1,7 @@
+# FoodScan 11.13.0 update
+
+See [11.13 release notes](RELEASE_NOTES_11_13.md) for the live-alternatives recovery architecture and premium source-classification cards.
+
 # Latest update: FoodScan 11.12.0
 
 See [release notes](RELEASE_NOTES_11_12.md) for fixed Open Food Facts category comparisons, meaningful per-portion presets, and safe saved-food recovery.
