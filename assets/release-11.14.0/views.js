@@ -7,7 +7,7 @@ function el(tag,klass,text){
  if(text!==undefined)node.textContent=text;
  return node;
 }
-function transformSwaps(html){
+export function transformSwaps(html){
  const template=document.createElement('template');template.innerHTML=html;
  const list=template.content.querySelector('.swap7-list');
  if(!list)return template.innerHTML;

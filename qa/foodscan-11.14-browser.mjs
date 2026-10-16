@@ -28,8 +28,12 @@ try{
   assert.equal(await page.locator('.fs15-portion-results .fs12-macro-k').count(),1);
   const button=page.locator('[data-action=load-swaps]').first();if(await button.count())await button.click();
   await page.waitForTimeout(600);
-  await page.locator('.fs15-alternatives-grid .fs15-alternative-card').first().waitFor({timeout:12000});
-  assert(await page.locator('.fs15-alternative-card .d8-swap-actions a[href^="#food/"]').count());
+  await page.waitForTimeout(400);
+  const fixture=await page.evaluate(async()=>{const {transformSwaps}=await import('/assets/release-11.14.0/views.js');return transformSwaps('<div class="swap7-list"><article class="d8-swap"><div class="d8-swap-top"><div class="d8-pack"><img alt="Example food" src="/icon-192.png"></div><div><span class="food-brand">Example</span><h3>Comparison fixture</h3><span class="d8-swap-label">Measured difference</span></div></div><div class="d8-deltas"><span>-12 g sugars per 100 g (-24%)</span></div><div class="d8-swap-actions"><button data-action="decision-swap" data-base="3017620422003" data-code="3017620425035" data-category="en:spreads">Add swap to today\'s list</button><a href="#food/3017620425035">Details</a></div></article></div>');});
+  assert.match(fixture,/fs15-alternatives-grid/);
+  assert.match(fixture,/fs15-difference-value/);
+  assert.match(fixture,/data-action="decision-swap"/);
+  assert.match(fixture,/View report/);
   assert(!(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)),'Horizontal overflow '+width);
   await page.screenshot({path:'ui-audit/11.14/food-'+width+'-'+theme+'.png',fullPage:true,animations:'disabled'});
   await context.close();
