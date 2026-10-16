@@ -28,7 +28,12 @@ async function scenario(width,theme,providerOk){
  await page.route('https://world.openfoodfacts.org/api/v2/search?**',route=>respond(route,{error:'unavailable'},502));
  await page.route('**/api/events',route=>route.fulfill({status:204}));
  await page.goto(base+'/#food/'+id,{waitUntil:'domcontentloaded'});
- await page.locator('.v18-product').waitFor({timeout:25000});
+ try{await page.locator('.v18-product').waitFor({timeout:10000});}catch(error){
+  const state=await page.evaluate(()=>({title:document.title,hash:location.hash,html:document.querySelector('#main')?.innerHTML?.slice(0,2400),text:document.body?.innerText?.slice(0,1400),scripts:[...document.querySelectorAll('script')].map(x=>x.src||x.type)}));
+  console.error('BROWSER STARTUP DEBUG',JSON.stringify({state,errors}));
+  await page.screenshot({path:'ui-audit/11.13/startup-failure-'+width+'-'+theme+'.png',fullPage:true});
+  throw error;
+ }
  const grade=page.locator('.fs14-nutri .fs14-mark'),nova=page.locator('.fs14-processing .fs14-mark');
  assert.equal(await grade.textContent(),'E');
  assert.equal(await nova.textContent(),'4');
