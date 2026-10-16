@@ -1,0 +1,1 @@
+setTimeout(()=>{if(!window.__foodscan_booted){const p=document.createElement('p');p.setAttribute('role','alert');p.textContent='FoodScan could not start. Check your connection and reload.';document.getElementById('main')?.append(p);}},9000);
