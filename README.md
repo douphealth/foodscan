@@ -1,3 +1,7 @@
+# Latest update: FoodScan 11.12.0
+
+See [release notes](RELEASE_NOTES_11_12.md) for fixed Open Food Facts category comparisons, meaningful per-portion presets, and safe saved-food recovery.
+
 # FoodScan 11.1.0 - Insight Release
 
 A mobile-first food barcode scanner, evidence-led packaged-food report, local meal diary, grocery and pantry companion for Cloudflare Pages Direct Upload. This is a complete deployable app with its original safety gates and cloud worker.

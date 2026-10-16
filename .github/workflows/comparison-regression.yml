@@ -1,0 +1,21 @@
+name: FoodScan comparison and portion regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '_worker.js'
+      - 'assets/release-11.12.0/**'
+      - 'qa/comparison-portion-smoke.mjs'
+      - '.github/workflows/comparison-regression.yml'
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --experimental-default-type=module qa/comparison-portion-smoke.mjs

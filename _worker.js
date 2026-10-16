@@ -8,7 +8,7 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '11.11.0';
+const VERSION = '11.12.0';
 const PRODUCT_CACHE_VERSION = '11.3.0';
 const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
 const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
@@ -16,7 +16,7 @@ const ORIGIN = 'https://world.openfoodfacts.org';
 const INDEX_ORIGIN = 'https://search.openfoodfacts.org/search';
 const FIELDS = 'code,product_name,product_name_en,product_name_el,brands,image_front_url,image_url,quantity,serving_size,nutriments,nutriscore_grade,nutrition_grades,nova_group,ingredients_text,ingredients_text_en,ingredients_text_el,allergens_tags,traces_tags,last_modified_t,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,additives_n,product_quantity_unit,serving_quantity,serving_quantity_unit,data_quality_errors_tags,product_type,obsolete';
 // The search index stores a slimmer record: no ingredient text, traces, serving size or additive count.
-const INDEX_FIELDS = 'code,product_name,product_name_en,brands,image_front_url,image_url,quantity,product_quantity_unit,nutriments,nutriscore_grade,nova_group,allergens,labels,ingredients_analysis,categories,countries,last_modified_t,unique_scans_n,obsolete';
+const INDEX_FIELDS = 'code,product_name,product_name_en,brands,image_front_url,image_url,quantity,product_quantity_unit,nutriments,nutriscore_grade,nutrition_grades,nova_group,allergens_tags,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,last_modified_t,unique_scans_n,obsolete';
 const SEARCH_LANGS = 'en,fr,de,es,it,el,pt,nl';
 const MAX_BODY = 600000, DEADLINE_MS = 7000, STALE_SECONDS = 30 * 86400;
 const FRESH = { product: 21600, category: 3600, search: 1800 };
@@ -293,7 +293,7 @@ function categorySearch(request, env, ctx) {
   const full = url.searchParams.get('detail') === 'full';
   if (!/^[a-z]{2}:[a-z0-9][a-z0-9-]{1,100}$/.test(category)) return error('invalid_category', 'Choose a category returned by the source record.', 400);
   if (country && !/^[a-z][a-z-]{2,40}$/.test(country)) return error('invalid_country', 'Use a country name as listed by the source, for example united-kingdom.', 400);
-  const query = `categories:"${category}"${country ? ` AND countries:"en:${country}"` : ''}`;
+  const query = `categories_tags:"${category}"${country ? ` AND countries_tags:"en:${country}"` : ''}`;
   const viaIndex = () => indexSearch(env, url.origin, query, '-unique_scans_n', 24);
   const viaOff = () => offSearch(env, url.origin, { categories_tags: category, ...(country ? { countries_tags: `en:${country}` } : {}) }, 24, false);
   // Hard restrictions need complete records (ingredient text and traces), so those shoppers try full records first.
@@ -335,7 +335,7 @@ export default {
     if (request.headers.get('Sec-Fetch-Site') === 'cross-site' || (request.headers.get('Origin') && request.headers.get('Origin') !== url.origin))
       return error('origin_not_allowed', 'Use the API from this FoodScan site.', 403);
     if (url.pathname === '/api/health') return json({ app: 'FoodScan', version: VERSION, backend: 'ready', upstream: 'not-checked',
-      contactConfigured: Boolean(env.CONTACT_EMAIL), source: ORIGIN, search: 'schema-aware-index+legacy', searchSchema: 'categories-countries-v1', recovery: 'stale-if-error-then-browser-direct', serverDeadlineMs: DEADLINE_MS });
+      contactConfigured: Boolean(env.CONTACT_EMAIL), source: ORIGIN, search: 'schema-aware-index+legacy', searchSchema: 'categories-tags-countries-tags-v2', recovery: 'stale-if-error-then-browser-direct', serverDeadlineMs: DEADLINE_MS });
     if (url.pathname === '/api/alternatives') return categorySearch(request, env, ctx);
     if (url.pathname === '/api/search') return textSearch(request, env, ctx);
     const match = url.pathname.match(/^\/api\/product\/(\d+)$/);

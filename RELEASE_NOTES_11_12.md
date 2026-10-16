@@ -1,0 +1,10 @@
+# FoodScan 11.12.0 — comparison recovery and informative portions
+
+- **Backend compatibility fix:** Search-a-licious category and country filters now use `categories_tags` and `countries_tags`, verified against the live public search endpoint. The search-index field projection includes the actual category, country, allergen and nutrition tag fields. Previous Search-a-licious filter requests could fail even after repeatedly pressing Try again.
+- **Fallback that does useful work:** If live category search fails, compare complete, previously retrieved records from the device in the same source category. Local suggestions still go through the existing source-backed better-choice and user-restriction checks. Never offer manually typed or incomplete records as verified alternatives.
+- **Honest unavailable state:** When no comparable saved foods exist, provide a direct route to side-by-side comparison rather than an endless retry loop. Provider error and rate-limit waiting are retained.
+- **Safe handling of incomplete results:** Incomplete index previews cannot certify allergy or dietary restrictions. Live and stored results are labelled separately.
+- **Portion buttons carry real facts:** Instead of “Example amount”, each quantity now displays calculated calories and the most pertinent available nutrition metrics for the current product. Values come only from existing validated per-100 data, with missing or conflicting fields withheld. Unknown serving size remains explicitly unknown.
+- **Fresh assets and privacy:** New 11.12 asset paths and an updated service worker avoid old immutable browser caches. No new tracking, account, external paid API or server-side storage added.
+- **Validation:** Source-level smoke tests cover the corrected backend query, local fallback eligibility, missing nutrition, and meaningful Nutella-like portion displays. Live browser and Cloudflare staging must be tested before claiming full deployment success.
+- **Rollback:** Revert the 11.12 commit on main; existing history and 11.10 assets remain intact.
