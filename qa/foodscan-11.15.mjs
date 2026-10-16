@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import {improveRecord,frontPhotos} from '../assets/release-11.15.0/record-quality.js';
-const model=(await import('../assets/release-11.15.0/model.js')).parseProduct;
 const p={barcode:'5740900401365',name:'Lurpak',basis:'g',servingAmount:null,servingUnit:null,
  nutrition:{kcal:14579.3499043977,sugars:.6,carbohydrates:.6,fat:75,saturatedFat:35,protein:.5,fiber:null,salt:.885,sodium:354},servingNutrition:{}};
 const source={nutriments:{'energy-kcal_100g':14579.3499043977,'energy-kj_100g':2793.7,'fat_100g':75,'saturated-fat_100g':35,'carbohydrates_100g':.6,'sugars_100g':.6,'proteins_100g':.5,'salt_100g':.885}};
