@@ -40,5 +40,5 @@ assert(headers.includes(hash),'CSP must allow exact importmap bytes');
 for(const dest of Object.values(JSON.parse(map).imports)){assert((await fs.stat('.'+dest)).isFile(),'Missing mapped module '+dest);}
 const css=await fs.readFile('assets/release-11.13.0/app.css','utf8');
 assert(css.includes('.fs14-profile-tile'),'Missing classification CSS');
-assert(html.includes('"softwareVersion":"11.13.0"'));
+assert(html.includes('"softwareVersion":"11.15.0"'));
 console.log('FoodScan 11.13 query, fallback, CORS rules, CSP, import map and source classes: PASS');
