@@ -1,0 +1,35 @@
+name: FoodScan live screen audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ui-audit.yml'
+      - 'qa/ui-audit.mjs'
+permissions:
+  contents: read
+jobs:
+  browser-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser tooling
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - name: Audit deployed screens
+        env:
+          APP_URL: https://foodscan-9oi.pages.dev/
+        run: node qa/ui-audit.mjs
+      - name: Upload screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foodscan-live-ui-audit
+          path: ui-audit/
+          retention-days: 7
+          if-no-files-found: warn
