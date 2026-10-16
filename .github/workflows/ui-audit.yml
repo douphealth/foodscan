@@ -21,10 +21,26 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright
           npx playwright install --with-deps chromium
-      - name: Audit deployed screens
+      - name: Prepare version-aware light and dark audit
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          const html=await fs.readFile('index.html','utf8');
+          const version=html.match(/"softwareVersion":"([^"]+)"/)?.[1];
+          if(!version)throw Error('Release version not found.');
+          let source=await fs.readFile('qa/ui-audit.mjs','utf8');
+          const edits=[[/const expected='[^']*'/,`const expected=${JSON.stringify(version)}`],["out='ui-audit'","out='ui-audit/'+(process.env.UI_AUDIT_THEME||'light')"],['deviceScaleFactor:1,serviceWorkers',"deviceScaleFactor:1,colorScheme:process.env.UI_AUDIT_THEME||'light',serviceWorkers"],['return {version,h1:',"return {uiTheme:document.documentElement.dataset.uiTheme,version,h1:"],['if(details.overflow)',"if(details.uiTheme!==process.env.UI_AUDIT_THEME)finding('error',label,'Display theme does not match requested audit theme.');\n if(details.overflow)"]];
+          for(const [from,to] of edits){const next=source.replace(from,to);if(next===source)throw Error('Audit source changed; review the adapter.');source=next;}
+          await fs.writeFile('qa/ui-audit-current.mjs',source);
+          NODE
+      - name: Audit deployed screens in both themes
         env:
           APP_URL: https://foodscan-9oi.pages.dev/
-        run: node qa/ui-audit.mjs
+        run: |
+          status=0
+          UI_AUDIT_THEME=light node qa/ui-audit-current.mjs || status=1
+          UI_AUDIT_THEME=dark node qa/ui-audit-current.mjs || status=1
+          exit "$status"
       - name: Upload screenshots and reports
         if: always()
         uses: actions/upload-artifact@v4
