@@ -8,14 +8,15 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '11.3.0';
+const VERSION = '11.11.0';
+const PRODUCT_CACHE_VERSION = '11.3.0';
 const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
 const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
 const ORIGIN = 'https://world.openfoodfacts.org';
 const INDEX_ORIGIN = 'https://search.openfoodfacts.org/search';
 const FIELDS = 'code,product_name,product_name_en,product_name_el,brands,image_front_url,image_url,quantity,serving_size,nutriments,nutriscore_grade,nutrition_grades,nova_group,ingredients_text,ingredients_text_en,ingredients_text_el,allergens_tags,traces_tags,last_modified_t,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,additives_n,product_quantity_unit,serving_quantity,serving_quantity_unit,data_quality_errors_tags,product_type,obsolete';
 // The search index stores a slimmer record: no ingredient text, traces, serving size or additive count.
-const INDEX_FIELDS = 'code,product_name,product_name_en,brands,image_front_url,image_url,quantity,nutriments,nutriscore_grade,nova_group,allergens_tags,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,last_modified_t,unique_scans_n';
+const INDEX_FIELDS = 'code,product_name,product_name_en,brands,image_front_url,image_url,quantity,product_quantity_unit,nutriments,nutriscore_grade,nova_group,allergens,labels,ingredients_analysis,categories,countries,last_modified_t,unique_scans_n,obsolete';
 const SEARCH_LANGS = 'en,fr,de,es,it,el,pt,nl';
 const MAX_BODY = 600000, DEADLINE_MS = 7000, STALE_SECONDS = 30 * 86400;
 const FRESH = { product: 21600, category: 3600, search: 1800 };
@@ -186,28 +187,38 @@ async function fetchProduct(request, env, code) {
 /* ---------- search providers (text and category) ---------- */
 class SearchFailure extends Error { constructor(code, status, wait = 0) { super(code); this.code = code; this.status = status; this.wait = wait; } }
 async function upstreamJSON(href, env, origin, which) {
+  const failure = (code, status, wait = 0, upstreamStatus = null) => Object.assign(new SearchFailure(code, status, wait), { provider: which, upstreamStatus });
   const now = Date.now();
-  if (cooldown[which] > now) throw new SearchFailure('rate_limited', 429, Math.ceil((cooldown[which] - now) / 1000));
+  if (cooldown[which] > now) throw failure('rate_limited', 429, Math.ceil((cooldown[which] - now) / 1000));
+  const limit = await reserveRead(`search:${which}`, env);
+  if (limit) throw failure(limit.code, 429, limit.wait);
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), DEADLINE_MS);
   try {
     const response = await fetch(href, { method: 'GET', signal: controller.signal, redirect: 'error', headers: { Accept: 'application/json', 'User-Agent': `FoodScan/${VERSION} (${contactFor(env, origin)})` } });
-    if ([429, 503].includes(response.status)) { const wait = retrySeconds(response.headers.get('Retry-After')); cooldown[which] = Date.now() + Math.min(wait, 120) * 1000; try { await response.body?.cancel(); } catch {} throw new SearchFailure('rate_limited', 429, wait); }
-    if ([401, 403].includes(response.status)) { try { await response.body?.cancel(); } catch {} throw new SearchFailure('upstream_blocked', 502); }
-    if (!response.ok) { try { await response.body?.cancel(); } catch {} throw new SearchFailure('upstream_http', 502); }
-    if (!/json/i.test(response.headers.get('Content-Type') || '')) { try { await response.body?.cancel(); } catch {} throw new SearchFailure('upstream_format', 502); }
-    try { return JSON.parse(await limitedText(response)); } catch (exception) { throw exception instanceof SearchFailure ? exception : new SearchFailure('upstream_format', 502); }
+    if ([429, 503].includes(response.status)) { const wait = retrySeconds(response.headers.get('Retry-After')); cooldown[which] = Date.now() + wait * 1000; try { await response.body?.cancel(); } catch {} throw failure('rate_limited', 429, wait, response.status); }
+    if ([401, 403].includes(response.status)) { try { await response.body?.cancel(); } catch {} throw failure('upstream_blocked', 502, 0, response.status); }
+    if ([400, 422].includes(response.status)) { try { await response.body?.cancel(); } catch {} throw failure('upstream_query', 502, 0, response.status); }
+    if (!response.ok) { try { await response.body?.cancel(); } catch {} throw failure('upstream_http', 502, 0, response.status); }
+    if (!/json/i.test(response.headers.get('Content-Type') || '')) { try { await response.body?.cancel(); } catch {} throw failure('upstream_format', 502, 0, response.status); }
+    try { return JSON.parse(await limitedText(response)); } catch (exception) { throw exception instanceof SearchFailure ? exception : failure(exception?.message === 'response_size' ? 'upstream_size' : 'upstream_format', 502, 0, response.status); }
   } catch (exception) {
     if (exception instanceof SearchFailure) throw exception;
-    throw new SearchFailure(controller.signal.aborted ? 'upstream_timeout' : 'upstream_network', controller.signal.aborted ? 504 : 502);
+    throw failure(controller.signal.aborted ? 'upstream_timeout' : 'upstream_network', controller.signal.aborted ? 504 : 502);
   } finally { clearTimeout(timer); }
 }
-const usable = p => p && validBarcode(String(p.code || '')) && !['beauty', 'petfood', 'product'].includes(p.product_type) && p.obsolete !== 'on' && String(p.obsolete) !== '1';
+const usable = p => p && validBarcode(String(p.code || '')) && !['beauty', 'petfood', 'product'].includes(p.product_type) && p.obsolete !== true && p.obsolete !== 'on' && String(p.obsolete) !== '1';
 const pick = (p, fields) => Object.fromEntries(fields.split(',').filter(k => Object.hasOwn(p, k)).map(k => [k, p[k]]));
 /** Search-index hits become OFF-shaped records, flagged partial so safety checks never over-trust them. */
 function fromIndex(hit) {
-  const record = pick(hit, INDEX_FIELDS);
+  const record = pick(hit, FIELDS);
   record.code = String(hit.code);
   record.brands = Array.isArray(hit.brands) ? hit.brands.join(', ') : String(hit.brands || '');
+  for (const [current, legacy] of [['categories','categories_tags'],['countries','countries_tags'],['allergens','allergens_tags'],['labels','labels_tags'],['ingredients_analysis','ingredients_analysis_tags']]) {
+    const value = Array.isArray(hit[current]) ? hit[current] : hit[legacy];
+    if (Array.isArray(value)) record[legacy] = value.filter(x => typeof x === 'string').slice(0,100);
+  }
+  const nova = Number(hit.nova_group);
+  if ([1,2,3,4].includes(nova)) record.nova_group = nova;
   record.partial = true;
   return record;
 }
@@ -217,7 +228,8 @@ async function indexSearch(env, origin, query, sort, size) {
   u.searchParams.set('q', query); u.searchParams.set('langs', SEARCH_LANGS); u.searchParams.set('page_size', String(size)); u.searchParams.set('page', '1'); u.searchParams.set('fields', INDEX_FIELDS);
   if (sort) u.searchParams.set('sort_by', sort);
   const raw = await upstreamJSON(u.href, env, origin, 'index');
-  if (!Array.isArray(raw.hits)) throw new SearchFailure('upstream_format', 502);
+  if (!Array.isArray(raw.hits)) throw Object.assign(new SearchFailure('upstream_format', 502), { provider: 'index', upstreamStatus: 200 });
+  if (raw.timed_out && !raw.hits.length) throw Object.assign(new SearchFailure('upstream_timeout', 504), { provider: 'index', upstreamStatus: 200 });
   return { products: raw.hits.filter(usable).map(fromIndex), checked: raw.hits.length, source: 'search-index', partial: true };
 }
 async function offSearch(env, origin, params, size, text) {
@@ -229,15 +241,32 @@ async function offSearch(env, origin, params, size, text) {
   return { products: raw.products.filter(usable).map(p => pick(p, FIELDS)), checked: raw.products.length, source: 'off-search', partial: false };
 }
 async function firstWorking(providers) {
-  let last;
-  for (const run of providers) { try { return await run(); } catch (exception) { last = exception; } }
-  throw last || new SearchFailure('upstream_network', 502);
+  const failures = [];
+  for (const run of providers) {
+    try { return await run(); } catch (exception) { failures.push(exception); }
+  }
+  const paused = failures.filter(x => ['rate_limited','local_rate_limited'].includes(x?.code)).sort((a,b)=>(b.wait||0)-(a.wait||0));
+  const last = paused[0] || failures.at(-1) || new SearchFailure('upstream_network', 502);
+  last.providers = failures.map(x => ({ provider: x?.provider || 'unknown', code: x?.code || 'upstream_network', upstreamStatus: x?.upstreamStatus || null })).slice(0,3);
+  throw last;
 }
 function searchError(exception) {
   const code = exception?.code || 'upstream_network';
-  if (code === 'rate_limited') return error('rate_limited', 'The food database is busy right now. Your saved foods still work.', 429, { retryAfter: exception.wait || 60 }, { 'Retry-After': String(exception.wait || 60) });
-  if (code === 'upstream_blocked') return error(code, 'The food database refused this search.', 502);
-  return error(code, 'The food database did not answer. It is usually busy rather than down, so please try again in a moment.', exception?.status || 502);
+  const details = { requestId: globalThis.crypto?.randomUUID?.() || Date.now().toString(36), providers: exception?.providers || [] };
+  if (['rate_limited','local_rate_limited'].includes(code)) {
+    const wait = exception.wait || 60;
+    return error(code, code === 'local_rate_limited' ? 'FoodScan reached its temporary upstream request budget. Wait for the request pause before retrying.' : 'The search provider requested a pause. Wait before trying again.', 429, { ...details, retryAfter: wait }, { 'Retry-After': String(wait) });
+  }
+  const messages = {
+    upstream_blocked: 'The search provider refused this server request. The site operator should check provider access and app identification.',
+    upstream_query: 'The search provider rejected the request format. This is an API compatibility problem, not proof that the database is busy.',
+    upstream_format: 'The search provider returned an unexpected response format.',
+    upstream_size: 'The search response exceeded the safe processing size.',
+    upstream_timeout: 'The search providers did not finish within the server deadline.',
+    upstream_http: 'The search providers returned an HTTP error.',
+    upstream_network: 'The server could not connect to the search providers.'
+  };
+  return error(code, messages[code] || 'The live comparison search could not be completed.', exception?.status || 502, details);
 }
 /** Shared cache + stale-if-error wrapper for text and category search. */
 async function cachedSearch(request, ctx, kind, keyPart, run) {
@@ -252,7 +281,7 @@ async function cachedSearch(request, ctx, kind, keyPart, run) {
       await remember(cache, ctx, key, staleKey, response, FRESH[kind === 'search' ? 'search' : 'category']);
       return withCache(response, 'MISS');
     } catch (exception) {
-      return (await staleCopy(cache, staleKey)) || searchError(exception);
+      return (await staleCopy(cache, staleKey)) || (await staleCopy(cache, new Request(`${url.origin}/api/cache/11.3.0/stale/${kind}/${keyPart}`))) || searchError(exception);
     }
   })();
   inflight.set(key.url, job);
@@ -264,7 +293,7 @@ function categorySearch(request, env, ctx) {
   const full = url.searchParams.get('detail') === 'full';
   if (!/^[a-z]{2}:[a-z0-9][a-z0-9-]{1,100}$/.test(category)) return error('invalid_category', 'Choose a category returned by the source record.', 400);
   if (country && !/^[a-z][a-z-]{2,40}$/.test(country)) return error('invalid_country', 'Use a country name as listed by the source, for example united-kingdom.', 400);
-  const query = `categories_tags:"${category}"${country ? ` AND countries_tags:"en:${country}"` : ''}`;
+  const query = `categories:"${category}"${country ? ` AND countries:"en:${country}"` : ''}`;
   const viaIndex = () => indexSearch(env, url.origin, query, '-unique_scans_n', 24);
   const viaOff = () => offSearch(env, url.origin, { categories_tags: category, ...(country ? { countries_tags: `en:${country}` } : {}) }, 24, false);
   // Hard restrictions need complete records (ingredient text and traces), so those shoppers try full records first.
@@ -306,7 +335,7 @@ export default {
     if (request.headers.get('Sec-Fetch-Site') === 'cross-site' || (request.headers.get('Origin') && request.headers.get('Origin') !== url.origin))
       return error('origin_not_allowed', 'Use the API from this FoodScan site.', 403);
     if (url.pathname === '/api/health') return json({ app: 'FoodScan', version: VERSION, backend: 'ready', upstream: 'not-checked',
-      contactConfigured: Boolean(env.CONTACT_EMAIL), source: ORIGIN, search: 'index+legacy', recovery: 'stale-if-error-then-browser-direct', serverDeadlineMs: DEADLINE_MS });
+      contactConfigured: Boolean(env.CONTACT_EMAIL), source: ORIGIN, search: 'schema-aware-index+legacy', searchSchema: 'categories-countries-v1', recovery: 'stale-if-error-then-browser-direct', serverDeadlineMs: DEADLINE_MS });
     if (url.pathname === '/api/alternatives') return categorySearch(request, env, ctx);
     if (url.pathname === '/api/search') return textSearch(request, env, ctx);
     const match = url.pathname.match(/^\/api\/product\/(\d+)$/);
@@ -314,7 +343,7 @@ export default {
     const code = match[1]; if (!validBarcode(code)) return error('invalid_barcode', 'The barcode length or check digit is invalid.', 400);
     const cache = globalThis.caches?.default;
     // A new namespace cannot reuse a v2.0 false-negative cache entry.
-    const key = new Request(`${url.origin}/api/cache/${VERSION}/product/${code}`), staleKey = new Request(`${url.origin}/api/cache/${VERSION}/stale/product/${code}`);
+    const key = new Request(`${url.origin}/api/cache/${PRODUCT_CACHE_VERSION}/product/${code}`), staleKey = new Request(`${url.origin}/api/cache/${PRODUCT_CACHE_VERSION}/stale/product/${code}`);
     if (cache) { try { const hit = await cache.match(key); if (hit?.status === 200) return withCache(hit, 'HIT'); } catch {} }
     const pending = inflight.get(key.url); if (pending) return (await pending).clone();
     const job = (async () => {
