@@ -1,0 +1,53 @@
+@import url('/assets/release-11.6.0/app.css');
+/* 11.7.0: one bright, coherent surface system; legacy dark panels are repaired at runtime and by these rules. */
+html:root,html:root[data-theme]{color-scheme:light!important;background:#f5f6f2!important}
+html body,html body[data-route],html body main,html body #main{background:radial-gradient(ellipse 80% 40% at 15% 0,#edf4da,transparent 70%),#f5f6f2!important;color:#1d2616!important;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif!important;font-weight:400}
+html body :where(h1,h2,h3,h4){font-weight:660!important;color:#171d12;letter-spacing:-.035em}
+html body :where(p,li,small,label,dd,dt,td,th,summary){font-weight:400}
+html body .r17-lit{background:#f3f6ec!important;background-image:none!important;color:#1d2616!important;border-color:#dbe5cd!important;box-shadow:none}
+html body .r17-lit :where(h1,h2,h3,h4,strong,b){color:#171d12}
+html body .site-header{background:#fff!important;border-bottom:1px solid #e1e8d5!important}
+html body .brand,html body .brand span{color:#171d12!important}
+html body .brand-mark{background:linear-gradient(135deg,#bfe85a,#9ccc26)!important;color:#1b2a08!important}
+html body .main-nav{background:#eef3e2!important}
+html body .main-nav a{color:#3d4a31!important}
+html body .main-nav a[aria-current=page]{background:#fff!important;color:#171d12!important;box-shadow:0 2px 10px -6px #2f411a66}
+html body .header-how,html body .header-actions .icon-button{color:#3d4a31!important}
+html body .profile-strip{background:#f9fbf4!important;border-color:#e1e8d5!important}
+html body .site-footer{background:#fff!important;color:#46523c!important;border-top:1px solid #e1e8d5}
+/* homepage */
+html body .r16-home{align-items:stretch}
+html body .r16-home>.r15-find{background:#fff!important;border:1px solid #e1e8d5!important}
+html body .r16-home .fs11-scan-panel{background:#f3f7e8!important;border:1px solid #e0e9cf!important;border-radius:26px!important;padding:20px!important;box-shadow:none!important}
+html body .r16-home .fs-scan-primary{background:linear-gradient(120deg,#bdea55,#a1d426)!important;color:#17210a!important;border:0!important;border-radius:20px!important;box-shadow:0 14px 28px -18px #5f8a1b!important}
+html body .r16-home .fs-scan-primary small{color:#35501a!important}
+html body .r16-home .fs-scan-alt{background:#fff!important;color:#1d2616!important;border:1px solid #d9e4c8!important;border-radius:16px!important}
+html body .r16-home .fs-quick-find-row{background:#fff!important;border:1px solid #d9e4c8!important}
+html body .r16-home .fs-quick-find-row input{color:#1d2616!important;background:transparent!important}
+html body .r16-home .fs-quick-find-row input::placeholder{color:#6b7861!important;opacity:1}
+html body .r16-home .fs-quick-find-row button[type=submit]{background:#1d2616!important;color:#fff!important}
+html body .r16-home .fs12-instant-try>span{display:block;color:#2f3d22!important;font-weight:650;margin-bottom:6px}
+html body .r16-home .fs12-try-chips button{background:#fff!important;color:#1d2616!important;border:1px solid #d6e2c3!important;font-weight:600}
+html body .r16-home :is(.fs-command-note,.fs12-instant-try small,.fs11-separator,.fs11-separator span){color:#56634b!important}
+html body .r16-home .r15-dashboard{background:#fff;border:1px solid #e1e8d5;border-radius:30px;padding:28px}
+html body .r16-start-diary,html body .r16-home .r15-diary{background:#fff!important;border:1px solid #e1e8d5!important;color:#1d2616!important}
+html body .r16-start-diary>summary,html body .r15-diary>summary{color:#1d2616!important}
+/* result page */
+html body[data-route=food] #main>.container{max-width:760px}
+html body .r15-details,html body .r15-sheet,html body .fs12-portion{background:#fff!important;color:#1d2616!important}
+html body .r16-glance{background:linear-gradient(150deg,#eef6d9,#fff 75%)!important}
+html body .r16-glance .r15-finding h2{color:#171d12!important}
+html body .r15-pills span{color:#3d4a31!important;border-color:#d2dec1!important}
+html body .r15-energy{background:linear-gradient(110deg,#eef6d9,#dff0b3)!important;color:#1d2616!important}
+html body .r15-macro{background:linear-gradient(#fafcf4,#eef5dc)!important;color:#1d2616!important}
+html body .r15-macro>span{font-weight:650;color:#2f3d22!important}
+html body .r15-macro-ring strong{color:#171d12!important}
+html body #fs-ingredients,html body #fs-ingredients *{--ing-ink:#1d2616}
+html body .fs12-ingredient-list .fs12-ing-row{background:#f7faf0!important;border:1px solid #dfe8cf!important;border-left:5px solid #a9cf4c!important;color:#1d2616!important}
+html body .fs12-ingredient-list .fs12-ing-row :is(strong,span,small){color:#1d2616}
+html body .fs12-ing-index{background:#e4efce!important;color:#33481a!important}
+html body .fs12-ing-label{background:#eaf2da!important;color:#3d4f27!important}
+html body .fs12-ing-right small,html body .fs12-ing-translation{color:#56634b!important}
+html body :where(a,button,input,summary):focus-visible{outline:3px solid #5f8a1b!important;outline-offset:3px}
+@media(max-width:800px){html body[data-route=food] #main>.container{max-width:560px}html body .r16-home .r15-dashboard{padding:20px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
