@@ -1,3 +1,7 @@
+# FoodScan 11.14.1 update
+
+The source-accurate Protein, Fat, and Carbs circular cards are restored in the product report. See [11.14.1 release notes](RELEASE_NOTES_11_14_1.md).
+
 # FoodScan 11.13.0 update
 
 See [11.13 release notes](RELEASE_NOTES_11_13.md) for the live-alternatives recovery architecture and premium source-classification cards.

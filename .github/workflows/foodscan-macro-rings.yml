@@ -1,0 +1,39 @@
+name: FoodScan 11.14.1 circular nutrition regression
+on:
+  push:
+    branches: [main, qa/release-11.14.1]
+    paths:
+      - 'assets/release-11.14.1/**'
+      - 'index.html'
+      - '_headers'
+      - 'sw.js'
+      - 'qa/foodscan-11.14.1*'
+      - '.github/workflows/foodscan-macro-rings.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate versioning, CSP and offline asset list
+        run: node --experimental-default-type=module qa/foodscan-11.14.1.mjs
+      - name: Prepare Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - name: Test actual nutrient ring rendering
+        run: |
+          python3 -m http.server 8787 --bind 127.0.0.1 >/tmp/foodscan-macros-server.log 2>&1 &
+          sleep 2
+          node qa/foodscan-11.14.1-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foodscan-11.14.1-circular-macro-screenshots
+          path: ui-audit/11.14.1
+          retention-days: 7

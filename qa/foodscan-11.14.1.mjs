@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+
+const html=await fs.readFile('index.html','utf8');
+const map=html.split('<script type="importmap">')[1]?.split('</script>')[0];
+assert(map,'Missing import map');
+const hash='sha256-'+crypto.createHash('sha256').update(map).digest('base64');
+const headers=await fs.readFile('_headers','utf8');
+assert(headers.includes(hash),'CSP script hash must match exact inline import map');
+const imports=JSON.parse(map).imports;
+assert.equal(imports['/assets/release-11.3.0/lib/decision-ui.js'],'/assets/release-11.14.1/result.js');
+assert.equal(imports['/assets/release-11.3.0/lib/model.js'],'/assets/release-11.14.1/model.js');
+for(const item of Object.values(imports))assert((await fs.stat('.'+item)).isFile(),'Missing module '+item);
+for(const item of ['app.css','app.js','result.js','model.js'])assert((await fs.stat('assets/release-11.14.1/'+item)).isFile());
+assert(html.includes('"softwareVersion":"11.14.1"'));
+const css=await fs.readFile('assets/release-11.14.1/app.css','utf8');
+assert(css.includes("url('/assets/release-11.14.0/app.css')"));
+assert(css.includes('.v19-ring svg'));
+assert(css.includes('display:block'));
+assert(css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'));
+assert(css.includes('.v19-macro.is-unknown .v19-ring-line'));
+const sw=await fs.readFile('sw.js','utf8');
+assert(sw.includes("foodscan-shell-11.14.1"));
+assert(sw.includes("'/assets/release-11.14.1/'+x"));
+const result=await fs.readFile('assets/release-11.14.1/result.js','utf8');
+assert(result.includes('Circular outlines are decorative'));
+console.log('FoodScan 11.14.1 macro asset, CSP and responsive CSS assertions: PASS');
