@@ -1,0 +1,32 @@
+@layer previous,source-integrity;
+@import url('/assets/release-11.19.0/app.css') layer(previous);
+@layer source-integrity{
+ #main .fs20-source-review .fs20-integrity{display:grid;gap:12px;padding:clamp(17px,2vw,25px);margin:16px clamp(12px,2vw,26px);background:var(--ui-soft);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:19px}
+ #main .fs20-source-rejected .fs20-integrity{background:var(--ui-warning-bg);color:var(--ui-warning-ink);border-color:var(--ui-line)}
+ #main .fs20-kicker{letter-spacing:.09em;font-weight:850;font-size:.73rem;line-height:1.4;color:inherit}
+ #main .fs20-integrity h2{margin:0;color:inherit!important;font-size:clamp(1.25rem,3vw,1.8rem);font-weight:850;line-height:1.22;letter-spacing:-.018em}
+ #main .fs20-integrity .fs20-intro{margin:0;color:inherit!important;line-height:1.55;font-size:.94rem}
+ #main .fs20-issues{display:grid;gap:6px;padding-left:19px;margin:0;color:inherit!important;font-size:.84rem;line-height:1.5}
+ #main .fs20-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:4px}
+ #main .fs20-actions .fs20-action{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-height:48px;border-radius:12px;padding:11px 14px;font-size:.85rem;line-height:1.35;font-weight:800;cursor:pointer;text-decoration:none}
+ #main .fs20-actions .fs20-action-main{background:var(--ui-action);color:var(--ui-action-ink);border:1px solid var(--ui-action)}
+ #main .fs20-actions .fs20-action-other,#main .fs20-actions .fs20-action-link{background:var(--ui-paper);color:var(--ui-ink);border:1px solid var(--ui-line)}
+ #main .fs20-integrity .fs20-disclaimer{margin:0;color:inherit!important;opacity:.85;font-size:.78rem;line-height:1.55}
+ #main .fs20-source-review .v18-findings{min-width:0}
+ #main .fs20-source-review .fs20-integrity :focus-visible{outline:3px solid var(--ui-protein);outline-offset:3px}
+ .app-dialog .fs20-label-form{display:grid;gap:14px}
+ .app-dialog .fs20-label-intro{font-size:.87rem;line-height:1.5;color:var(--ui-ink);margin:0}
+ .app-dialog .fs20-label-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .app-dialog .fs20-label-field{display:grid;gap:5px;min-width:0;color:var(--ui-ink);font-size:.81rem;font-weight:750}
+ .app-dialog .fs20-label-field.full{grid-column:1/-1}
+ .app-dialog .fs20-label-field :is(input,select){display:block;width:100%;min-width:0;min-height:45px;border:1px solid var(--ui-line);border-radius:10px;background:var(--ui-paper);color:var(--ui-ink);padding:8px 10px;font-size:1rem}
+ .app-dialog .fs20-label-actions{display:flex;flex-wrap:wrap;gap:8px}
+ .app-dialog .fs20-label-actions button{min-height:46px;border-radius:10px;padding:10px 15px;font-weight:800}
+ .app-dialog .fs20-label-status{color:var(--ui-warning-ink);font-size:.82rem;line-height:1.5;margin:0}
+ @media(max-width:680px){
+  #main .fs20-integrity{margin:12px 14px!important}
+  #main .fs20-actions .fs20-action{flex:1 1 100%}
+  .app-dialog .fs20-label-grid{grid-template-columns:minmax(0,1fr)}
+  .app-dialog .fs20-label-field.full{grid-column:1}
+ }
+}
