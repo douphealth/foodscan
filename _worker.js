@@ -8,8 +8,8 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '11.15.0';
-const PRODUCT_CACHE_VERSION = '11.15.0';
+const VERSION = '11.17.0';
+const PRODUCT_CACHE_VERSION = '11.17.0';
 const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
 const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
 const ORIGIN = 'https://world.openfoodfacts.org';
@@ -102,6 +102,23 @@ async function limitedText(response) {
   } finally { reader.releaseLock(); }
 }
 
+
+/** Coverage is calculated for the precise source barcode, never a related product. */
+function measuredCore(p){
+ const n=p?.nutriments&&typeof p.nutriments==='object'?p.nutriments:{};
+ return ['energy-kcal','proteins','carbohydrates','sugars','fat','saturated-fat','fiber','salt'].filter(k=>{
+  let v=n[k+'_100g'];
+  if(k==='energy-kcal'&&(v==null||!Number.isFinite(Number(v))))v=n['energy-kj_100g'];
+  return v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0;
+ }).length;
+}
+function hasReferenceUnit(p){
+ const unit=String(p?.product_quantity_unit||'').toLowerCase();
+ if(['g','kg','mg','ml','cl','dl','l'].includes(unit))return true;
+ return /(?:^|[\s(])\d+(?:[.,]\d+)?\s*(kg|mg|g|ml|cl|dl|l)(?:\s|$)/i.test(String(p?.quantity||''));
+}
+function sourceQuality(p){const count=measuredCore(p);return {count,usable:count>=2&&hasReferenceUnit(p)};}
+
 /* ---------- product by barcode ---------- */
 async function fetchProduct(request, env, code) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), DEADLINE_MS);
@@ -167,11 +184,44 @@ async function fetchProduct(request, env, code) {
         return fail('upstream_format', 'The food API returned no product object.', 502);
       const returned = String(body.product.code || body.code || '');
       if (!equivalent(returned, code)) return fail('upstream_mismatch', 'The returned barcode did not match the package. No substitute product was displayed.', 502);
-      const product = Object.fromEntries(FIELDS.split(',').filter(key => Object.hasOwn(body.product, key)).map(key => [key, body.product[key]]));
+      let product = Object.fromEntries(FIELDS.split(',').filter(key => Object.hasOwn(body.product, key)).map(key => [key, body.product[key]]));
       product.code = returned;
-      return json({ status: 'success', product, fetchedAt: Date.now(), source: 'Open Food Facts', version: 2,
-        connection: { version: VERSION, requestId, endpoint: url.origin + url.pathname, attempts, compatibility } }, 200,
-      { 'Cache-Control': 'public, max-age=300, s-maxage=21600' });
+      // The full v2 representation of the SAME barcode occasionally contains
+      // nutrition fields missing from v3. Query once, only for weak source records.
+      if (!compatibility && !sourceQuality(product).usable && !controller.signal.aborted) {
+        const v2 = new URL(ORIGIN+'/api/v2/product/'+code+'.json');
+        v2.searchParams.set('fields', FIELDS);
+        const limit = await reserveRead(ip,env);
+        if (!limit) {
+          const candidate={endpoint:v2.origin+v2.pathname,httpStatus:null,elapsedMs:0,recovery:'same-barcode-v2'};
+          attempts.push(candidate);const began=Date.now();
+          try{
+            const extra=await fetch(v2.href,{method:'GET',redirect:'error',signal:controller.signal,
+              headers:{'User-Agent':'FoodScan/'+VERSION+' ('+contact+')',Accept:'application/json'}});
+            candidate.httpStatus=extra.status;
+            if(extra.status===429||extra.status===503)providerCooldown=Date.now()+retrySeconds(extra.headers.get('Retry-After'))*1000;
+            if(extra.ok&&/json/i.test(extra.headers.get('Content-Type')||'')){
+              const second=JSON.parse(await limitedText(extra));
+              if(second?.product&&typeof second.product==='object'&&!Array.isArray(second.product)
+                &&equivalent(String(second.product.code||second.code||''),code)){
+                const other=Object.fromEntries(FIELDS.split(',').filter(k=>Object.hasOwn(second.product,k)).map(k=>[k,second.product[k]]));
+                other.code=String(second.product.code||second.code);
+                const first=sourceQuality(product),next=sourceQuality(other);
+                if((next.usable&&!first.usable)||(next.count>first.count&&next.usable===first.usable)){
+                  product=other;candidate.recovered=true;
+                }
+              }
+            }else{try{await extra.body?.cancel();}catch{}}
+          }catch(ex){candidate.failure=controller.signal.aborted?'timeout':'fallback_unavailable';}
+          finally{candidate.elapsedMs=Date.now()-began;}
+        }
+      }
+      const quality=sourceQuality(product);
+      return json({status:'success',product,fetchedAt:Date.now(),source:'Open Food Facts',version:2,
+        quality:{coreNutrients:quality.count,usableReference:quality.usable},
+        connection:{version:VERSION,requestId,endpoint:url.origin+url.pathname,attempts,compatibility}},200,
+      {'Cache-Control':quality.usable?'public, max-age=300, s-maxage=21600':'no-store',
+        'X-FoodScan-Quality':quality.usable?'usable':'limited'});
     }
     return fail('upstream_redirect', 'The food API exceeded the safe redirect limit.', 502);
   } catch (exception) {
@@ -351,7 +401,7 @@ export default {
       // One quiet retry for a transient failure before the shopper ever sees an error.
       if (retryable.has(result)) { await sleep(300); result = await fetchProduct(request, env, code); }
       // Only successes are cached. Connection errors and not-found results are never stored at the edge.
-      if (result.status === 200) { await remember(cache, ctx, key, staleKey, result, FRESH.product); return withCache(result, 'MISS'); }
+      if (result.status === 200) { if(result.headers.get('X-FoodScan-Quality')!=='limited')await remember(cache, ctx, key, staleKey, result, FRESH.product); return withCache(result, 'MISS'); }
       // Provider trouble (not a confirmed miss): the last good answer beats an error message.
       if (![400, 403, 404].includes(result.status)) { const stale = await staleCopy(cache, staleKey); if (stale) return stale; }
       return withCache(result, 'MISS');
