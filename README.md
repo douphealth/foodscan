@@ -1,3 +1,7 @@
+## FoodScan 11.16.0
+
+See [release notes](RELEASE_NOTES_11_16.md).
+
 # Latest update: FoodScan 11.15.0
 
 See [release notes](RELEASE_NOTES_11_15.md): responsive photo improvements, conservative nutrition-source validation and visible data completeness.

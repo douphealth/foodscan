@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+const html=await fs.readFile('index.html','utf8');
+const inline=html.split('<script type="importmap">')[1]?.split('</script>')[0];
+assert(inline);
+const hash='sha256-'+crypto.createHash('sha256').update(inline).digest('base64');
+assert((await fs.readFile('_headers','utf8')).includes(hash),'CSP hash');
+for(const file of Object.values(JSON.parse(inline).imports))await fs.stat('.'+file);
+assert(html.includes('"softwareVersion":"11.16.0"'));
+const model=await fs.readFile('assets/release-11.16.0/model.js','utf8');
+assert(model.includes('reportedNova')&&model.includes('reportedGrade'));
+const css=await fs.readFile('assets/release-11.16.0/app.css','utf8');
+assert(css.includes('.fs17-trust-value')&&css.includes('color:var(--ui-ink)!important'));
+console.log('FoodScan 11.16 release integrity passed');

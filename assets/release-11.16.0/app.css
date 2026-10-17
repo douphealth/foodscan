@@ -1,0 +1,31 @@
+@layer previous,fixes;
+@import url('/assets/release-11.15.0/app.css') layer(previous);
+@layer fixes{
+ /* Deliberately scope the surface and typography together. Legacy .v19-surface rules cannot wash out text. */
+ #main .fs11-report #fs-source,#main .fs11-report #fs-source.fs-report-section{background:var(--ui-paper)!important;color:var(--ui-ink)!important;border-color:var(--ui-line)!important;}
+ #main .fs11-report #fs-source .fs-report-section-heading{background:transparent!important;color:var(--ui-ink)!important}
+ #main .fs11-report #fs-source .fs-report-section-heading :is(h3,span){color:var(--ui-ink)!important;opacity:1!important}
+ #main .fs11-report #fs-source .fs17-trust-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:transparent!important;color:var(--ui-ink)!important;border:0!important;padding:0!important}
+ #main .fs11-report #fs-source .fs17-trust-row{display:flex;flex-direction:column;gap:9px;align-items:flex-start;min-width:0;min-height:95px;padding:16px;background:var(--ui-soft)!important;color:var(--ui-ink)!important;border:1px solid var(--ui-line)!important;border-radius:17px}
+ #main .fs11-report #fs-source .fs17-trust-label{display:block;color:var(--ui-muted)!important;font-size:.75rem!important;letter-spacing:.09em;font-weight:800!important;opacity:1!important;line-height:1.45}
+ #main .fs11-report #fs-source .fs17-trust-value{display:block;color:var(--ui-ink)!important;font-size:clamp(.99rem,2vw,1.2rem)!important;font-weight:800!important;line-height:1.36;overflow-wrap:anywhere;opacity:1!important}
+ #main .fs11-report #fs-source .fs17-trust-link{color:var(--ui-ink)!important;font-size:1.06rem!important;font-weight:800!important;text-decoration:underline;text-underline-offset:4px;line-height:1.5}
+ #main .fs11-report #fs-source .fs17-trust-link:focus-visible{outline:3px solid var(--ui-protein)!important;outline-offset:3px}
+ #main .fs11-report #fs-source .fs17-limits{grid-column:1/-1;gap:10px}
+ #main .fs11-report #fs-source .fs17-trust-description{margin:0;color:var(--ui-ink)!important;opacity:.94!important;font-size:.87rem!important;line-height:1.55}
+ #main .fs11-report #fs-source .fs17-source-warning{margin:0;color:var(--ui-warning-ink)!important;background:var(--ui-warning-bg)!important;border:1px solid var(--ui-line);border-radius:10px;padding:9px 11px;font-size:.83rem!important;line-height:1.5}
+ #main .fs11-report #fs-source .button-row{display:flex;gap:10px;flex-wrap:wrap}
+ #main .fs11-report #fs-source .button-row button{min-height:46px;color:var(--ui-ink)!important;background:var(--ui-soft)!important;border:1px solid var(--ui-line)!important;border-radius:12px;padding:10px 15px}
+ #main .fs11-report #fs-source .fs11-basis-line{color:var(--ui-muted)!important}
+ #main .fs15-classification-band .fs17-score-unavailable .fs14-mark{background:var(--ui-soft)!important;color:var(--ui-ink)!important;border:1px solid var(--ui-line)!important;box-shadow:none!important}
+ #main .fs15-classification-band .fs17-score-unavailable .fs14-tile-reading :is(strong,small){color:var(--ui-ink)!important;opacity:1!important}
+ #main .fs15-classification-band .fs17-score-unavailable .fs14-tile-reading small{font-size:.85rem;line-height:1.6}
+ #main .fs15-classification-band .fs17-unrated-scale{opacity:.43!important;filter:saturate(.45)}
+ #main .fs15-classification-band .fs17-unrated-scale .is-active{outline:0!important}
+ @media(max-width:650px){
+  #main .fs11-report #fs-source .fs17-trust-grid{grid-template-columns:minmax(0,1fr)}
+  #main .fs11-report #fs-source .fs17-limits{grid-column:1}
+  #main .fs11-report #fs-source .fs17-trust-row{min-height:0;padding:17px}
+  #main .fs11-report #fs-source .button-row button{max-width:100%}
+ }
+}
