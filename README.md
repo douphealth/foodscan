@@ -1,3 +1,7 @@
+## FoodScan 11.19.0
+
+[Release notes: comparison reliability](RELEASE_NOTES_11_19.md).
+
 ## FoodScan 11.17.0
 
 See [release notes](RELEASE_NOTES_11_17.md).

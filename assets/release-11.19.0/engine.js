@@ -90,7 +90,7 @@ async function ensureSwaps(product,{force=false}={}){
  if(current.code===product.barcode&&current.refreshing)return;
  if(!force&&current.code===product.barcode&&['loading','done'].includes(current.status))return;
  if(force&&current.code===product.barcode&&current.retryAt>Date.now()){refreshSwapsSlot();return;}
- const categories=usableCategories(product).slice().reverse().slice(0,2),country=swapCountry(state.store.settings,product);
+ const categories=usableCategories(product).slice().reverse().slice(0,8),country=swapCountry(state.store.settings,product);
  const local=bestLocalComparison(product,rawProducts(state),categories,state.store.profile,betterChoices);
  swapController?.abort();const controller=swapController=new AbortController();
  const mine=state.swaps={code:product.barcode,status:local?'done':'loading',category:local?.category||categories[0],country:local?'':country,countryName:local?'':COUNTRIES.find(c=>c.slug===country)?.name||'',items:local?.items||[],checked:local?.checked||0,mode:local?'local':'live',refreshing:!!state.online,error:''};
