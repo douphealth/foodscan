@@ -8,7 +8,7 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '11.17.0';
+const VERSION = '11.19.0';
 const PRODUCT_CACHE_VERSION = '11.17.0';
 const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
 const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
@@ -19,9 +19,10 @@ const FIELDS = 'code,product_name,product_name_en,product_name_el,brands,image_f
 const INDEX_FIELDS = 'code,product_name,product_name_en,brands,image_front_url,image_url,quantity,product_quantity_unit,nutriments,nutriscore_grade,nutrition_grades,nova_group,allergens_tags,labels_tags,ingredients_analysis_tags,categories_tags,countries_tags,last_modified_t,unique_scans_n,obsolete';
 const SEARCH_LANGS = 'en,fr,de,es,it,el,pt,nl';
 const MAX_BODY = 600000, DEADLINE_MS = 7000, STALE_SECONDS = 30 * 86400;
-const FRESH = { product: 21600, category: 3600, search: 1800 };
+const FRESH = { product: 21600, category: 21600, search: 3600 };
 const inflight = new Map(), users = new Map(), upstreamReads = [];
 const cooldown = { off: 0, index: 0 };
+const searchBudget = {off:[],index:[]};
 let providerCooldown = 0;
 const retryable = new WeakSet();
 
@@ -235,12 +236,24 @@ async function fetchProduct(request, env, code) {
 }
 
 /* ---------- search providers (text and category) ---------- */
+// Independent provider budget: OFF legacy throttling must not disable its search index.
+async function reserveSearchRead(which,env){
+ if(!Object.hasOwn(searchBudget,which))return {code:'invalid',wait:60};
+ if(env?.UPSTREAM_RATE_LIMITER?.limit){
+  const result=await env.UPSTREAM_RATE_LIMITER.limit({key:'foodscan-search-'+which});
+  if(!result.success)return {code:'local_rate_limited',wait:30};
+ }
+ const now=Date.now(),rows=searchBudget[which];
+ while(rows.length&&rows[0]<=now-60000)rows.shift();
+ if(rows.length>=24)return {code:'local_rate_limited',wait:Math.ceil((rows[0]+60000-now)/1000)};
+ rows.push(now);return null;
+}
 class SearchFailure extends Error { constructor(code, status, wait = 0) { super(code); this.code = code; this.status = status; this.wait = wait; } }
 async function upstreamJSON(href, env, origin, which) {
   const failure = (code, status, wait = 0, upstreamStatus = null) => Object.assign(new SearchFailure(code, status, wait), { provider: which, upstreamStatus });
   const now = Date.now();
   if (cooldown[which] > now) throw failure('rate_limited', 429, Math.ceil((cooldown[which] - now) / 1000));
-  const limit = await reserveRead(`search:${which}`, env);
+  const limit = await reserveSearchRead(which, env);
   if (limit) throw failure(limit.code, 429, limit.wait);
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), DEADLINE_MS);
   try {
