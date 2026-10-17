@@ -6,11 +6,14 @@ try{
   const ctx=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
   const page=await ctx.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+  page.on('requestfailed',r=>errors.push('request: '+r.url()+' '+r.failure()?.errorText));
+  page.on('response',r=>{if(r.status()>=400&&r.url().includes('/assets/'))errors.push('HTTP '+r.status()+' '+r.url())});
   const raw={code,image_front_url:'https://images.openfoodfacts.org/images/products/000/008/082/3131/front_en.5.400.jpg',ingredients_text:'Οκκ',categories_tags:['el:Ζάχαρη'],serving_size:'100',nutrition_data_per:'100g',data_quality_errors_tags:['en:nutrition-packaging-as-sold-100g-energy-value-in-kcal-does-not-match-value-in-kj','en:nutrition-packaging-as-sold-100g-values-are-all-identical'],nutriments:{'energy-kcal_100g':10,'energy-kj_100g':10,'fat_100g':10,'saturated-fat_100g':10}};
   await page.route('**/api/product/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:'success',fetchedAt:Date.now(),product:raw})}));
   await page.route('**/api/events',route=>route.fulfill({status:204}));
   await page.goto('http://127.0.0.1:8787/#food/'+code);
-  await page.locator('.fs20-source-rejected .fs20-integrity').waitFor({timeout:24000});
+  try{await page.locator('.fs20-source-rejected .fs20-integrity').waitFor({timeout:11000});}catch(e){console.log('STARTUP',JSON.stringify({html:(await page.locator('#main').innerHTML()).slice(0,2300),errors,urls:await page.evaluate(()=>performance.getEntriesByType('resource').filter(x=>x.name.includes('/assets/')).map(x=>x.name).slice(-20))}));throw e;}
   assert.equal(await page.locator('.fs15-macro-grid').count(),0);
   assert.equal(await page.locator('.fs20-integrity [data-action="label-facts"]').count(),1);
   await page.locator('[data-action="label-facts"]').click();
