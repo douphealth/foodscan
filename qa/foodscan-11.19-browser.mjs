@@ -6,6 +6,9 @@ try{
   const ctx=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
   const page=await ctx.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('console:'+m.text())});
+  page.on('requestfailed',rq=>errors.push('request:'+rq.url()+' '+rq.failure()?.errorText));
+  page.on('response',rs=>{if(rs.status()>=400&&rs.url().includes('/assets/'))errors.push('HTTP:'+rs.status()+' '+rs.url())});
   let attempts=0;
   await page.route('**/api/product/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:'success',fetchedAt:Date.now(),product:{
     code:'3017620422003',product_name:'Nutella',brands:'Ferrero',quantity:'400 g',product_quantity_unit:'g',
@@ -16,7 +19,7 @@ try{
   await page.route('**/api/alternatives?**',route=>{attempts++;return route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:{code:'upstream_network',message:'Blocked edge egress'}})});});
   await page.route('**/api/events',route=>route.fulfill({status:204}));
   await page.goto('http://127.0.0.1:8787/#food/3017620422003');
-  try{await page.locator('.fs15-macro-grid').waitFor({timeout:12000});}catch(err){console.log('STARTUP_DIAGNOSTICS',JSON.stringify({width,url:page.url(),html:await page.locator('#main').innerHTML().then(x=>x.slice(0,2800)),errors}));throw err;}
+  try{await page.locator('.fs15-macro-grid').waitFor({timeout:12000});}catch(err){console.log('STARTUP_DIAGNOSTICS',JSON.stringify({width,url:page.url(),html:await page.locator('#main').innerHTML().then(x=>x.slice(0,2800)),errors,scripts:await page.evaluate(()=>[...document.scripts].map(x=>({src:x.src,type:x.type}))),resources:await page.evaluate(()=>performance.getEntriesByType('resource').filter(x=>x.name.includes('/assets/')).slice(-18).map(x=>x.name))}));throw err;}
   const button=page.locator('[data-action="load-swaps"]').first();
   assert(await button.count(),'Missing compare action');
   await button.click();
