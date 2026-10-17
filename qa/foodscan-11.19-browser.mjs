@@ -16,7 +16,7 @@ try{
   await page.route('**/api/alternatives?**',route=>{attempts++;return route.fulfill({status:502,contentType:'application/json',body:JSON.stringify({error:{code:'upstream_network',message:'Blocked edge egress'}})});});
   await page.route('**/api/events',route=>route.fulfill({status:204}));
   await page.goto('http://127.0.0.1:8787/#food/3017620422003');
-  await page.locator('.fs15-macro-grid').waitFor({timeout:20000});
+  try{await page.locator('.fs15-macro-grid').waitFor({timeout:12000});}catch(err){console.log('STARTUP_DIAGNOSTICS',JSON.stringify({width,url:page.url(),html:await page.locator('#main').innerHTML().then(x=>x.slice(0,2800)),errors}));throw err;}
   const button=page.locator('[data-action="load-swaps"]').first();
   assert(await button.count(),'Missing compare action');
   await button.click();
