@@ -1,0 +1,24 @@
+name: FoodScan Alternatives Browser Connectivity Probe
+on:
+  push:
+    branches: [qa/alternatives-11.19.0]
+    paths: ['qa/alternatives-diagnostic.mjs','.github/workflows/foodscan-alternatives-diagnostic.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 8787 --bind 127.0.0.1 >/tmp/fs-alt-server.log 2>&1 &
+          sleep 2
+          node qa/alternatives-diagnostic.mjs
