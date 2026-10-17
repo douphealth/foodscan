@@ -46,6 +46,6 @@ try{
  assert.equal(result.products[0].countries_tags[0],'en:france');
  assert.equal(result.products[0].partial,true);
  const health=await worker.fetch(new Request('https://foodscan.test/api/health'),{},{});
- assert.equal((await health.json()).version,'11.15.0');
+ assert.equal((await health.json()).version,'11.19.0');
 }finally{globalThis.fetch=liveFetch;}
 console.log('FoodScan comparison and portion regression checks passed.');

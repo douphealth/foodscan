@@ -15,7 +15,7 @@ const hash='sha256-'+crypto.createHash('sha256').update(inline).digest('base64')
 assert((await fs.readFile('_headers','utf8')).includes(hash),'Import map CSP mismatch');
 for(const path of Object.values(JSON.parse(inline).imports))await fs.stat('.'+path);
 for(const name of ['app.css','app.js','result.js','model.js','report-audit.js','api-core.js','api.js','engine.js'])await fs.stat('assets/release-11.17.0/'+name);
-assert((await fs.readFile('sw.js','utf8')).includes('foodscan-shell-11.17.0'));
+assert((await fs.readFile('sw.js','utf8')).includes('foodscan-shell-11.19.0'));
 const worker=await fs.readFile('_worker.js','utf8');
 assert(worker.includes("X-FoodScan-Quality"));
 assert(worker.includes("sourceQuality(product).usable"));

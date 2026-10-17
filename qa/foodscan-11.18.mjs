@@ -12,7 +12,7 @@ assert(result.includes("from '/assets/release-11.16.0/result.js'"));
 assert(!result.includes('querySelector'));
 const css=await fs.readFile('assets/release-11.18.0/app.css','utf8');
 assert.equal(css.trim(),"@import url('/assets/release-11.16.0/app.css');");
-const sw=await fs.readFile('sw.js','utf8');assert(sw.includes('foodscan-shell-11.18.0'));
+const sw=await fs.readFile('sw.js','utf8');assert(sw.includes('foodscan-shell-11.19.0'));
 const audit=await import('../assets/release-11.18.0/report-audit.js');
 const p={basis:'g',nutrition:{kcal:530,protein:null,fat:null},partial:false};
 assert.equal(audit.reportAudit(p).safeToCalculate,true);

@@ -7,7 +7,7 @@ assert(inline);
 const hash='sha256-'+crypto.createHash('sha256').update(inline).digest('base64');
 assert((await fs.readFile('_headers','utf8')).includes(hash),'CSP hash');
 for(const file of Object.values(JSON.parse(inline).imports))await fs.stat('.'+file);
-assert(html.includes('"softwareVersion":"11.16.0"'));
+assert(html.includes('"softwareVersion":"11.19.0"'));
 const model=await fs.readFile('assets/release-11.16.0/model.js','utf8');
 assert(model.includes('reportedNova')&&model.includes('reportedGrade'));
 const css=await fs.readFile('assets/release-11.16.0/app.css','utf8');
