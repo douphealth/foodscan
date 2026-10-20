@@ -11,7 +11,7 @@ import {installDailyFeatures} from '/assets/release-11.3.0/lib/features.js';
 import {clearPhotos,savePhoto} from '/assets/release-11.3.0/lib/photos.js';
 import {validateStoredProduct} from '/assets/release-11.3.0/lib/model.js';
 import {sourceIntegrity,validateLabelFacts} from './source-trust.js';
-import {usableCategories,betterChoices,swapCountry,swapsWorthOffering,COUNTRIES,trafficLights} from '/assets/release-11.3.0/lib/nutrition.js';
+import {usableCategories,betterChoices,swapCountry,swapsWorthOffering,COUNTRIES,trafficLights} from '/assets/release-11.21.0/recommendation-quality.js';
 import {portionBody} from '/assets/release-11.3.0/lib/components.js';
 import {bestLocalComparison} from '/assets/release-11.12.0/comparison-recovery.js';
 import {isRecoverableWeakProduct,reportAudit} from '/assets/release-11.20.0/report-audit.js';
