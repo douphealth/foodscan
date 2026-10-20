@@ -24,5 +24,5 @@ const hash='sha256-'+crypto.createHash('sha256').update(map).digest('base64');
 assert((await fs.readFile('_headers','utf8')).includes(hash),'CSP hash mismatch');
 for(const file of Object.values(JSON.parse(map).imports))await fs.stat('.'+file);
 for(const name of ['app.css','app.js','source-trust.js','model.js','result.js','api-core.js','api.js','engine.js','views.js','report-audit.js'])await fs.stat('assets/release-11.20.0/'+name);
-assert((await fs.readFile('sw.js','utf8')).includes('foodscan-shell-11.20.0'));
+assert((await fs.readFile('sw.js','utf8')).includes('foodscan-shell-11.21.0'));
 console.log('PASS source quarantine, valid control, manual entry and release integrity');
