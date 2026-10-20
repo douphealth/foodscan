@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 const html=await fs.readFile('index.html','utf8');
 const headers=await fs.readFile('_headers','utf8');
-const map=html.match(/<script type="importmap">([\\s\\S]*?)<\\/script>/)?.[1];
+const map=html.split('<script type="importmap">')[1]?.split('</script>')[0];
 assert(map,'Import map required');
 const hash='sha256-'+crypto.createHash('sha256').update(map).digest('base64');
 assert(headers.includes(hash),'CSP import map hash must match');
