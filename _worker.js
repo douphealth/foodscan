@@ -8,7 +8,7 @@
  *   - transient failures get one automatic retry
  * Per-isolate guards are best-effort, NOT a distributed rate limiter.
  */
-const VERSION = '11.19.0';
+const VERSION = '11.21.0';
 const PRODUCT_CACHE_VERSION = '11.17.0';
 const EVENT_NAMES = new Set(['scan_success','scan_outcome','merchant_open','list_add','install']);
 const EVENT_PROPERTIES = new Set(['method','cached','durationMs','kind','placement']);
