@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+const html=await fs.readFile('index.html','utf8');
+const headers=await fs.readFile('_headers','utf8');
+const map=html.split('<script type="importmap">')[1]?.split('</script>')[0];
+assert(map,'Import map required');
+const hash='sha256-'+crypto.createHash('sha256').update(map).digest('base64');
+assert(headers.includes(hash),'CSP import map hash must match');
+for(const target of Object.values(JSON.parse(map).imports))await fs.stat('.'+target);
+for(const name of ['app.css','views.js','recommendation-quality.js','allergen-evidence.js'])await fs.stat('assets/release-11.21.0/'+name);
+assert((await fs.readFile('sw.js','utf8')).includes('foodscan-shell-11.21.0'));
+assert(html.includes('release-11.21.0/app.css'));
+console.log('PASS FoodScan 11.21 static resource integrity and CSP');

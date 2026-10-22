@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f5f7f2">
-<meta name="description" content="Scan packaged foods for source-backed nutrition, ingredients and allergens. Calculate your portion and keep a private food diary.">
+<meta name="description" content="Know your food with a source-reported Nutri-Score, clear nutrients, comparable higher-grade options and a private journal. Scan, search and save without an account.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://food-scan.gearuptofit.com/">
 <meta name="application-name" content="FoodScan">
@@ -24,21 +24,57 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://food-scan.gearuptofit.com/og.png">
 <meta name="color-scheme" content="light dark">
-<title>FoodScan | Food Scanner and Private Diary</title>
+<title>FoodScan | Understand food. Choose with confidence.</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <script src="/assets/release-11.10.0/boot.js"></script>
-<link rel="stylesheet" href="/assets/release-11.20.0/app.css">
+<link rel="stylesheet" href="/assets/release-11.21.0/app.css">
 <link rel="preconnect" href="https://world.openfoodfacts.org" crossorigin>
-<script type="importmap">{"imports":{"/assets/release-11.3.0/lib/views.js":"/assets/release-11.20.0/views.js","/assets/release-11.3.0/lib/decision-ui.js":"/assets/release-11.20.0/result.js","/assets/release-11.3.0/lib/model.js":"/assets/release-11.20.0/model.js","/assets/release-11.3.0/lib/api.js":"/assets/release-11.20.0/api.js","/assets/release-11.3.0/lib/store.js":"/assets/release-11.10.0/store.js","/assets/release-11.3.0/lib/meal-diary.js":"/assets/release-11.14.0/meal-diary.js"}}</script>
+<script type="importmap">{"imports":{"/assets/release-11.3.0/lib/views.js":"/assets/release-11.21.0/views.js","/assets/release-11.3.0/lib/decision-ui.js":"/assets/release-11.20.0/result.js","/assets/release-11.3.0/lib/model.js":"/assets/release-11.20.0/model.js","/assets/release-11.3.0/lib/api.js":"/assets/release-11.20.0/api.js","/assets/release-11.3.0/lib/store.js":"/assets/release-11.10.0/store.js","/assets/release-11.3.0/lib/meal-diary.js":"/assets/release-11.14.0/meal-diary.js"}}</script>
 <script type="module" src="/assets/release-11.20.0/app.js"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FoodScan","url":"https://food-scan.gearuptofit.com/","applicationCategory":"HealthApplication","operatingSystem":"Any","isAccessibleForFree":true,"softwareVersion":"11.20.0","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FoodScan","url":"https://food-scan.gearuptofit.com/","applicationCategory":"HealthApplication","operatingSystem":"Any","isAccessibleForFree":true,"softwareVersion":"11.21.0","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<style>
+.fs-start{min-height:70vh;display:grid;align-items:center;background:radial-gradient(ellipse at 85% 10%,#dce9d8 0,transparent 48%),linear-gradient(135deg,#f7f7f1,#f1f5ed);color:#173b30;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.fs-start-inner{width:min(1100px,100%);padding:clamp(30px,7vw,90px) clamp(20px,5vw,68px);margin:auto}
+.fs-start-eyebrow{font-size:.75rem;letter-spacing:.16em;font-weight:800;color:#356c50}
+.fs-start h1{font-size:clamp(2.6rem,7vw,5.6rem);max-width:850px;line-height:1.04;letter-spacing:-.055em;margin:20px 0;font-weight:790}
+.fs-start-lead{font-size:clamp(1.04rem,1.8vw,1.28rem);line-height:1.65;color:#416356;max-width:680px}
+.fs-start-actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 14px}
+.fs-start-actions a{min-height:48px;display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:12px 21px;border-radius:999px;text-decoration:none;font-size:.95rem;font-weight:720}
+.fs-start-primary{background:#18543c;color:#fff}.fs-start-secondary{border:1px solid #a8bfad;color:#18543c;background:#fff}
+.fs-start-actions a:focus-visible{outline:3px solid #1d8558;outline-offset:3px}
+.fs-start-state{font-size:.8rem;color:#456d55;margin:8px 0 30px}
+.fs-start-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:30px}
+.fs-start-features>div{border:1px solid #dce6db;background:rgba(255,255,255,.84);border-radius:18px;padding:20px;display:grid;gap:8px}
+.fs-start-features strong{font-size:1rem}.fs-start-features span{font-size:.87rem;line-height:1.55;color:#456759}
+.fs-start-note{font-size:.77rem;line-height:1.6;color:#587063;margin-top:24px;max-width:800px}
+@media(max-width:650px){.fs-start-features{grid-template-columns:1fr}.fs-start-actions a{width:100%}.fs-start h1{letter-spacing:-.045em}}
+@media(prefers-reduced-motion:reduce){.fs-start *{scroll-behavior:auto!important;animation:none!important}}
+</style>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="header"></div>
-<main id="main" tabindex="-1" aria-label="FoodScan application"><div class="container startup"><h1>FoodScan</h1><p role="status">Opening FoodScan…</p></div></main>
+<main id="main" tabindex="-1" aria-label="FoodScan application">
+<section class="fs-start" aria-labelledby="fs-start-title">
+  <div class="fs-start-inner">
+    <p class="fs-start-eyebrow">FOODSCAN · KNOW YOUR FOOD</p>
+    <h1 id="fs-start-title">Better food choices start with knowing.</h1>
+    <p class="fs-start-lead">Look up a packaged food by name or barcode. See its source-reported Nutri-Score, understand the nutrients behind the grade, and compare verified alternatives when available.</p>
+    <nav class="fs-start-actions" aria-label="Explore FoodScan">
+      <a class="fs-start-primary" href="/demo/">Try the 30-second food demo <span aria-hidden="true">↗</span></a>
+      <a class="fs-start-secondary" href="/how/">How the food grades work</a>
+    </nav>
+    <p class="fs-start-state" role="status">Loading the interactive food scanner…</p>
+    <div class="fs-start-features" aria-label="What FoodScan offers">
+      <div><strong>One clear grade</strong><span>See the reported Nutri-Score and the data behind it.</span></div>
+      <div><strong>Better-choice comparisons</strong><span>Find higher-grade options when sufficiently verified and comparable.</span></div>
+      <div><strong>Your private food shelf</strong><span>Save foods and review your day without creating an account.</span></div>
+    </div>
+    <p class="fs-start-note">FoodScan uses community-sourced product data. Check packaging directly for allergens, ingredients, and dietary suitability. A grade is not a personalized medical assessment.</p>
+  </div>
+</section></main>
 <div id="footer"></div>
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 <input type="file" id="photo-input" accept="image/*" class="sr-only" tabindex="-1" aria-label="Choose a barcode photo">

@@ -1,0 +1,59 @@
+name: FoodScan 11.21 QA and Cloudflare ZIP
+on:
+  push:
+    branches: [feat/foodscan-trust-homepage-20261020]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-verify-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static and source integrity regression checks
+        run: |
+          node --experimental-default-type=module qa/foodscan-11.20.mjs
+          node --experimental-default-type=module qa/foodscan-11.21.mjs
+      - name: JavaScript syntax validation
+        run: |
+          node --check assets/release-11.21.0/views.js
+          node --check assets/release-11.21.0/recommendation-quality.js
+          node --check assets/release-11.21.0/allergen-evidence.js
+          node --check assets/release-11.20.0/engine.js
+          node --check _worker.js
+          node --check sw.js
+      - name: Inspect public entry points in Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8787 --bind 127.0.0.1 >/tmp/foodscan-11.21.log 2>&1 &
+          sleep 2
+          node qa/foodscan-11.21-browser.mjs
+      - name: Package complete Cloudflare Pages advanced worker project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          root=Path('.')
+          out=Path('FoodScan-SOTA-11.21.0-Cloudflare-Pages.zip')
+          keep=['index.html','404.html','_headers','_routes.json','_worker.js','robots.txt','sitemap.xml','llms.txt','manifest.webmanifest','sw.js','icon.svg','icon-192.png','icon-512.png','icon-maskable-512.png','og.png']
+          with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=9) as z:
+              for p in [root/x for x in keep]+sorted(Path('assets').rglob('*'))+sorted(Path('art').rglob('*'))+sorted(Path('data').rglob('*'))+sorted(Path('demo').rglob('*')):
+                  if p.is_file():z.write(p,p.as_posix())
+          print(f'{out}: {out.stat().st_size:,} bytes')
+          with ZipFile(out) as z:
+              bad=z.testzip()
+              assert bad is None, f'Corrupt zip entry: {bad}'
+              for path in ['index.html','_worker.js','sw.js','assets/release-11.21.0/views.js','data/alternatives/hazelnut-spreads.json']:
+                  assert path in z.namelist(),f'Missing {path}'
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FoodScan-SOTA-11.21.0-Cloudflare-Pages
+          path: FoodScan-SOTA-11.21.0-Cloudflare-Pages.zip
+          if-no-files-found: error
+          retention-days: 30
