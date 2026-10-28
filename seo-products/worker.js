@@ -4,7 +4,14 @@ const BARCODE = /^(?:[0-9]{8}|[0-9]{12,14})$/;
 const BASE = "https://food-scan.gearuptofit.com";
 const headers = {"content-type":"text/html; charset=utf-8","x-content-type-options":"nosniff","cache-control":"public, max-age=120, s-maxage=600"};
 const response = (body,status=200,extra={}) => new Response(body,{status,headers:{...headers,...extra}});
-function safeBarcode(value) { return BARCODE.test(value) && value.length !== 9 && value.length !== 10 && value.length !== 11; }
+function safeBarcode(value) {
+  if (!BARCODE.test(value)) return false;
+  const digits = value.split("").map(Number);
+  const check = digits.pop();
+  let sum = 0, weight = 3;
+  for (let i=digits.length-1;i>=0;i--){sum += digits[i]*weight;weight = weight===3?1:3;}
+  return (10 - sum % 10) % 10 === check;
+}
 function pageNotFound() { return response("<!doctype html><html><head><meta name=\"robots\" content=\"noindex,nofollow\"></head><body><h1>Product unavailable</h1><a href=\"/\">Scan a food</a></body></html>",404,{"cache-control":"no-store"}); }
 function json(body,status=200){return new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}});}
 export function publicQuality(p){
