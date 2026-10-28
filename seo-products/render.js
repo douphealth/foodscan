@@ -49,5 +49,7 @@ export function renderPublicProductPage(record, origin = "https://food-scan.gear
     "<h2>Nutrition per 100 g or 100 ml, as reported</h2><table><tbody>" + rows + "</tbody></table>" +
     (ingredients ? "<h2>Ingredients reported by the source</h2><p>" + esc(ingredients) + "</p>" : "") +
     "<p>Barcode: " + esc(code) + "</p><p><a href=\"https://world.openfoodfacts.org/product/" + encodeURIComponent(code) + "\" rel=\"nofollow noopener\">View original source record</a></p>" +
-    "<p><a href=\"/#home\">Scan another food with FoodScan</a></p></main></body></html>";
+    "<section aria-label=\"Share this product\"><h2>Share the product facts</h2><p>Discover what is in your food — scan yours free.</p><button id=\"share-product\" type=\"button\">Share verified facts</button> <a href=\"/\" >Scan your food free</a><p id=\"share-result\" role=\"status\" aria-live=\"polite\"></p></section>" +
+    "<p><small>Data: Open Food Facts contributors (ODbL). Verify the current package. Product information does not establish allergy safety.</small></p>" +
+    "<p><a href=\"/#home\">Scan another food with FoodScan</a></p></main><script>document.getElementById('share-product').addEventListener('click', async () => { const title=document.title;const url=location.href;try{if(navigator.share){await navigator.share({title,url});return;}if(navigator.clipboard){await navigator.clipboard.writeText(url);document.getElementById('share-result').textContent='Product link copied';return;}document.getElementById('share-result').textContent=url;}catch(e){if(e.name!=='AbortError')document.getElementById('share-result').textContent=url;}});</script></body></html>";
 }
