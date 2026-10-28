@@ -1,3 +1,4 @@
+import { handlePublicRoute } from "./seo-products/worker.js";
 /** FoodScan 9.1 - standalone Cloudflare Pages advanced-mode Worker.
  * Public, read-only Open Food Facts requests. No credentials or proxy services.
  *
@@ -389,6 +390,10 @@ async function collectEvent(request, env) {
 export default {
   async fetch(request, env = {}, ctx) {
     const url = new URL(request.url);
+    if (env.FOODSCAN_PUBLIC_PAGES_ENABLED === '1') {
+      const publicResponse = await handlePublicRoute(request, env);
+      if (publicResponse) return publicResponse;
+    }
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     if (url.pathname === '/api/events') {
       if (request.headers.get('Sec-Fetch-Site') === 'cross-site' || (request.headers.get('Origin') && request.headers.get('Origin') !== url.origin)) return error('origin_not_allowed', 'Use the API from this FoodScan site.', 403);
