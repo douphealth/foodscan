@@ -1,0 +1,8 @@
+{
+  "version": "62.0.0",
+  "ranOn": "2026-10-30, Windows 11, Node 24.3, Google Chrome (headless), real _worker.js behind tools/serve.mjs; the release tree also answered correctly under workerd (wrangler pages dev)",
+  "unitAndContract": { "command": "npm test", "tests": 39, "passed": 39, "failed": 0, "files": ["grading", "relevance", "catalogue", "consistency", "worker", "package"] },
+  "browser": { "command": "npm run e2e ; node --test tests/pwa.spec.mjs", "tests": 14, "passed": 14, "failed": 0, "files": ["e2e.spec (6)", "recommendations.spec (6)", "pwa.spec (2)"] },
+  "extractedZipCheck": "the built ZIP was extracted into a fresh folder: 621 files byte-identical to app/, and 33 contract tests passed against that folder (FS_APP_DIR)",
+  "notRun": ["Cloudflare staging deployment", "physical-device camera scanning", "native share sheet on a phone", "production analytics", "D1-backed index and public-catalogue modes (no binding available)"]
+}

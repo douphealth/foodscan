@@ -1,0 +1,397 @@
+{
+ "generatedFrom": "D:\\Claude\\FoodScan\\v62-src\\app\\assets\\greece-v610",
+ "manifestVersion": "61.0.0",
+ "products": 12113,
+ "tally": {
+  "records": 12113,
+  "status:missing": 7833,
+  "family:bar": 200,
+  "noCategoryTags": 6155,
+  "noIngredients": 8590,
+  "noImage": 3382,
+  "sourceUngraded": 7943,
+  "status:reported": 4019,
+  "sourceGraded": 4170,
+  "notReproducible:incomplete": 1763,
+  "shown:D": 1033,
+  "shown:E": 961,
+  "reproducible": 910,
+  "shown:C": 860,
+  "partialNutrition": 585,
+  "notReproducible:estimated-nutrition": 279,
+  "saltSodiumMismatch": 138,
+  "noNutrition": 2525,
+  "status:withheld": 241,
+  "blocked": 241,
+  "blockedReason:Carbohydrate of 430 g per 100 g is impossible": 1,
+  "blockedReason:Protein of 1,940 g per 100 g is impossible": 1,
+  "blockedReason:Sugars of 140 g per 100 g is impossible": 1,
+  "blockedReason:10200 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 2,400 g per 100 g": 1,
+  "kcalKjMismatch": 142,
+  "shown:A": 637,
+  "notReproducible:special": 514,
+  "shown:B": 548,
+  "notReproducible:drink": 568,
+  "blockedReason:The database flags inconsistent nutritional values": 54,
+  "gradedButWithheld": 131,
+  "blockedReason:Carbohydrate of 280 g per 100 g is impossible": 1,
+  "blockedReason:Sugars of 230 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 289.7 g per 100 g": 1,
+  "blockedReason:Calories contradict the reported macronutrients": 140,
+  "family:biscuit": 433,
+  "blockedReason:4838 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Sugars exceed carbohydrates": 18,
+  "family:bread": 518,
+  "blockedReason:Salt of 1,074.2 g per 100 g is impossible": 1,
+  "blockedReason:1505 kcal per 100 g is more than pure fat contains": 1,
+  "sourceGradeVsOwnScore": 371,
+  "notReproducible:declined": 126,
+  "blockedReason:Protein of 113 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 181.8 g per 100 g": 1,
+  "blockedReason:Salt of 746.4 g per 100 g is impossible": 1,
+  "family:cake": 211,
+  "blockedReason:Fat, carbohydrate and protein add up to 106.4 g per 100 g": 1,
+  "family:cereal": 304,
+  "blockedReason:1657 kcal per 100 g is more than pure fat contains": 1,
+  "family:cheese": 551,
+  "blockedReason:Carbohydrate of 101.4 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 135.3 g per 100 g": 1,
+  "blockedReason:Salt of 108.2 g per 100 g is impossible": 1,
+  "blockedReason:1291 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Salt of 2,375 g per 100 g is impossible": 1,
+  "family:chocolate": 351,
+  "blockedReason:Fat, carbohydrate and protein add up to 112.8 g per 100 g": 1,
+  "blockedReason:Saturated fat exceeds total fat": 9,
+  "blockedReason:Sugars of 464 g per 100 g is impossible": 1,
+  "blockedReason:Salt of 4,250 g per 100 g is impossible": 1,
+  "family:coffee-tea": 204,
+  "blockedReason:Fat, carbohydrate and protein add up to 105.2 g per 100 g": 1,
+  "family:dessert": 366,
+  "blockedReason:Fat, carbohydrate and protein add up to 120 g per 100 g": 1,
+  "family:dried-fruit": 33,
+  "status:estimated": 20,
+  "blockedReason:1101 kcal per 100 g is more than pure fat contains": 1,
+  "family:fat": 110,
+  "family:fish": 157,
+  "family:ice-cream": 132,
+  "family:juice": 207,
+  "blockedReason:Carbohydrate of 112 g per 100 ml is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 112.4 g per 100 ml": 1,
+  "notReproducible:invalid-composition": 10,
+  "family:legume-veg": 258,
+  "blockedReason:Salt of 725 g per 100 g is impossible": 1,
+  "family:meal": 97,
+  "blockedReason:Salt of 275.6 g per 100 g is impossible": 1,
+  "family:meat": 433,
+  "blockedReason:Carbohydrate of 288 g per 100 g is impossible": 1,
+  "blockedReason:Protein of 999 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 1,287 g per 100 g": 1,
+  "blockedReason:Salt of 1,600 g per 100 g is impossible": 1,
+  "family:milk": 229,
+  "blockedReason:5000 kcal per 100 g is more than pure fat contains": 1,
+  "family:nut": 203,
+  "blockedReason:Salt of 1,782.5 g per 100 g is impossible": 1,
+  "family:other": 4479,
+  "blockedReason:Salt of 175 g per 100 g is impossible": 2,
+  "blockedReason:Salt of 34,883.7 g per 100 g is impossible": 1,
+  "blockedReason:Salt of 230 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 195.5 g per 100 g": 1,
+  "blockedReason:Carbohydrate of 55,935.5 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 55,949.8 g per 100 g": 1,
+  "blockedReason:1699 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Carbohydrate of 500.2 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 538.2 g per 100 g": 1,
+  "blockedReason:3404 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:1422 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Carbohydrate of 1,390 g per 100 g is impossible": 1,
+  "blockedReason:Sugars of 1,350 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 1,410 g per 100 g": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 135 g per 100 g": 1,
+  "blockedReason:976 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Salt of 750 g per 100 g is impossible": 1,
+  "blockedReason:Fat of 2,600 g per 100 g is impossible": 1,
+  "blockedReason:Carbohydrate of 5,600 g per 100 g is impossible": 1,
+  "blockedReason:Protein of 850 g per 100 g is impossible": 1,
+  "blockedReason:Sugars of 210 g per 100 g is impossible": 1,
+  "blockedReason:48500 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 9,050 g per 100 g": 1,
+  "blockedReason:Salt of 1,000 g per 100 g is impossible": 1,
+  "blockedReason:Fat of 587.5 g per 100 g is impossible": 1,
+  "blockedReason:Carbohydrate of 1,485 g per 100 g is impossible": 1,
+  "blockedReason:Protein of 237.8 g per 100 g is impossible": 1,
+  "blockedReason:12300 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 2,310.3 g per 100 g": 1,
+  "blockedReason:Salt of 1,316.7 g per 100 g is impossible": 1,
+  "blockedReason:Salt of 6,500 g per 100 g is impossible": 1,
+  "blockedReason:Salt of 535 g per 100 g is impossible": 1,
+  "blockedReason:Salt of 307.5 g per 100 g is impossible": 1,
+  "family:pasta": 287,
+  "blockedReason:Protein of 126 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 199.4 g per 100 g": 1,
+  "family:pizza": 81,
+  "family:plant-drink": 69,
+  "family:rice-grain": 131,
+  "family:sauce": 355,
+  "blockedReason:Fat of 1,000 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 1,004 g per 100 g": 1,
+  "blockedReason:Salt of 2,287.5 g per 100 g is impossible": 1,
+  "family:savoury-snack": 442,
+  "family:soda": 220,
+  "family:soup": 17,
+  "family:spread": 505,
+  "blockedReason:1082 kcal per 100 g is more than pure fat contains": 1,
+  "blockedReason:The source reports zero sugars, but its ingredient list name": 2,
+  "blockedReason:Salt of 495 g per 100 g is impossible": 1,
+  "family:sweets": 182,
+  "blockedReason:Fat, carbohydrate and protein add up to 109.1 g per 100 g": 1,
+  "blockedReason:Carbohydrate of 166 g per 100 g is impossible": 1,
+  "blockedReason:Fat, carbohydrate and protein add up to 166.2 g per 100 g": 1,
+  "family:water": 103,
+  "blockedReason:3.5 g of salt per 100 ml is not plausible for a drink; it lo": 1,
+  "family:yogurt": 245,
+  "duplicateGroups": 155,
+  "duplicateRecords": 342,
+  "sourceAgeDays": {
+   "p10": 1,
+   "p50": 218,
+   "p90": 975,
+   "olderThan2y": 2081,
+   "olderThan4y": 740
+  }
+ },
+ "examples": {
+  "blocked": [
+   {
+    "code": "5060756341678",
+    "name": "Wholefood protien snack bar",
+    "reasons": [
+     "Carbohydrate of 430 g per 100 g is impossible",
+     "Protein of 1,940 g per 100 g is impossible",
+     "Sugars of 140 g per 100 g is impossible",
+     "10200 kcal per 100 g is more than pure fat contains",
+     "Fat, carbohydrate and protein add up to 2,400 g per 100 g"
+    ]
+   },
+   {
+    "code": "5900020030405",
+    "name": "NESTLE LION Barres de Céréales 6x25g",
+    "reasons": [
+     "The database flags inconsistent nutritional values"
+    ]
+   },
+   {
+    "code": "8595229930143",
+    "name": "Super Ovoce",
+    "reasons": [
+     "Carbohydrate of 280 g per 100 g is impossible",
+     "Sugars of 230 g per 100 g is impossible",
+     "Fat, carbohydrate and protein add up to 289.7 g per 100 g",
+     "Calories contradict the reported macronutrients"
+    ]
+   },
+   {
+    "code": "5201004020338",
+    "name": "Caprice",
+    "reasons": [
+     "Calories contradict the reported macronutrients"
+    ]
+   },
+   {
+    "code": "5201004020697",
+    "name": "Digestive",
+    "reasons": [
+     "Calories contradict the reported macronutrients"
+    ]
+   },
+   {
+    "code": "5202576682436",
+    "name": "Sandwich biscuits with cocoa filling",
+    "reasons": [
+     "4838 kcal per 100 g is more than pure fat contains"
+    ]
+   },
+   {
+    "code": "5202888109836",
+    "name": "Frezyderm Μπισκότα",
+    "reasons": [
+     "Calories contradict the reported macronutrients"
+    ]
+   },
+   {
+    "code": "5203021110702",
+    "name": "Madeleine",
+    "reasons": [
+     "Calories contradict the reported macronutrients"
+    ]
+   }
+  ],
+  "kcalKjMismatch": [
+   {
+    "code": "5200305817074",
+    "name": "Cocoa Date Bar With Cacao Nibs",
+    "kcal": 322,
+    "kj": 1588.7000000000003
+   },
+   {
+    "code": "8595229930143",
+    "name": "Super Ovoce",
+    "kcal": 370,
+    "kj": 4964.39
+   },
+   {
+    "code": "5201004020338",
+    "name": "Caprice",
+    "kcal": 379.421606118546,
+    "kj": 2002.2
+   },
+   {
+    "code": "5203064008677",
+    "name": "Pti ber thins",
+    "kcal": 428,
+    "kj": 1493.9
+   },
+   {
+    "code": "5208046089767",
+    "name": "Digestive Biscuits",
+    "kcal": 493,
+    "kj": 237
+   },
+   {
+    "code": "8410376047011",
+    "name": "Twins Cocoa Sandwich Cookies",
+    "kcal": 879.541108986615,
+    "kj": 1884.7619047619
+   },
+   {
+    "code": "8436547642830",
+    "name": "ORGANIC BISCUIT WITH COCOA",
+    "kcal": 452,
+    "kj": 1510.9
+   },
+   {
+    "code": "0046000283265",
+    "name": "Tortillas de trigo",
+    "kcal": 670.411089866156,
+    "kj": 1276.56441717791
+   }
+  ],
+  "sourceGradeVsOwnScore": [
+   {
+    "code": "5201673002093",
+    "name": "Sliced whole meal durum wheat sourdough bread with olive oil",
+    "letter": "B",
+    "score": -2
+   },
+   {
+    "code": "2000000121734",
+    "name": "ΓΙΩΤΗΣ ΡΟΦΗΜΑ ΣΟΚΟΛΑΤΑΣ",
+    "letter": "D",
+    "score": 9
+   },
+   {
+    "code": "4056489009979",
+    "name": "Goody cao",
+    "letter": "E",
+    "score": 16
+   },
+   {
+    "code": "5200106870049",
+    "name": "Choco Milk",
+    "letter": "E",
+    "score": 15
+   },
+   {
+    "code": "5201002002534",
+    "name": "ΓΙΩΤΗΣ ρόφημα σοκολατας",
+    "letter": "D",
+    "score": 9
+   },
+   {
+    "code": "5201037508667",
+    "name": "Tou Topou Mas (Cocoa Flavour)",
+    "letter": "E",
+    "score": 15
+   },
+   {
+    "code": "5201037509237",
+    "name": "Milko",
+    "letter": "D",
+    "score": 9
+   },
+   {
+    "code": "5201037509251",
+    "name": "milko free",
+    "letter": "B",
+    "score": -2
+   }
+  ],
+  "duplicateGroups": [
+   {
+    "key": "|protein bar|",
+    "codes": [
+     "4335619172890",
+     "5200132752012",
+     "5200252001908",
+     "5201583093914"
+    ]
+   },
+   {
+    "key": "nutri valley|protein bar|3 x 40 g",
+    "codes": [
+     "5200132303450",
+     "5200132350010",
+     "5200132754450"
+    ]
+   },
+   {
+    "key": "|digestive bar|",
+    "codes": [
+     "5201004366474",
+     "5201974166449",
+     "5202646004649",
+     "5201004046642"
+    ]
+   },
+   {
+    "key": "healthy habits|peanut butter bars|4 x 35 g",
+    "codes": [
+     "5202535179120",
+     "5202535179137"
+    ]
+   },
+   {
+    "key": "|cookies|",
+    "codes": [
+     "5200100933740",
+     "5200100945088",
+     "5201004043696"
+    ]
+   },
+   {
+    "key": "|digestive|",
+    "codes": [
+     "5200100942650",
+     "5203278054873",
+     "5201004020956",
+     "5201004266194"
+    ]
+   },
+   {
+    "key": "papadopoulos|digestive|",
+    "codes": [
+     "5201004020642",
+     "5201004020697"
+    ]
+   },
+   {
+    "key": "|chipicao|",
+    "codes": [
+     "5201360717163",
+     "5201360565207",
+     "0630230090535"
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "measuredOn": "Chromium, CPU 4x, 1.6 Mbps, 150 ms RTT, cache disabled, medians of 5 runs; emulator serves uncompressed bytes",
+ "home_v61": [
+  {
+   "fcp": 2572,
+   "tbt": 940,
+   "kb": 686
+  },
+  {
+   "fcp": 2592,
+   "tbt": 1037
+  },
+  {
+   "fcp": 2600,
+   "tbt": 981
+  }
+ ],
+ "home_v62": [
+  {
+   "fcp": 2592,
+   "tbt": 1143,
+   "kb": 739
+  },
+  {
+   "fcp": 2580,
+   "tbt": 997
+  },
+  {
+   "fcp": 2560,
+   "tbt": 1034
+  }
+ ],
+ "verdict": "no measurable change in first/largest contentful paint or blocking time; +53 KB uncompressed (engine, product-type lexicon, Greek strings)"
+}

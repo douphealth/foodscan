@@ -1,0 +1,1337 @@
+{
+ "capturedAt": "2026-10-30T08:57:07.388Z",
+ "catalogueRevision": "off-csv-2026-10-29",
+ "domain": "src/domain.mjs",
+ "summary": {
+  "sampled": 60,
+  "readLive": 60,
+  "notReadable": 0,
+  "sameShownGrade": 60,
+  "differentShownGrade": 0,
+  "recordChangedSinceExport": 0,
+  "nutritionIdentical": 59,
+  "stillListedForGreece": 60,
+  "gradedInCatalogue": 18,
+  "gradedAndSameGrade": 18,
+  "gradedButDifferentLetters": []
+ },
+ "rows": [
+  {
+   "code": "5200252162951",
+   "name": "Energy bar",
+   "family": "bar",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1725786361
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1725786361,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "7622300444181",
+   "name": "Oreo",
+   "family": "biscuit",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "e",
+    "modified": 1773973322
+   },
+   "live": {
+    "grade": "E",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1773973322,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201485000201",
+   "name": "Elite classic με σίκαλη",
+   "family": "bread",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1793196136
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1793196136,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": false
+  },
+  {
+   "code": "5204610000848",
+   "name": "Croissant Dolce",
+   "family": "cake",
+   "catalogue": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "d",
+    "modified": 1646454229
+   },
+   "live": {
+    "grade": "D",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1646454229,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5212002207782",
+   "name": "Choco Flakes",
+   "family": "cereal",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1725008485
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1725008485,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202258200071",
+   "name": "Meze feta olived",
+   "family": "cheese",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1727253888
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1727253888,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200305013605",
+   "name": "Baklava chocolate & hazelnuts",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1726647321
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1726647321,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5012547001681",
+   "name": "GROUND COFFEE",
+   "family": "coffee-tea",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1760224741
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1760224741,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201083351583",
+   "name": "High protein strained yogurt dessert banana & peanut butter flavor",
+   "family": "dessert",
+   "catalogue": {
+    "grade": "A",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "a",
+    "modified": 1786324930
+   },
+   "live": {
+    "grade": "A",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1786324930,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5208046089361",
+   "name": "Δαμάσκηνα χωρίς κουκούτσι αποξηραμενα",
+   "family": "dried-fruit",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "c",
+    "modified": 1788188102
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1788188102,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200377200699",
+   "name": "Gluten-free almond biscuits with olive oil",
+   "family": "fat",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1570769967
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1570769967,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5206830112042",
+   "name": "Σολομός",
+   "family": "fish",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1785348497
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1785348497,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202336157891",
+   "name": "Vanilla Cocoa Ice Cream Family Size",
+   "family": "ice-cream",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1782587598
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1782587598,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201005001473",
+   "name": "Sour Cherry Juice Drink, with 15% sour cherry juice",
+   "family": "juice",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1769182441
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1769182441,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201673005445",
+   "name": "Αξιαγαπητες tomato",
+   "family": "legume-veg",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1780340356
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1780340356,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5213015170629",
+   "name": "Pork Tenderloin With Rice And Vegetables",
+   "family": "meal",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1741628812
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1741628812,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5059944691190",
+   "name": "HAM & EGG CRISPY ROMAINE SALAD",
+   "family": "meat",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1768753538
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1768753538,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200143060106",
+   "name": "Φρέσκο Ημιαποβουτυρωμένο Παστεριωμένο Γάλα",
+   "family": "milk",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1784092314
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1784092314,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5205944016970",
+   "name": "Αμυγδαλα ωμα ευπορη γη",
+   "family": "nut",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1735333115
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1735333115,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5204193819905",
+   "name": "Cuba Honakia Spicy",
+   "family": "other",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1789226036
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1789226036,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "4335619012943",
+   "family": "pasta",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1770023419
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1770023419,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202535078119",
+   "name": "Pizza Rolls",
+   "family": "pizza",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1762074194
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1762074194,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5411188136613",
+   "name": "Bevanda 100% Vegetale Gusto Latte Classico Avena",
+   "family": "plant-drink",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "c",
+    "modified": 1788025434
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1788025434,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201262225384",
+   "name": "Quinoa",
+   "family": "rice-grain",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1729709183
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1729709183,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201024013167",
+   "name": "lays mustard",
+   "family": "sauce",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1776432073
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1776432073,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201502310054",
+   "name": "Rice Chips Ketcup",
+   "family": "savoury-snack",
+   "catalogue": {
+    "grade": "A",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "a",
+    "modified": 1780740787
+   },
+   "live": {
+    "grade": "A",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1780740787,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200106138033",
+   "name": "Lime Ginger Soda",
+   "family": "soda",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1788369434
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1788369434,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8714100272053",
+   "name": "Κινεζικη σουπα με λαχανικη",
+   "family": "soup",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1748327306
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1748327306,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200378901809",
+   "name": "Μελι",
+   "family": "spread",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1793210026
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1793210026,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8697785842035",
+   "name": "Loukoum",
+   "family": "sweets",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1730890646
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1730890646,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "20560850",
+   "name": "Table water",
+   "family": "water",
+   "catalogue": {
+    "grade": "B",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "b",
+    "modified": 1758956730
+   },
+   "live": {
+    "grade": "B",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1758956730,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200107080560",
+   "name": "Στραγγιστό Γιαούρτι Αγελάδος 2%",
+   "family": "yogurt",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1765133782
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1765133782,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200132755068",
+   "name": "Cookie +Chocolate Flavor Protein Bar",
+   "family": "bar",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1759918182
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1759918182,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8716200705899",
+   "name": "NOUNOU Biscuit Cream 300g",
+   "family": "biscuit",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1793196404
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1793196404,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "4000358012263",
+   "name": "Whole grain oat bread",
+   "family": "bread",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "c",
+    "modified": 1786352369
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1786352369,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200305013636",
+   "name": "Baklavas",
+   "family": "cake",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1644577185
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1644577185,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202336074303",
+   "name": "Νιφάδες ρυζιού και σιταριού",
+   "family": "cereal",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1768955998
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1768955998,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202258058276",
+   "name": "FETA AOP",
+   "family": "cheese",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1788402149
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1788402149,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "6001224427561",
+   "name": "70% Dark Chocolate",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1768395513
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1768395513,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202178084706",
+   "name": "Mountain tea with lemon",
+   "family": "coffee-tea",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1691339319
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1691339319,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5200412400015",
+   "family": "dessert",
+   "catalogue": {
+    "grade": "C",
+    "status": "reported",
+    "method": null,
+    "sourceGrade": "c",
+    "modified": 1788187870
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1788187870,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "4056489763321",
+   "name": "Sultana raisins",
+   "family": "dried-fruit",
+   "catalogue": {
+    "grade": "D",
+    "status": "reported",
+    "method": null,
+    "sourceGrade": "d",
+    "modified": 1793196282
+   },
+   "live": {
+    "grade": "D",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1793196282,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202336067732",
+   "name": "Sunflower Oil",
+   "family": "fat",
+   "catalogue": {
+    "grade": null,
+    "status": "withheld",
+    "method": null,
+    "sourceGrade": "c",
+    "modified": 1720783831
+   },
+   "live": {
+    "grade": null,
+    "status": "withheld",
+    "method": null,
+    "modified": 1720783831,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8004030770041",
+   "name": "Tuna",
+   "family": "fish",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "c",
+    "modified": 1793196301
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1793196301,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8421826502295",
+   "name": "Mochi Ice Cream Mango",
+   "family": "ice-cream",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "c",
+    "modified": 1768293597
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1768293597,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5203278064162",
+   "name": "Φυσικός χυμός πορτοκάλι από συμπυκνωμένο χυμό πορτοκαλιών Πελοποννήσου",
+   "family": "juice",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "e",
+    "modified": 1791629033
+   },
+   "live": {
+    "grade": "E",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1791629033,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202576250314",
+   "name": "Στραγάλια Ψημένα Αφράτα",
+   "family": "legume-veg",
+   "catalogue": {
+    "grade": "A",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "a",
+    "modified": 1790141956
+   },
+   "live": {
+    "grade": "A",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1790141956,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201119000102",
+   "name": "Stuffed vine leaves with rice & herbs",
+   "family": "meal",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "c",
+    "modified": 1793196262
+   },
+   "live": {
+    "grade": "C",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1793196262,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202884001721",
+   "name": "Chicken Schnitzel",
+   "family": "meat",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1788871626
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1788871626,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5204633002539",
+   "name": "Go barista Milk",
+   "family": "milk",
+   "catalogue": {
+    "grade": "B",
+    "status": "reported",
+    "method": null,
+    "sourceGrade": "b",
+    "modified": 1732739748
+   },
+   "live": {
+    "grade": "B",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1732739748,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5202576252042",
+   "name": "Peanuts",
+   "family": "nut",
+   "catalogue": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "d",
+    "modified": 1788217146
+   },
+   "live": {
+    "grade": "D",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1788217146,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5203149004389",
+   "family": "other",
+   "catalogue": {
+    "grade": null,
+    "status": "withheld",
+    "method": null,
+    "sourceGrade": "a",
+    "modified": 1790845721
+   },
+   "live": {
+    "grade": null,
+    "status": "withheld",
+    "method": null,
+    "modified": 1790845721,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5214000885535",
+   "name": "Ζυμαρικά",
+   "family": "pasta",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1785144997
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1785144997,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "0244362655731",
+   "name": "7d mini bake rolls pizza",
+   "family": "pizza",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1742031586
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1742031586,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5712876252807",
+   "name": "gelato almond milk chocolate",
+   "family": "plant-drink",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1762362232
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1762362232,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5203278043624",
+   "name": "Ρύζι Μπονέτ",
+   "family": "rice-grain",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1788596255
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1788596255,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8001250016522",
+   "name": "PESTO alla GENOVESE",
+   "family": "sauce",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "e",
+    "modified": 1793195957
+   },
+   "live": {
+    "grade": "E",
+    "status": "reported",
+    "method": "2023",
+    "modified": 1793195957,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201237209036",
+   "name": "Ρυζογκοφρετες",
+   "family": "savoury-snack",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1783773072
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1783773072,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5206542000699",
+   "name": "Green Cola",
+   "family": "soda",
+   "catalogue": {
+    "grade": null,
+    "status": "withheld",
+    "method": null,
+    "sourceGrade": "b",
+    "modified": 1787423403
+   },
+   "live": {
+    "grade": null,
+    "status": "withheld",
+    "method": null,
+    "modified": 1787423403,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "8722700473022",
+   "name": "knorr broth",
+   "family": "soup",
+   "catalogue": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "sourceGrade": "unknown",
+    "modified": 1779120322
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1779120322,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  }
+ ]
+}
