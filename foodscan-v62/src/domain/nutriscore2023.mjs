@@ -80,6 +80,8 @@ const NS23_NAME = {
   drink: /\b(?:drink|beverage|juice|nectar|soda|cola|lemonade|tonic|iced tea|smoothie|kefir|milk|γαλα|χυμοσ|χυμου|νεκταρ|αναψυκτ|λεμοναδα|πορτοκαλαδα|ροφημα)\b/,
   meat: /\b(?:beef|pork|lamb|veal|ham|bacon|salami|sausage|chorizo|prosciutto|burger|μοσχαρ|χοιριν|αρνι|ζαμπον|μπεικον|σαλαμι|λουκανικ)\b/
 };
+// categories whose fruit/vegetable/legume share the source fixes at 100 whatever the ingredient estimate says
+const NS23_FVL_OVERRIDE = ['en:olive-oils', 'en:rapeseed-oils', 'en:colza-oils', 'en:walnut-oils'];
 const NS23_SWEETENER_E = /^e(?:950|951|952|954|955|957|959|960[a-d]?|961|962|969)$/;
 const NS23_SWEETENER_WORDS = /acesulfam|aspartam|cyclamat|saccharin|sucralos|thaumatin|neohesperidin|steviol|stevia|neotam|advantam|ασπαρταμ|ακεσουλφαμ|σουκραλοζ|στεβια|γλυκαντικ|sweetener|edulcorant|dolcificant|edulcorante|sussstoff|zoetstof/;
 
@@ -88,7 +90,7 @@ const NS23_SWEETENER_WORDS = /acesulfam|aspartam|cyclamat|saccharin|sucralos|tha
 function ns23Kinds(p) {
   const cats = p?.categories || [], n = p?.nutrition || {}, name = ns23Fold(`${p?.name || ''} ${p?.brand || ''}`);
   if (ns23Known(n.alcohol) && n.alcohol > 1.2) return { kinds: [], via: 'composition', exempt: true };
-  if (cats.length && ns23Has(cats, ...NS23_EXEMPT)) return { kinds: [], via: 'category', exempt: true };
+  if (cats.length && (ns23Has(cats, ...NS23_EXEMPT) || cats.some(c => /supplement|\u03c3\u03c5\u03bc\u03c0\u03bb\u03b7\u03c1\u03c9\u03bc/i.test(c)))) return { kinds: [], via: 'category', exempt: true };
   const red = cats.some(c => NS23_RED_MEAT.test(c)) ? 'certain' : cats.some(c => NS23_MEAT.test(c)) || NS23_NAME.meat.test(name) ? 'maybe' : false;
   if (cats.length) {
     const beverage = (ns23Has(cats, 'en:beverages', 'en:beverage-preparations') && !ns23Has(cats, 'en:meal-replacement', 'en:soups')) || ns23Has(cats, ...NS23_BEVERAGE_ALSO);
@@ -123,9 +125,40 @@ function ns23Inputs(p) {
   const n = p?.nutrition || {};
   const kj = ns23Known(n.kj) ? n.kj : ns23Known(n.kcal) ? n.kcal * 4.184 : null;
   if (kj === null || !['sugars', 'saturatedFat', 'salt'].every(k => ns23Known(n[k]))) return null;
+  const oil = (p?.categories || []).some(c => NS23_FVL_OVERRIDE.includes(c));
   return { kj, sugars: n.sugars, saturatedFat: n.saturatedFat, fat: ns23Known(n.fat) ? n.fat : null, salt: n.salt,
-    fibre: ns23Known(n.fiber) ? n.fiber : 0, protein: ns23Known(n.protein) ? n.protein : 0, fvl: ns23Known(n.fvl) && n.fvl <= 100 ? n.fvl : 0,
-    protein_known: ns23Known(n.protein), fibre_known: ns23Known(n.fiber) };
+    fibre: ns23Known(n.fiber) ? n.fiber : 0, protein: ns23Known(n.protein) ? n.protein : 0, fvl: oil ? 100 : ns23Known(n.fvl) && n.fvl <= 100 ? n.fvl : 0,
+    protein_known: ns23Known(n.protein), fibre_known: ns23Known(n.fiber), fvl_known: oil || (ns23Known(n.fvl) && n.fvl <= 100) };
+}
+
+/* ---- evidence tiers (64.0) ----
+ * Open Food Facts counts a fibre, protein or fruit-vegetable value that is not reported as 0 points. Matching the published points under that
+ * convention is real evidence, but it is not independent verification when those inputs were missing. So every reproduction is tiered:
+ *   complete  - every favourable input (and, for drinks, the sweetener check) was reported: nothing was assumed
+ *   robust    - something was missing, but the letter is the same for EVERY value physics and the ingredient list still allow
+ *   partial   - something was missing and the letter could differ: the source's own grade, not comparable, with the reason */
+const NS23_PLANT = /fruit|vegetable|legume|bean|(?:^| )pea(?:s)?(?: |$)|lentil|chickpea|tomato|nut|almond|olive|spinach|carrot|onion|garlic|pepper|cabbage|apple|orange|lemon|berr|banana|grape|peach|apricot|mango|φρουτ|λαχανικ|οσπρι|φασολ|φακ|ρεβιθ|ντοματ|καρυδ|αμυγδαλ|ελι|σπανακ|καροτ|κρεμμυδ|σκορδ|πιπερ|μηλ|πορτοκαλ|λεμον|φραουλ|μπανα/;
+const ns23NoPlantEvidence = p => { const t = ns23Fold(p?.ingredients || ''); return t.length > 3 && !NS23_PLANT.test(t); };
+function ns23Options(table, max) { const out = new Set([0]); for (const v of [...table, max]) if (v <= max) out.add(ns23Above(table, v)); out.add(ns23Above(table, max)); return [...out]; }
+function ns23Tier(p, input, kind, redMeat, sweet, calc) {
+  const drink = ns23Drink(kind), n = p?.nutrition || {}, sweetKnown = !drink || sweet !== null;
+  if (input.fibre_known && input.protein_known && input.fvl_known && sweetKnown) return { tier: 'complete', letters: [calc.grade], missing: [] };
+  const fat = ns23Known(n.fat) ? n.fat : null, carbs = ns23Known(n.carbohydrates) ? n.carbohydrates : null, kj = input.kj;
+  const fibreMax = input.fibre_known ? input.fibre : Math.min(100, carbs !== null ? Math.max(0, carbs - input.sugars) + 1 : kj / 8);
+  const proteinMax = input.protein_known ? input.protein : Math.min(100, fat !== null && carbs !== null ? Math.max(0, (kj * 1.03 + 15 - 37 * fat - 17 * carbs) / 17) : kj / 17);
+  const fvlMax = input.fvl_known ? input.fvl : ns23NoPlantEvidence(p) ? 0 : 100;
+  const fibreOpts = input.fibre_known ? [ns23Above(ns23TH.fibre, input.fibre)] : ns23Options(ns23TH.fibre, fibreMax);
+  const protTable = drink ? ns23TH.proteinBev : ns23TH.protein, fvlTable = drink ? ns23TH.fvlBev : ns23TH.fvl;
+  const protOpts = (input.protein_known ? [ns23Above(protTable, input.protein)] : ns23Options(protTable, proteinMax)).map(v => Math.min(v, redMeat ? 2 : 7));
+  const fvlOpts = input.fvl_known ? [ns23Above(fvlTable, input.fvl)] : ns23Options(fvlTable, fvlMax);
+  const sweetOpts = drink ? (sweet === null ? [0, 1] : [sweet]) : [0];
+  const baseNeg = calc.negative.total - calc.negative.sweeteners, letters = new Set();
+  for (const f of fibreOpts) for (const pr of protOpts) for (const v of fvlOpts) for (const s of sweetOpts) {
+    const neg = baseNeg + (drink && s > 0 ? 4 : 0), counted = ns23ProteinCounts(neg, kind, v);
+    letters.add(ns23GradeOfScore(neg - (f + v + (counted ? pr : 0)), kind));
+  }
+  const missing = [!input.fibre_known && 'fibre', !input.protein_known && 'protein', !input.fvl_known && 'fruit, vegetables and legumes', !sweetKnown && 'sweeteners'].filter(Boolean);
+  return { tier: letters.size === 1 && letters.has(calc.grade) ? 'robust' : 'partial', letters: [...letters].sort(), missing };
 }
 
 /**
@@ -159,7 +192,7 @@ function ns23Verify(p) {
     for (const redMeat of reds) for (const s of ns23Drink(kind) ? (sweet === null ? [0, 1] : [sweet]) : [0]) {
       const calc = ns23Score({ ...input, sweeteners: s, redMeat }, kind);
       tried.push({ kind, score: calc.score, redMeat, sweeteners: s });
-      if (calc.score === points && calc.grade === letter) return { status: 'reproduced', kind, calc, input, via: where.via, tried, redMeat, sweeteners: s };
+      if (calc.score === points && calc.grade === letter) return { status: 'reproduced', kind, calc, input, via: where.via, tried, redMeat, sweeteners: s, ...ns23Tier(p, input, kind, redMeat, sweet, calc) };
     }
   }
   return { status: 'consistent', kinds: fits, via: where.via, tried, reason: 'points-differ' };
@@ -178,4 +211,4 @@ function ns23Data(calc, input, kind) {
     beverage: kind === 'beverage', water: kind === 'water', cheese: kind === 'cheese', fatOil: fats, redMeat: false, estimated: true };
 }
 
-export { ns23Data, ns23Verify, ns23Score, ns23Kinds, ns23GradeOfScore, ns23Inputs, ns23Sweeteners, ns23TH }; // @strip-on-inline
+export { ns23Tier, ns23Data, ns23Verify, ns23Score, ns23Kinds, ns23GradeOfScore, ns23Inputs, ns23Sweeteners, ns23TH }; // @strip-on-inline

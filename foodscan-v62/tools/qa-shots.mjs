@@ -13,7 +13,7 @@ const paths = arg('--paths', '/').split(',');
 const scheme = arg('--scheme', 'light');
 const wait = Number(arg('--wait', 2500));
 mkdirSync(out, { recursive: true });
-const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
+const chrome = [process.env.CHROME_PATH, '/usr/bin/google-chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
 const browser = await chromium.launch({ executablePath: chrome, headless: true });
 for (const [label, viewport, mobile] of [['mobile', { width: 390, height: 844 }, true], ['desktop', { width: 1280, height: 900 }, false]]) {
   const ctx = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 2, colorScheme: scheme, serviceWorkers: 'block' });

@@ -131,10 +131,10 @@
     "grade": "E"
    },
    "candidate": {
-    "code": "5949065042363",
-    "name": "Hořká čokoláda",
-    "brand": "Delicata",
-    "grade": "D"
+    "code": "5203927656762",
+    "name": "Chocolate with caramel bars",
+    "brand": "Sdoukos",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -145,16 +145,16 @@
    "family": "coffee-tea",
    "kind": "higher-grade",
    "base": {
-    "code": "3800048203015",
-    "name": "Ice Tea",
-    "brand": "Bolero",
-    "grade": "C"
+    "code": "0992225747061",
+    "name": "Strawberry Ice Tea",
+    "brand": "Xixo",
+    "grade": "E"
    },
    "candidate": {
-    "code": "4335619172173",
-    "name": "Clear Whey Peach Ice Tea Flavour",
-    "brand": "Lidl",
-    "grade": "A"
+    "code": "5201037405010",
+    "name": "ice green & matcha tea",
+    "brand": "",
+    "grade": "B"
    },
    "verdict": null,
    "reviewer": null,
@@ -303,18 +303,18 @@
   },
   {
    "family": "meal",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "5205461232327",
-    "name": "Freskoulis Caesar’s Salad With Dressing",
-    "brand": "Freskoulis",
+    "code": "5214001497447",
+    "name": "Parmesan Pesto Chicken Wrap",
+    "brand": "Yo Green",
     "grade": "C"
    },
    "candidate": {
-    "code": "5202576380578",
-    "name": "Φασολάκια λαδερά - Green beans in tomato sauce",
-    "brand": "Sklavenitis",
-    "grade": "A"
+    "code": "5202053060269",
+    "name": "Cesar chicken wrap",
+    "brand": "Stergiou",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -323,17 +323,17 @@
   },
   {
    "family": "meat",
-   "kind": "nutrient-comparison",
+   "kind": "higher-grade",
    "base": {
-    "code": "8002670504026",
-    "name": "Plant Based Burgers",
-    "brand": "Granarolo, Unconventional",
+    "code": "5201310003070",
+    "name": "Smoked Turkey Fillet",
+    "brand": "Ifantis",
     "grade": "D"
    },
    "candidate": {
-    "code": "4056489068198",
-    "name": "Tofu natural",
-    "brand": "Vemondo",
+    "code": "4056489264279",
+    "name": "Turkey Roasted, Sliced",
+    "brand": "Lidl",
     "grade": "A"
    },
    "verdict": null,
@@ -463,7 +463,7 @@
   },
   {
    "family": "sauce",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
     "code": "5203967688495",
     "name": "Σπιτικ σάλτσα ντομάτας από το χωριό",
@@ -763,17 +763,17 @@
   },
   {
    "family": "coffee-tea",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "3800048203015",
-    "name": "Ice Tea",
-    "brand": "Bolero",
-    "grade": "C"
+    "code": "5201156130817",
+    "name": "Lipton green ice tea",
+    "brand": "Lipton",
+    "grade": "B"
    },
    "candidate": {
-    "code": "4335619172173",
-    "name": "Clear Whey Peach Ice Tea Flavour",
-    "brand": "Lidl",
+    "code": "5201946901245",
+    "name": "Vikos cool tea",
+    "brand": "VIKOS",
     "grade": "A"
    },
    "verdict": null,
@@ -931,10 +931,10 @@
     "grade": "C"
    },
    "candidate": {
-    "code": "5202576380578",
-    "name": "Φασολάκια λαδερά - Green beans in tomato sauce",
-    "brand": "Sklavenitis",
-    "grade": "A"
+    "code": "5201340065116",
+    "name": "Salad pocket",
+    "brand": "",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -943,7 +943,7 @@
   },
   {
    "family": "meat",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
     "code": "5201310003070",
     "name": "Smoked Turkey Fillet",
@@ -951,10 +951,10 @@
     "grade": "D"
    },
    "candidate": {
-    "code": "4056489264279",
-    "name": "Turkey Roasted, Sliced",
-    "brand": "Lidl",
-    "grade": "A"
+    "code": "5202575004505",
+    "name": "Sliced cooked turkey fillet with olive oil",
+    "brand": "CRETA FARMS",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -1083,18 +1083,18 @@
   },
   {
    "family": "sauce",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "5203967688495",
-    "name": "Σπιτικ σάλτσα ντομάτας από το χωριό",
-    "brand": "Φιλεντέμ",
-    "grade": "A"
+    "code": "5000157073006",
+    "name": "Soja",
+    "brand": "H J Heinz Foods UK Ltd",
+    "grade": "E"
    },
    "candidate": {
-    "code": "5202336108909",
-    "name": "Sauce tomate bio",
-    "brand": "",
-    "grade": "B"
+    "code": "4002239604505",
+    "name": "Chi Wan Soja Sauce",
+    "brand": "ChiWán",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -1165,16 +1165,16 @@
    "family": "spread",
    "kind": "comparison-only",
    "base": {
-    "code": "5740900402119",
-    "name": "Lurpak Fats",
-    "brand": "Lurpak",
+    "code": "5203379008126",
+    "name": "Houmous Salad",
+    "brand": "",
     "grade": "D"
    },
    "candidate": {
-    "code": "4056489923282",
-    "name": "Butter For Baking And Cooking",
-    "brand": "Vitador",
-    "grade": "D"
+    "code": "5201310000864",
+    "name": "Hummus Salad Original",
+    "brand": "Ifantis",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -1383,18 +1383,18 @@
   },
   {
    "family": "coffee-tea",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "0992225747061",
-    "name": "Strawberry Ice Tea",
-    "brand": "Xixo",
+    "code": "5201156933227",
+    "name": "Lipton ice tea",
+    "brand": "Lipton",
     "grade": "E"
    },
    "candidate": {
-    "code": "5201037405010",
-    "name": "ice green & matcha tea",
+    "code": "5202178010705",
+    "name": "Ice tea green zero sugar",
     "brand": "",
-    "grade": "B"
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -1551,9 +1551,9 @@
     "grade": "C"
    },
    "candidate": {
-    "code": "5202053060269",
-    "name": "Cesar chicken wrap",
-    "brand": "Stergiou",
+    "code": "5204610002637",
+    "name": "On the go μετσοβίτικο φιλέτο κοτόπουλο",
+    "brand": "Panini",
     "grade": "D"
    },
    "verdict": null,
@@ -1571,10 +1571,10 @@
     "grade": null
    },
    "candidate": {
-    "code": "5201310000956",
-    "name": "Chicken nuggets",
-    "brand": "Ifantis",
-    "grade": "A"
+    "code": "5200374700895",
+    "name": "Καπνιστή Γαλοπούλα Σε Φέτες",
+    "brand": "Κρήτης Γεύσεις",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -1663,7 +1663,7 @@
   },
   {
    "family": "plant-drink",
-   "kind": "nutrient-comparison",
+   "kind": "same-grade",
    "base": {
     "code": "5202178085970",
     "name": "Almond drink with pea protein and cocoa",
@@ -1671,10 +1671,10 @@
     "grade": "B"
    },
    "candidate": {
-    "code": "4820192262118",
-    "name": "Oat With Banana",
-    "brand": "Vega milk",
-    "grade": "C"
+    "code": "5411188128311",
+    "name": "SIN AZÚCAR COCO",
+    "brand": "Danone Belux nv",
+    "grade": "B"
    },
    "verdict": null,
    "reviewer": null,
@@ -1703,18 +1703,18 @@
   },
   {
    "family": "sauce",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
-    "code": "3073781195132",
-    "name": "Dip And Biscuits",
-    "brand": "La vache qui rit",
-    "grade": "D"
+    "code": "5000157073006",
+    "name": "Soja",
+    "brand": "H J Heinz Foods UK Ltd",
+    "grade": "E"
    },
    "candidate": {
-    "code": "5201310722995",
-    "name": "Guacamole salad",
-    "brand": "IFANTIS",
-    "grade": "A"
+    "code": "4002239604505",
+    "name": "Chi Wan Soja Sauce",
+    "brand": "ChiWán",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -1791,9 +1791,9 @@
     "grade": "D"
    },
    "candidate": {
-    "code": "5202336119899",
-    "name": "Soft butter",
-    "brand": "AB",
+    "code": "4056489923282",
+    "name": "Butter For Baking And Cooking",
+    "brand": "Vitador",
     "grade": "D"
    },
    "verdict": null,
@@ -2003,7 +2003,7 @@
   },
   {
    "family": "coffee-tea",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
     "code": "5201156130817",
     "name": "Lipton green ice tea",
@@ -2011,10 +2011,10 @@
     "grade": "B"
    },
    "candidate": {
-    "code": "5201946901245",
-    "name": "Vikos cool tea",
-    "brand": "VIKOS",
-    "grade": "A"
+    "code": "5202178010705",
+    "name": "Ice tea green zero sugar",
+    "brand": "",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -2045,16 +2045,16 @@
    "family": "dried-fruit",
    "kind": "comparison-only",
    "base": {
-    "code": "20992309",
-    "name": "Jus de raisin pomme orange et grenade",
-    "brand": "",
-    "grade": null
+    "code": "4056489834267",
+    "name": "DATE BITES PEANUT & COCOA",
+    "brand": "Alesto",
+    "grade": "D"
    },
    "candidate": {
-    "code": "4056489763321",
-    "name": "Sultana raisins",
-    "brand": "LIDL",
-    "grade": "D"
+    "code": "4335619258754",
+    "name": "Dates",
+    "brand": "Golden Bloom",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -2163,18 +2163,18 @@
   },
   {
    "family": "meal",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
-    "code": "5205461232327",
-    "name": "Freskoulis Caesar’s Salad With Dressing",
-    "brand": "Freskoulis",
+    "code": "5202576377288",
+    "name": "Gemista Γεμιστά με ρύζι",
+    "brand": "Sklavenitis",
     "grade": "C"
    },
    "candidate": {
-    "code": "5213015170612",
-    "name": "Beef With Country Potatoes And Mushroom Sauce",
-    "brand": "Fitness Meals GR",
-    "grade": null
+    "code": "4335619097056",
+    "name": "Stuffed tomatoes and peppers with potatoes",
+    "brand": "Chef Select - LIDL",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -2183,18 +2183,18 @@
   },
   {
    "family": "meat",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "8002670504026",
-    "name": "Plant Based Burgers",
-    "brand": "Granarolo, Unconventional",
-    "grade": "D"
+    "code": "5059944691190",
+    "name": "HAM & EGG CRISPY ROMAINE SALAD",
+    "brand": "TESCO",
+    "grade": null
    },
    "candidate": {
-    "code": "5200300114338",
-    "name": "Organic Natural Tofu Soft",
-    "brand": "Tofunistas",
-    "grade": "A"
+    "code": "5202336156573",
+    "name": "Βραστή Γαλοπούλα Σε Φέτες",
+    "brand": "ΑΒ",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -2283,17 +2283,17 @@
   },
   {
    "family": "plant-drink",
-   "kind": "same-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "5202178085970",
-    "name": "Almond drink with pea protein and cocoa",
-    "brand": "KARPOS PROTEIN",
-    "grade": "B"
+    "code": "9020200006917",
+    "name": "Joya soya vanille drink",
+    "brand": "Joya",
+    "grade": "C"
    },
    "candidate": {
-    "code": "5411188128311",
-    "name": "SIN AZÚCAR COCO",
-    "brand": "Danone Belux nv",
+    "code": "5411188543381",
+    "name": "Soya",
+    "brand": "alpro",
     "grade": "B"
    },
    "verdict": null,
@@ -2323,18 +2323,18 @@
   },
   {
    "family": "sauce",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "4002239604505",
-    "name": "Chi Wan Soja Sauce",
-    "brand": "ChiWán",
-    "grade": "D"
+    "code": "8001250016522",
+    "name": "PESTO alla GENOVESE",
+    "brand": "De Cecco",
+    "grade": "E"
    },
    "candidate": {
-    "code": "4335619069961",
-    "name": "Bio Organic Ketchup",
-    "brand": "Kania",
-    "grade": "C"
+    "code": "5201193206841",
+    "name": "Pesto alla Genovese",
+    "brand": "PRIMO GUSTO",
+    "grade": "E"
    },
    "verdict": null,
    "reviewer": null,
@@ -2403,18 +2403,18 @@
   },
   {
    "family": "spread",
-   "kind": "higher-grade",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "4056489603337",
-    "name": "Ταχίνι Κακαο",
-    "brand": "Γλυκανθη",
-    "grade": "E"
+    "code": "5203927883410",
+    "name": "Peanuts Butter Smooth",
+    "brand": "Sdoukos Hungry Not",
+    "grade": "A"
    },
    "candidate": {
-    "code": "5201182023237",
-    "name": "ΤΑΧΙΝΙ Κακάο ZERO",
-    "brand": "Olympos",
-    "grade": "B"
+    "code": "8719200267565",
+    "name": "Becel Light (Vegan)",
+    "brand": "Becel",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -2623,18 +2623,18 @@
   },
   {
    "family": "coffee-tea",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "5201156933227",
-    "name": "Lipton ice tea",
-    "brand": "Lipton",
-    "grade": "E"
+    "code": "3800048203015",
+    "name": "Ice Tea",
+    "brand": "Bolero",
+    "grade": "C"
    },
    "candidate": {
-    "code": "5202178010705",
-    "name": "Ice tea green zero sugar",
+    "code": "5063270101865",
+    "name": "Lipton Ice Tea",
     "brand": "",
-    "grade": "C"
+    "grade": "B"
    },
    "verdict": null,
    "reviewer": null,
@@ -2665,15 +2665,15 @@
    "family": "dried-fruit",
    "kind": "comparison-only",
    "base": {
-    "code": "5208046089361",
-    "name": "Δαμάσκηνα χωρίς κουκούτσι αποξηραμενα",
-    "brand": "Μαρατα",
-    "grade": "C"
+    "code": "20992309",
+    "name": "Jus de raisin pomme orange et grenade",
+    "brand": "",
+    "grade": null
    },
    "candidate": {
-    "code": "12080465",
-    "name": "Αποξηραμένα βερίκοκα",
-    "brand": "Μαράτα",
+    "code": "4056489763321",
+    "name": "Sultana raisins",
+    "brand": "LIDL",
     "grade": "D"
    },
    "verdict": null,
@@ -2723,18 +2723,18 @@
   },
   {
    "family": "ice-cream",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "4007993023937",
-    "name": "Ice Cream - Oreo",
-    "brand": "Oreo",
+    "code": "20252250",
+    "name": "Corner, vanilla",
+    "brand": "Ballino",
     "grade": "E"
    },
    "candidate": {
-    "code": "5202234220567",
-    "name": "Super Spoon Ice Cream Chocolate Hype",
-    "brand": "Kri Kri, Κρι Κρι",
-    "grade": "A"
+    "code": "5201034052286",
+    "name": "Vanilla  secret",
+    "brand": "Scandal",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -2783,18 +2783,18 @@
   },
   {
    "family": "meal",
-   "kind": "comparison-only",
+   "kind": "same-grade",
    "base": {
-    "code": "5205461232327",
-    "name": "Freskoulis Caesar’s Salad With Dressing",
-    "brand": "Freskoulis",
+    "code": "5202336118229",
+    "name": "Mousakas",
+    "brand": "AB",
     "grade": "C"
    },
    "candidate": {
-    "code": "5213015170612",
-    "name": "Beef With Country Potatoes And Mushroom Sauce",
-    "brand": "Fitness Meals GR",
-    "grade": null
+    "code": "5202576377288",
+    "name": "Gemista Γεμιστά με ρύζι",
+    "brand": "Sklavenitis",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -2803,11 +2803,11 @@
   },
   {
    "family": "meat",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "5214002982058",
-    "name": "Veggie chicken",
-    "brand": "Ο Βέγκαν 269",
+    "code": "4056489889335",
+    "name": "Tofu balls",
+    "brand": "Vemondo, Lidl",
     "grade": "C"
    },
    "candidate": {
@@ -2903,17 +2903,17 @@
   },
   {
    "family": "plant-drink",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "9020200006917",
-    "name": "Joya soya vanille drink",
-    "brand": "Joya",
+    "code": "4056489346364",
+    "name": "Coconut And Rice Milk",
+    "brand": "Vemondo",
     "grade": "C"
    },
    "candidate": {
-    "code": "5411188543381",
-    "name": "Soya",
-    "brand": "alpro",
+    "code": "5206385000856",
+    "name": "Almond drink",
+    "brand": "ΕΒΛΟΓΗΜΕΝΟ",
     "grade": "B"
    },
    "verdict": null,
@@ -2945,16 +2945,16 @@
    "family": "sauce",
    "kind": "comparison-only",
    "base": {
-    "code": "8001250016522",
-    "name": "PESTO alla GENOVESE",
-    "brand": "De Cecco",
-    "grade": "E"
+    "code": "3073781195132",
+    "name": "Dip And Biscuits",
+    "brand": "La vache qui rit",
+    "grade": "D"
    },
    "candidate": {
-    "code": "5201193206841",
-    "name": "Pesto alla Genovese",
-    "brand": "PRIMO GUSTO",
-    "grade": "E"
+    "code": "5202073000191",
+    "name": "Spicy greek feta deep",
+    "brand": "Paltsidis",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -3025,16 +3025,16 @@
    "family": "spread",
    "kind": "comparison-only",
    "base": {
-    "code": "4056489603337",
-    "name": "Ταχίνι Κακαο",
-    "brand": "Γλυκανθη",
-    "grade": "E"
+    "code": "5200115840248",
+    "name": "Ταχίνι",
+    "brand": "",
+    "grade": "D"
    },
    "candidate": {
-    "code": "4056489603320",
-    "name": "Cocoa Tachini",
-    "brand": "Glykanthi",
-    "grade": "E"
+    "code": "5201049211029",
+    "name": "Tahini paste with honey",
+    "brand": "",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -3125,15 +3125,15 @@
    "family": "biscuit",
    "kind": "comparison-only",
    "base": {
-    "code": "5200100954981",
-    "name": "Dubai vibes Choco-Pistachio Cookies",
-    "brand": "Violanta",
+    "code": "5203064009360",
+    "name": "Sod Cookies Kings Protein",
+    "brand": "Kings",
     "grade": "E"
    },
    "candidate": {
-    "code": "4823077642401",
-    "name": "Lemon Cream",
-    "brand": "Roshen",
+    "code": "6009544928508",
+    "name": "High Protein Cookie Salted Caramel",
+    "brand": "Usn",
     "grade": "E"
    },
    "verdict": null,
@@ -3231,10 +3231,10 @@
     "grade": "E"
    },
    "candidate": {
-    "code": "20815882",
-    "name": "Chocolate negro. Cacao 95% mínimo",
-    "brand": "",
-    "grade": "D"
+    "code": "5203927656762",
+    "name": "Chocolate with caramel bars",
+    "brand": "Sdoukos",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -3245,16 +3245,16 @@
    "family": "coffee-tea",
    "kind": "comparison-only",
    "base": {
-    "code": "5201156130817",
-    "name": "Lipton green ice tea",
-    "brand": "Lipton",
-    "grade": "B"
+    "code": "3800048203015",
+    "name": "Ice Tea",
+    "brand": "Bolero",
+    "grade": "C"
    },
    "candidate": {
-    "code": "5202178010705",
-    "name": "Ice tea green zero sugar",
+    "code": "5063270101865",
+    "name": "Lipton Ice Tea",
     "brand": "",
-    "grade": "C"
+    "grade": "B"
    },
    "verdict": null,
    "reviewer": null,
@@ -3285,15 +3285,15 @@
    "family": "dried-fruit",
    "kind": "comparison-only",
    "base": {
-    "code": "4056489763321",
-    "name": "Sultana raisins",
-    "brand": "LIDL",
-    "grade": "D"
+    "code": "5208046089361",
+    "name": "Δαμάσκηνα χωρίς κουκούτσι αποξηραμενα",
+    "brand": "Μαρατα",
+    "grade": "C"
    },
    "candidate": {
-    "code": "4335619184251",
-    "name": "Sultanas",
-    "brand": "Belbake",
+    "code": "12080465",
+    "name": "Αποξηραμένα βερίκοκα",
+    "brand": "Μαράτα",
     "grade": "D"
    },
    "verdict": null,
@@ -3343,17 +3343,17 @@
   },
   {
    "family": "ice-cream",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "20252250",
-    "name": "Corner, vanilla",
-    "brand": "Ballino",
+    "code": "5208046090404",
+    "name": "Mini Ksilakia",
+    "brand": "Bonora",
     "grade": "E"
    },
    "candidate": {
-    "code": "5201034052286",
-    "name": "Vanilla  secret",
-    "brand": "Scandal",
+    "code": "5208046090411",
+    "name": "Stick Ice Cream",
+    "brand": "Sklavenitis",
     "grade": null
    },
    "verdict": null,
@@ -3403,18 +3403,18 @@
   },
   {
    "family": "meal",
-   "kind": "comparison-only",
+   "kind": "same-grade",
    "base": {
-    "code": "5214001497447",
-    "name": "Parmesan Pesto Chicken Wrap",
-    "brand": "Yo Green",
+    "code": "5201119000102",
+    "name": "Stuffed vine leaves with rice & herbs",
+    "brand": "Paliria",
     "grade": "C"
    },
    "candidate": {
-    "code": "5204610002637",
-    "name": "On the go μετσοβίτικο φιλέτο κοτόπουλο",
-    "brand": "Panini",
-    "grade": "D"
+    "code": "4335619097056",
+    "name": "Stuffed tomatoes and peppers with potatoes",
+    "brand": "Chef Select - LIDL",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -3423,18 +3423,18 @@
   },
   {
    "family": "meat",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "5214002982058",
-    "name": "Veggie chicken",
-    "brand": "Ο Βέγκαν 269",
-    "grade": "C"
+    "code": "5201310003070",
+    "name": "Smoked Turkey Fillet",
+    "brand": "Ifantis",
+    "grade": "D"
    },
    "candidate": {
-    "code": "8586024622081",
-    "name": "Tofu, Smoked",
-    "brand": "Gym Beam",
-    "grade": "A"
+    "code": "5202336156610",
+    "name": "Καπνιστή Γαλοπούλα Σε Φέτες",
+    "brand": "ΑΒ Βασιλόπουλος",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -3523,18 +3523,18 @@
   },
   {
    "family": "plant-drink",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "4056489346364",
-    "name": "Coconut And Rice Milk",
-    "brand": "Vemondo",
-    "grade": "C"
+    "code": "5202178085970",
+    "name": "Almond drink with pea protein and cocoa",
+    "brand": "KARPOS PROTEIN",
+    "grade": "B"
    },
    "candidate": {
-    "code": "5206385000856",
-    "name": "Almond drink",
-    "brand": "ΕΒΛΟΓΗΜΕΝΟ",
-    "grade": "B"
+    "code": "5411188300328",
+    "name": "Alpro chocolate",
+    "brand": "alpro",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -3571,10 +3571,10 @@
     "grade": "D"
    },
    "candidate": {
-    "code": "5202073000191",
-    "name": "Spicy greek feta deep",
-    "brand": "Paltsidis",
-    "grade": "D"
+    "code": "5202258200088",
+    "name": "Dip tradition meze feta und paprija",
+    "brand": "Salakis",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -3645,16 +3645,16 @@
    "family": "spread",
    "kind": "comparison-only",
    "base": {
-    "code": "5203927883410",
-    "name": "Peanuts Butter Smooth",
-    "brand": "Sdoukos Hungry Not",
-    "grade": "A"
+    "code": "5740900402119",
+    "name": "Lurpak Fats",
+    "brand": "Lurpak",
+    "grade": "D"
    },
    "candidate": {
-    "code": "8590421061848",
-    "name": "φυστικοβούτηρο 100%",
-    "brand": "Nature's Promise",
-    "grade": "A"
+    "code": "5202336119899",
+    "name": "Soft butter",
+    "brand": "AB",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -3743,18 +3743,18 @@
   },
   {
    "family": "biscuit",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "5203064008615",
-    "name": "Μπισκότα μπανάνα αλατινη",
-    "brand": "",
+    "code": "5200100954981",
+    "name": "Dubai vibes Choco-Pistachio Cookies",
+    "brand": "Violanta",
     "grade": "E"
    },
    "candidate": {
-    "code": "5201004042484",
-    "name": "biscotta miranta 30% ligo.zax.",
-    "brand": "Παπαδόπουλος",
-    "grade": "C"
+    "code": "4823077642401",
+    "name": "Lemon Cream",
+    "brand": "Roshen",
+    "grade": "E"
    },
    "verdict": null,
    "reviewer": null,
@@ -3843,17 +3843,17 @@
   },
   {
    "family": "chocolate",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "5201127010100",
-    "name": "Chocolat au lait ION lisse et crémeux",
-    "brand": "",
+    "code": "5202460001084",
+    "name": "Σοκολάτα με πορτοκάλι",
+    "brand": "Dragées",
     "grade": "E"
    },
    "candidate": {
-    "code": "5201127010322",
-    "name": "Milk Chocolate Stevia",
-    "brand": "ΙΟΝ",
+    "code": "20815882",
+    "name": "Chocolate negro. Cacao 95% mínimo",
+    "brand": "",
     "grade": "D"
    },
    "verdict": null,
@@ -3865,16 +3865,16 @@
    "family": "coffee-tea",
    "kind": "higher-grade",
    "base": {
-    "code": "3800048203015",
-    "name": "Ice Tea",
-    "brand": "Bolero",
-    "grade": "C"
+    "code": "0992225747061",
+    "name": "Strawberry Ice Tea",
+    "brand": "Xixo",
+    "grade": "E"
    },
    "candidate": {
-    "code": "5063270101865",
-    "name": "Lipton Ice Tea",
+    "code": "5202178010705",
+    "name": "Ice tea green zero sugar",
     "brand": "",
-    "grade": "B"
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -3905,15 +3905,15 @@
    "family": "dried-fruit",
    "kind": "comparison-only",
    "base": {
-    "code": "0070450021740",
-    "name": "Pruneaux secs",
-    "brand": "sunsweet",
-    "grade": "C"
+    "code": "4056489763321",
+    "name": "Sultana raisins",
+    "brand": "LIDL",
+    "grade": "D"
    },
    "candidate": {
-    "code": "5214001060009",
-    "name": "SUN DRIED KALAMATA FIGS",
-    "brand": "TSERPES IOANNIS",
+    "code": "4335619184251",
+    "name": "Sultanas",
+    "brand": "Belbake",
     "grade": "D"
    },
    "verdict": null,
@@ -3943,18 +3943,18 @@
   },
   {
    "family": "fish",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "8004030476004",
-    "name": "Tuna Salad with turmeric rice, black chickpeas and orange",
-    "brand": "RIO mare",
-    "grade": "C"
+    "code": "4056489389569",
+    "name": "Wild Pacific Pikn Salmon Fillet in Brine",
+    "brand": "NIXE",
+    "grade": "A"
    },
    "candidate": {
-    "code": "5202336136018",
-    "name": "τόνος σε νερό",
-    "brand": "AB",
-    "grade": "A"
+    "code": "20002459",
+    "name": "Norwegian Smoked Salmon",
+    "brand": "Nautica",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -3963,18 +3963,18 @@
   },
   {
    "family": "ice-cream",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
-    "code": "5208046090404",
-    "name": "Mini Ksilakia",
-    "brand": "Bonora",
+    "code": "5202336125005",
+    "name": "Ice Cream cone with biscuits",
+    "brand": "AB",
     "grade": "E"
    },
    "candidate": {
-    "code": "5208046090411",
-    "name": "Stick Ice Cream",
-    "brand": "Sklavenitis",
-    "grade": null
+    "code": "3415587422027",
+    "name": "Häagen-Dazs Salted Caramel Ice Cream Bar",
+    "brand": "Häagen-Dazs",
+    "grade": "E"
    },
    "verdict": null,
    "reviewer": null,
@@ -4025,16 +4025,16 @@
    "family": "meal",
    "kind": "comparison-only",
    "base": {
-    "code": "5213015170629",
-    "name": "Pork Tenderloin With Rice And Vegetables",
-    "brand": "Fitness Meals",
-    "grade": null
+    "code": "5201119000102",
+    "name": "Stuffed vine leaves with rice & herbs",
+    "brand": "Paliria",
+    "grade": "C"
    },
    "candidate": {
-    "code": "5202336134533",
-    "name": "Chicken patty with rice & vegetables",
-    "brand": "AB",
-    "grade": null
+    "code": "4335619097056",
+    "name": "Stuffed tomatoes and peppers with potatoes",
+    "brand": "Chef Select - LIDL",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -4043,7 +4043,7 @@
   },
   {
    "family": "meat",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
     "code": "5201310003070",
     "name": "Smoked Turkey Fillet",
@@ -4051,10 +4051,10 @@
     "grade": "D"
    },
    "candidate": {
-    "code": "5202575004505",
-    "name": "Sliced cooked turkey fillet with olive oil",
-    "brand": "CRETA FARMS",
-    "grade": "D"
+    "code": "5200132752333",
+    "name": "Γαλοπούλα φιλέτο στήθος σε νερό",
+    "brand": "Nutri valley",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -4143,16 +4143,16 @@
   },
   {
    "family": "plant-drink",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "5202178085970",
-    "name": "Almond drink with pea protein and cocoa",
-    "brand": "KARPOS PROTEIN",
-    "grade": "B"
+    "code": "9020200006917",
+    "name": "Joya soya vanille drink",
+    "brand": "Joya",
+    "grade": "C"
    },
    "candidate": {
-    "code": "5411188300328",
-    "name": "Alpro chocolate",
+    "code": "5411188136613",
+    "name": "Bevanda 100% Vegetale Gusto Latte Classico Avena",
     "brand": "alpro",
     "grade": "C"
    },
@@ -4183,18 +4183,18 @@
   },
   {
    "family": "sauce",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "5202336143405",
-    "name": "ΧΟΙΡΙΝΟ ΣΝΙΤΣΕΛ ΜΕ ΠΑΤΑΤΕΣ BABY ΣΕ ΣΑΛΤΣΑ ΜΟΥΣΤΑΡΔΑΣ",
-    "brand": "ΕΤΟΙΜΑ ΓΕΥΜΑΤΑ",
-    "grade": null
+    "code": "5000157073006",
+    "name": "Soja",
+    "brand": "H J Heinz Foods UK Ltd",
+    "grade": "E"
    },
    "candidate": {
-    "code": "8722700498339",
-    "name": "Light mayonnaise",
-    "brand": "Hellman’s",
-    "grade": null
+    "code": "8715035130104",
+    "name": "Less Salt Soy Sauce",
+    "brand": "Kikkoman",
+    "grade": "E"
    },
    "verdict": null,
    "reviewer": null,
@@ -4263,7 +4263,7 @@
   },
   {
    "family": "spread",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
     "code": "4056489603337",
     "name": "Ταχίνι Κακαο",
@@ -4271,10 +4271,10 @@
     "grade": "E"
    },
    "candidate": {
-    "code": "20388874",
-    "name": "Tahini with cocoa",
-    "brand": "Eridanous",
-    "grade": "E"
+    "code": "5201182023237",
+    "name": "ΤΑΧΙΝΙ Κακάο ZERO",
+    "brand": "Olympos",
+    "grade": "B"
    },
    "verdict": null,
    "reviewer": null,
@@ -4365,15 +4365,15 @@
    "family": "biscuit",
    "kind": "higher-grade",
    "base": {
-    "code": "5201008420516",
-    "name": "Serenata twin dark",
-    "brand": "Tottis",
+    "code": "5203064008615",
+    "name": "Μπισκότα μπανάνα αλατινη",
+    "brand": "",
     "grade": "E"
    },
    "candidate": {
-    "code": "7300400482912",
-    "name": "Multigrain - Wholegrain Biscuits",
-    "brand": "wasa",
+    "code": "5201004042484",
+    "name": "biscotta miranta 30% ligo.zax.",
+    "brand": "Παπαδόπουλος",
     "grade": "C"
    },
    "verdict": null,
@@ -4463,18 +4463,18 @@
   },
   {
    "family": "chocolate",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
-    "code": "5202460001084",
-    "name": "Σοκολάτα με πορτοκάλι",
-    "brand": "Dragées",
+    "code": "5201127010100",
+    "name": "Chocolat au lait ION lisse et crémeux",
+    "brand": "",
     "grade": "E"
    },
    "candidate": {
-    "code": "5201002000141",
-    "name": "ανθός αραβοσίτου Σοκολάτα",
-    "brand": "ΓΙΩΤΗΣ",
-    "grade": null
+    "code": "5201127010322",
+    "name": "Milk Chocolate Stevia",
+    "brand": "ΙΟΝ",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -4483,18 +4483,18 @@
   },
   {
    "family": "coffee-tea",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "3800048203015",
-    "name": "Ice Tea",
-    "brand": "Bolero",
-    "grade": "C"
+    "code": "0992225747061",
+    "name": "Strawberry Ice Tea",
+    "brand": "Xixo",
+    "grade": "E"
    },
    "candidate": {
-    "code": "5063270101865",
-    "name": "Lipton Ice Tea",
-    "brand": "",
-    "grade": "B"
+    "code": "5201034001550",
+    "name": "Lipton Ice Tea -lemon",
+    "brand": "Lipton",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -4525,16 +4525,16 @@
    "family": "dried-fruit",
    "kind": "comparison-only",
    "base": {
-    "code": "4056489763321",
-    "name": "Sultana raisins",
-    "brand": "LIDL",
-    "grade": "D"
+    "code": "0070450021740",
+    "name": "Pruneaux secs",
+    "brand": "sunsweet",
+    "grade": "C"
    },
    "candidate": {
-    "code": "4335619258754",
-    "name": "Dates",
-    "brand": "Golden Bloom",
-    "grade": null
+    "code": "5214001060009",
+    "name": "SUN DRIED KALAMATA FIGS",
+    "brand": "TSERPES IOANNIS",
+    "grade": "D"
    },
    "verdict": null,
    "reviewer": null,
@@ -4565,15 +4565,15 @@
    "family": "fish",
    "kind": "comparison-only",
    "base": {
-    "code": "8004030476004",
-    "name": "Tuna Salad with turmeric rice, black chickpeas and orange",
-    "brand": "RIO mare",
-    "grade": "C"
+    "code": "5206830112042",
+    "name": "Σολομός",
+    "brand": "King Salmon",
+    "grade": null
    },
    "candidate": {
-    "code": "5202336136018",
-    "name": "τόνος σε νερό",
-    "brand": "AB",
+    "code": "5201340069015",
+    "name": "Salmon",
+    "brand": "Trata",
     "grade": "A"
    },
    "verdict": null,
@@ -4583,18 +4583,18 @@
   },
   {
    "family": "ice-cream",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
-    "code": "5202336125005",
-    "name": "Ice Cream cone with biscuits",
-    "brand": "AB",
+    "code": "4007993023937",
+    "name": "Ice Cream - Oreo",
+    "brand": "Oreo",
     "grade": "E"
    },
    "candidate": {
-    "code": "3415587422027",
-    "name": "Häagen-Dazs Salted Caramel Ice Cream Bar",
-    "brand": "Häagen-Dazs",
-    "grade": "E"
+    "code": "20080754",
+    "name": "Vanilla Ice Cream Soft Scoop",
+    "brand": "Gelatelli",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -4643,18 +4643,18 @@
   },
   {
    "family": "meal",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "5202576377288",
-    "name": "Gemista Γεμιστά με ρύζι",
-    "brand": "Sklavenitis",
+    "code": "5202336118229",
+    "name": "Mousakas",
+    "brand": "AB",
     "grade": "C"
    },
    "candidate": {
-    "code": "4335619097056",
-    "name": "Stuffed tomatoes and peppers with potatoes",
-    "brand": "Chef Select - LIDL",
-    "grade": "C"
+    "code": "5202576100787",
+    "name": "Κολοκυθάκια Γεμιστά - Stuffed courgettes",
+    "brand": "Sklavenitis",
+    "grade": "B"
    },
    "verdict": null,
    "reviewer": null,
@@ -4665,16 +4665,16 @@
    "family": "meat",
    "kind": "higher-grade",
    "base": {
-    "code": "5201310003070",
-    "name": "Smoked Turkey Fillet",
-    "brand": "Ifantis",
+    "code": "5202336124077",
+    "name": "Poulet fume en tranche",
+    "brand": "AB",
     "grade": "D"
    },
    "candidate": {
-    "code": "5202336156610",
-    "name": "Καπνιστή Γαλοπούλα Σε Φέτες",
-    "brand": "ΑΒ Βασιλόπουλος",
-    "grade": "C"
+    "code": "5298003060014",
+    "name": "Chick*n strips",
+    "brand": "mighty kitchen",
+    "grade": "A"
    },
    "verdict": null,
    "reviewer": null,
@@ -4763,17 +4763,17 @@
   },
   {
    "family": "plant-drink",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
-    "code": "9020200006917",
-    "name": "Joya soya vanille drink",
-    "brand": "Joya",
-    "grade": "C"
+    "code": "5712876252807",
+    "name": "gelato almond milk chocolate",
+    "brand": "",
+    "grade": null
    },
    "candidate": {
-    "code": "5411188136613",
-    "name": "Bevanda 100% Vegetale Gusto Latte Classico Avena",
-    "brand": "alpro",
+    "code": "5202178009136",
+    "name": "Oat drink with per protein",
+    "brand": "Ήπειρος",
     "grade": "C"
    },
    "verdict": null,
@@ -4803,18 +4803,18 @@
   },
   {
    "family": "sauce",
-   "kind": "nutrient-comparison",
+   "kind": "comparison-only",
    "base": {
-    "code": "5201119000164",
-    "name": "Giant beans in onion & tomato sauce",
-    "brand": "Paliria",
-    "grade": "C"
+    "code": "5000157073006",
+    "name": "Soja",
+    "brand": "H J Heinz Foods UK Ltd",
+    "grade": "E"
    },
    "candidate": {
-    "code": "5202132010413",
-    "name": "Μουστάρδα 0% Προσθήκη Ζάχαρης",
-    "brand": "Condito",
-    "grade": null
+    "code": "8715035130104",
+    "name": "Less Salt Soy Sauce",
+    "brand": "Kikkoman",
+    "grade": "E"
    },
    "verdict": null,
    "reviewer": null,
@@ -4883,18 +4883,18 @@
   },
   {
    "family": "spread",
-   "kind": "same-grade",
+   "kind": "comparison-only",
    "base": {
-    "code": "5203927883410",
-    "name": "Peanuts Butter Smooth",
-    "brand": "Sdoukos Hungry Not",
-    "grade": "A"
+    "code": "4056489603337",
+    "name": "Ταχίνι Κακαο",
+    "brand": "Γλυκανθη",
+    "grade": "E"
    },
    "candidate": {
-    "code": "5203967687269",
-    "name": "Filedem",
-    "brand": "Φιλεντέμ",
-    "grade": "A"
+    "code": "4056489603320",
+    "name": "Cocoa Tachini",
+    "brand": "Glykanthi",
+    "grade": "E"
    },
    "verdict": null,
    "reviewer": null,
@@ -4983,7 +4983,7 @@
   },
   {
    "family": "biscuit",
-   "kind": "comparison-only",
+   "kind": "higher-grade",
    "base": {
     "code": "5201008420516",
     "name": "Serenata twin dark",
@@ -4991,10 +4991,10 @@
     "grade": "E"
    },
    "candidate": {
-    "code": "20101053",
-    "name": "75% kakaós krémmel töltött ostya",
-    "brand": "sodney",
-    "grade": "E"
+    "code": "7300400482912",
+    "name": "Multigrain - Wholegrain Biscuits",
+    "brand": "wasa",
+    "grade": "C"
    },
    "verdict": null,
    "reviewer": null,
@@ -5083,17 +5083,17 @@
   },
   {
    "family": "chocolate",
-   "kind": "comparison-only",
+   "kind": "nutrient-comparison",
    "base": {
-    "code": "20641788",
-    "name": "Mousse Au Chocolat Noir Pistache",
-    "brand": "J.D. Gross, Lidl",
+    "code": "5202460001084",
+    "name": "Σοκολάτα με πορτοκάλι",
+    "brand": "Dragées",
     "grade": "E"
    },
    "candidate": {
-    "code": "5200106870469",
-    "name": "Κρέμα σοκολάτας",
-    "brand": "",
+    "code": "5201002000141",
+    "name": "ανθός αραβοσίτου Σοκολάτα",
+    "brand": "ΓΙΩΤΗΣ",
     "grade": null
    },
    "verdict": null,
@@ -5103,7 +5103,7 @@
   },
   {
    "family": "coffee-tea",
-   "kind": "higher-grade",
+   "kind": "comparison-only",
    "base": {
     "code": "0992225747061",
     "name": "Strawberry Ice Tea",
@@ -5111,9 +5111,9 @@
     "grade": "E"
    },
    "candidate": {
-    "code": "5202178010705",
-    "name": "Ice tea green zero sugar",
-    "brand": "",
+    "code": "5201034001550",
+    "name": "Lipton Ice Tea -lemon",
+    "brand": "Lipton",
     "grade": "C"
    },
    "verdict": null,
@@ -5145,16 +5145,16 @@
    "family": "dried-fruit",
    "kind": "comparison-only",
    "base": {
-    "code": "0070450021740",
-    "name": "Pruneaux secs",
-    "brand": "sunsweet",
-    "grade": "C"
+    "code": "4056489763321",
+    "name": "Sultana raisins",
+    "brand": "LIDL",
+    "grade": "D"
    },
    "candidate": {
-    "code": "0070450020873",
-    "name": "Prugne California",
-    "brand": "Sunsweet",
-    "grade": "C"
+    "code": "4335619258754",
+    "name": "Dates",
+    "brand": "Golden Bloom",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,
@@ -5183,7 +5183,7 @@
   },
   {
    "family": "fish",
-   "kind": "higher-grade",
+   "kind": "nutrient-comparison",
    "base": {
     "code": "8004030476004",
     "name": "Tuna Salad with turmeric rice, black chickpeas and orange",
@@ -5191,10 +5191,10 @@
     "grade": "C"
    },
    "candidate": {
-    "code": "5201340011106",
-    "name": "ΤΟΝΟΣ ΣΕ ΝΕΡΟ",
-    "brand": "ΤΡΑΤΑ",
-    "grade": "A"
+    "code": "5212002206464",
+    "name": "Mexicana Tuna Salad",
+    "brand": "Alta",
+    "grade": null
    },
    "verdict": null,
    "reviewer": null,

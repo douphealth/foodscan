@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : d; };
-const dict = (await import(pathToFileURL(resolve(arg('--dict', 'app/assets/chunk-BQKWV521-v620.js'))).href)).default;
+const dict = (await import(pathToFileURL(resolve(arg('--dict', `app/assets/chunk-BQKWV521-${JSON.parse(readFileSync('release.json', 'utf8')).suffix}.js`))).href)).default;
 const added = existsSync(resolve(arg('--add', 'src/i18n-el-62.json'))) ? JSON.parse(readFileSync(resolve(arg('--add', 'src/i18n-el-62.json')), 'utf8')) : {};
 const src = readFileSync('src/domain.mjs', 'utf8') + readFileSync('src/domain/nutriscore2023.mjs', 'utf8');
 const found = new Set();

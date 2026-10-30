@@ -30,15 +30,12 @@ jobs:
         run: |
           STAMP=$(date -u +%Y-%m-%d)
           node tools/build-catalogue.mjs --csv /tmp/off.csv.gz --country greece --out build/catalogue --revision "off-csv-$STAMP" --exported-at "${STAMP}T00:00:00Z" | tee build/summary.json
-      - name: Sanity gates (refuse a catalogue that shrank or lost its families)
-        run: |
-          node -e "
-          const s=require('./build/catalogue/build-summary.json');
-          if (s.products < 9000) { console.error('catalogue has only', s.products, 'products'); process.exit(1); }
-          if (Object.keys(s.families).length < 25) { console.error('too few families'); process.exit(1); }
-          console.log('ok', s.products, 'products,', Object.keys(s.families).length, 'families');"
+      - name: Release gates (hashes, duplicates, barcodes, market, indexes, quarantine share, snapshot age, families)
+        run: node tools/verify-catalogue.mjs build/catalogue --report build/verify.json
       - uses: actions/upload-artifact@v4
         with:
           name: greece-catalogue
-          path: foodscan-v62/build/catalogue
+          path: |
+            foodscan-v62/build/catalogue
+            foodscan-v62/build/verify.json
           retention-days: 30

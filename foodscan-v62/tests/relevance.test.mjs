@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { productKind, productUseMatch } from '../src/match-policy.mjs';
+import { productKind, productUseMatch, isSupplement } from '../src/match-policy.mjs';
 import { compatibleFoods, discoveryFamily } from '../src/comparison-guards.mjs';
 
 const P = (name, extra = {}) => ({ name, categories: [], basis: 'g', nutrition: {}, ...extra });
@@ -37,7 +37,8 @@ test('the same kind of product is still offered', () => {
   assert.equal(ok('soda', 'Βίκος Cola', 'Coca-Cola Zero Sugar'), true);
   assert.equal(ok('cereal', 'Cornflakes Proteino', 'Weetabix Original'), false, 'protein-positioned vs plain: kept apart on purpose');
   assert.equal(ok('cereal', 'Corn Flakes Chocos', 'Weetabix Original'), true);
-  assert.equal(ok('meat', 'Veggie chicken', 'Tofu natur'), true, 'both meat alternatives');
+  assert.equal(ok('meat', 'Veggie chicken', 'Tofu natur'), false, 'a plant chicken substitute is not tofu (audit P0-1: different cooking use)');
+  assert.equal(ok('meat', 'Vegan burger', 'Plant based burgers'), true, 'same form of plant protein');
   assert.equal(ok('meat', 'Smoked Turkey Fillet', 'Καπνιστή Γαλοπούλα Σε Φέτες'), true);
   assert.equal(ok('plant-drink', 'Almond drink', 'Alpro Soya Unsweetened'), true);
   assert.equal(ok('yogurt', 'Στραγγιστό γιαούρτι 2%', 'STRAINED COW YOGURT 0% FAT'), true);
@@ -69,4 +70,29 @@ test('Greek text resolves: no word boundary can silently fail next to a Greek le
 
 test('the family guess never decides a grade: discovery only', () => {
   assert.equal(typeof discoveryFamily(P('Feta'), () => ''), 'string');
+});
+
+// Independent audit of 63.0.0 (P0-1): three pairs the shipped review packet offered as better choices. Real records are used where they exist.
+test('audit P0-1: supplements, salads and forms of plant protein are never swapped', async () => {
+  const { catalogue, domain } = await import('./helpers.mjs');
+  const dom = await domain(), { manifest, byCode } = catalogue();
+  const get = code => { const r = byCode.get(code); return { family: r.family, p: { ...dom.parseProduct({ product: r.raw, fetchedAt: manifest.exportedAt }, code), catalogueSnapshot: { provider: 'openfoodfacts-daily-export', exportedAt: manifest.exportedAt } } }; };
+  const pairs = [['3800048203015', '4335619172173', 'iced tea vs whey protein powder with an iced-tea flavour (a dietary supplement)'], ['5205461232327', '5202576380578', 'a prepared salad with dressing vs green beans in tomato sauce'], ['8002670504026', '4056489068198', 'plant-based burgers vs plain tofu']];
+  for (const [a, b, why] of pairs) { const A = get(a), B = get(b); assert.equal(productUseMatch(A.p, B.p, A.family).ok, false, why); assert.equal(compatibleFoods(A.p, B.p, () => '', A.family), false, why + ' (discovery)'); }
+  // the grade behind the third item was a letter-only agreement with an estimate: it is the source's own letter, not a comparable verified grade
+  const beans = dom.assessGrade(get('5202576380578').p); assert.equal(beans.status, 'reported'); assert.equal(beans.method, null);
+});
+
+test('audit P0-1: Greek and imported variants of the same mistakes', () => {
+  const P = (name, categories = []) => ({ name, categories, basis: 'g', nutrition: {} });
+  assert.equal(ok('meal', 'Σαλάτα Caesar με dressing', 'Φασολάκια σε σάλτσα ντομάτας'), false, 'head noun decides, not "με dressing" / "σε σάλτσα"');
+  assert.equal(ok('meal', "Caesar's Salad with Dressing", 'Green beans in tomato sauce'), false);
+  assert.equal(ok('sauce', 'Caesar dressing', 'Tomato sauce'), false, 'two real condiments still differ by kind');
+  assert.equal(ok('coffee-tea', 'Ice Tea Peach', 'ISO WHEY Peach Ice Tea Flavour'), false);
+  assert.equal(ok('coffee-tea', 'Ice Tea Peach', 'Συμπλήρωμα διατροφής ice tea'), false);
+  assert.equal(isSupplement(P('Creatine Monohydrate')), true); assert.equal(isSupplement(P('Whey Protein Isolate')), true); assert.equal(isSupplement(P('Protein Powder - Cookies & Cream')), true);
+  assert.equal(isSupplement(P('Crunchy Protein Bar', ['en:protein-bars'])), false, 'a protein bar is a snack bar and is compared as one');
+  assert.equal(isSupplement(P('Greek yogurt 2%')), false); assert.equal(isSupplement(P('Peach ice tea', ['en:iced-teas'])), false);
+  assert.equal(ok('meat', 'Plant based sausages', 'Tofu'), false); assert.equal(ok('meat', 'Vegan nuggets', 'Vegan burger'), false);
+  assert.equal(ok('meat', 'Vegan μπιφτέκια', 'Plant based burgers'), true);
 });

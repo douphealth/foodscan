@@ -5,7 +5,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const APP = process.env.FS_APP_DIR ? resolve(process.env.FS_APP_DIR) : join(ROOT, 'app'); // FS_APP_DIR: test an extracted release ZIP instead of app/
 export const CATALOGUE_DIR = join(APP, 'assets', 'greece-v610');
-export const SUFFIX = JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')).suffix;
+const RELEASE = JSON.parse(readFileSync(join(ROOT, process.env.FS_RELEASE || 'release.json'), 'utf8'));
+/** The catalogue directory this release ships (a refreshed one after tools/promote-catalogue.mjs); CATALOGUE_DIR stays the v61 snapshot used as the fixed reference. */
+export const ACTIVE_CATALOGUE_DIR = join(APP, 'assets', RELEASE.catalogueDir || 'greece-v610');
+export const SUFFIX = RELEASE.suffix;
 export const importFile = file => import(pathToFileURL(file).href);
 
 let cache;

@@ -70,7 +70,7 @@ test('reproduced grades equal the source grade; contradictory or unreproducible 
   for (const { raw } of records) {
     const p = parse(dom, raw); if (!p?.nutriScore) continue;
     const a = dom.assessGrade(p);
-    if (a.reproducedByPoints) { assert.equal(a.grade, p.nutriScore, raw.code); assert.equal(a.method, '2023-calculated'); assert.equal(a.status, 'reported', 'the grade is the sources own, reproduced; it is not presented as calculated by FoodScan'); kinds[a.reproducedKind || 'general'] = (kinds[a.reproducedKind || 'general'] || 0) + 1; }
+    if (a.reproducedByPoints) { assert.equal(a.grade, p.nutriScore, raw.code); assert.equal(a.method, a.evidenceTier === 'partial-input-agreement' ? null : '2023-calculated', `${raw.code}: only complete or robust evidence is comparable`); assert.ok(['complete-input', 'robust-to-missing-inputs', 'partial-input-agreement'].includes(a.evidenceTier)); if (a.evidenceTier === 'partial-input-agreement') assert.ok(a.missingInputs.length > 0 && /does not report/.test(a.caveats.join('|')), raw.code); assert.equal(a.status, 'reported', 'the grade is the sources own, reproduced; it is not presented as calculated by FoodScan'); kinds[a.reproducedKind || 'general'] = (kinds[a.reproducedKind || 'general'] || 0) + 1; }
     if (a.status === 'reported' && !p.nutriScoreMethod && !a.reproducedByPoints) assert.equal(a.method, null, `${raw.code}: an unversioned grade must not claim a method`);
   }
   assert.ok(Object.values(kinds).reduce((a, b) => a + b, 0) > 3000);

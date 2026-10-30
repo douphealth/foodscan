@@ -6,11 +6,11 @@ import { spawn, execFileSync } from 'node:child_process';
 import { readFileSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ROOT, SUFFIX } from './helpers.mjs';
+import { ROOT, SUFFIX, APP } from './helpers.mjs';
 
 const PORT = 8812; let server, result;
 before(async () => {
-  server = spawn(process.execPath, [join(ROOT, 'tools', 'serve.mjs'), '--port', String(PORT), '--offline'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+  server = spawn(process.execPath, [join(ROOT, 'tools', 'serve.mjs'), '--dir', APP, '--port', String(PORT), '--offline'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => { const t = setTimeout(() => reject(new Error('no server')), 20000); server.stdout.on('data', d => { if (String(d).includes('emulator')) { clearTimeout(t); resolve(); } }); });
   const out = join(mkdtempSync(join(tmpdir(), 'fs62-')), 'rec.json');
   execFileSync(process.execPath, [join(ROOT, 'tools', 'rec-harness.mjs'), '--base', `http://localhost:${PORT}`, '--suffix', SUFFIX, '--dir', join(ROOT, 'app/assets/greece-v610'), '--out', out, '--per-family', '2'], { cwd: ROOT, stdio: 'pipe', timeout: 240000 });

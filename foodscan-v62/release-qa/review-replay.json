@@ -1,0 +1,450 @@
+{
+ "summary": {
+  "replayed": 260,
+  "stillOffered": 221,
+  "noLongerOffered": 39,
+  "byReason": {
+   "grade-evidence-not-comparable": 20,
+   "supplement": 2,
+   "different-product-use": 16,
+   "product-use-unconfirmed": 1
+  },
+  "byKind": {
+   "higher-grade": 27,
+   "nutrient-comparison": 4,
+   "comparison-only": 8
+  },
+  "missing": 0
+ },
+ "dropped": [
+  {
+   "id": 2,
+   "family": "biscuit",
+   "kind": "higher-grade",
+   "base": "Oreo",
+   "offered": "Chickpea cakes with dark shocolate and raspberry pieces",
+   "baseType": "biscuit:sweet-biscuit",
+   "offeredType": "biscuit:sweet-biscuit",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 8,
+   "family": "coffee-tea",
+   "kind": "higher-grade",
+   "base": "Ice Tea",
+   "offered": "Clear Whey Peach Ice Tea Flavour",
+   "baseType": "coffee-tea:iced-tea",
+   "offeredType": "excluded:supplement",
+   "stillOffered": false,
+   "reason": "supplement"
+  },
+  {
+   "id": 16,
+   "family": "meal",
+   "kind": "higher-grade",
+   "base": "Freskoulis Caesar’s Salad With Dressing",
+   "offered": "Φασολάκια λαδερά - Green beans in tomato sauce",
+   "baseType": "prepared-salad",
+   "offeredType": "meal:prepared-meal",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 17,
+   "family": "meat",
+   "kind": "nutrient-comparison",
+   "base": "Plant Based Burgers",
+   "offered": "Tofu natural",
+   "baseType": "plant-burger",
+   "offeredType": "tofu",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 21,
+   "family": "pizza",
+   "kind": "higher-grade",
+   "base": "Special & margherita pizza",
+   "offered": "Pizza",
+   "baseType": "pizza",
+   "offeredType": "pizza",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 39,
+   "family": "coffee-tea",
+   "kind": "comparison-only",
+   "base": "Ice Tea",
+   "offered": "Clear Whey Peach Ice Tea Flavour",
+   "baseType": "coffee-tea:iced-tea",
+   "offeredType": "excluded:supplement",
+   "stillOffered": false,
+   "reason": "supplement"
+  },
+  {
+   "id": 41,
+   "family": "dried-fruit",
+   "kind": "higher-grade",
+   "base": "SUN DRIED KALAMATA FIGS",
+   "offered": "Prugne California",
+   "baseType": "dried-fruit:dried-fruit",
+   "offeredType": "dried-fruit:dried-fruit",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 44,
+   "family": "ice-cream",
+   "kind": "higher-grade",
+   "base": "Ice Cream cone with biscuits",
+   "offered": "Mochi Ice Cream Mango",
+   "baseType": "ice-cream:ice-cream-cone-bar",
+   "offeredType": "ice-cream:ice-cream-cone-bar",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 47,
+   "family": "meal",
+   "kind": "comparison-only",
+   "base": "Freskoulis Caesar’s Salad With Dressing",
+   "offered": "Φασολάκια λαδερά - Green beans in tomato sauce",
+   "baseType": "prepared-salad",
+   "offeredType": "meal:prepared-meal",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 48,
+   "family": "meat",
+   "kind": "higher-grade",
+   "base": "Smoked Turkey Fillet",
+   "offered": "Turkey Roasted, Sliced",
+   "baseType": "meat:ham",
+   "offeredType": "meat:ham",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 50,
+   "family": "nut",
+   "kind": "higher-grade",
+   "base": "Peanuts roasted & salted",
+   "offered": "Pistaches de Californie grillées à sec",
+   "baseType": "nut:nuts",
+   "offeredType": "nut:nuts",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 54,
+   "family": "rice-grain",
+   "kind": "higher-grade",
+   "base": "Ρύζι μπονετ",
+   "offered": "Wheat groats",
+   "baseType": "rice-grain:rice",
+   "offeredType": "rice-grain:rice",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 74,
+   "family": "fish",
+   "kind": "higher-grade",
+   "base": "Tuna",
+   "offered": "Tuna Flakes in Brine from real Skipjack tuna",
+   "baseType": "fish:canned-tuna",
+   "offeredType": "fish:canned-tuna",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 79,
+   "family": "meat",
+   "kind": "comparison-only",
+   "base": "HAM & EGG CRISPY ROMAINE SALAD",
+   "offered": "Chicken nuggets",
+   "baseType": "meat:ham",
+   "offeredType": "meat:breaded",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 80,
+   "family": "milk",
+   "kind": "higher-grade",
+   "base": "Νουνού family",
+   "offered": "ariani.500ml",
+   "baseType": "milk:milk",
+   "offeredType": "milk:milk",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 86,
+   "family": "sauce",
+   "kind": "nutrient-comparison",
+   "base": "Dip And Biscuits",
+   "offered": "Guacamole salad",
+   "baseType": "sauce:sauce",
+   "offeredType": "prepared-salad",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 101,
+   "family": "coffee-tea",
+   "kind": "higher-grade",
+   "base": "Lipton green ice tea",
+   "offered": "Vikos cool tea",
+   "baseType": "coffee-tea:iced-tea",
+   "offeredType": "coffee-tea:iced-tea",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 109,
+   "family": "meal",
+   "kind": "nutrient-comparison",
+   "base": "Freskoulis Caesar’s Salad With Dressing",
+   "offered": "Beef With Country Potatoes And Mushroom Sauce",
+   "baseType": "prepared-salad",
+   "offeredType": "meal:prepared-meal",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 110,
+   "family": "meat",
+   "kind": "higher-grade",
+   "base": "Plant Based Burgers",
+   "offered": "Organic Natural Tofu Soft",
+   "baseType": "plant-burger",
+   "offeredType": "tofu",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 117,
+   "family": "sauce",
+   "kind": "higher-grade",
+   "base": "Chi Wan Soja Sauce",
+   "offered": "Bio Organic Ketchup",
+   "baseType": "sauce:soy-sauce",
+   "offeredType": "sauce:ketchup",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 119,
+   "family": "soda",
+   "kind": "higher-grade",
+   "base": "Sprite",
+   "offered": "Orange Zero Sugar Added",
+   "baseType": "soda:citrus-soda",
+   "offeredType": "soda:citrus-soda",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 121,
+   "family": "spread",
+   "kind": "higher-grade",
+   "base": "Ταχίνι Κακαο",
+   "offered": "ΤΑΧΙΝΙ Κακάο ZERO",
+   "baseType": "cocoa-powder",
+   "offeredType": "cocoa-powder",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 140,
+   "family": "meal",
+   "kind": "comparison-only",
+   "base": "Freskoulis Caesar’s Salad With Dressing",
+   "offered": "Beef With Country Potatoes And Mushroom Sauce",
+   "baseType": "prepared-salad",
+   "offeredType": "meal:prepared-meal",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 141,
+   "family": "meat",
+   "kind": "higher-grade",
+   "base": "Veggie chicken",
+   "offered": "Tofu, Smoked",
+   "baseType": "meat-alternative",
+   "offeredType": "tofu",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 151,
+   "family": "soup",
+   "kind": "higher-grade",
+   "base": "Ζωμός Κότας",
+   "offered": "ΖΩΜΟΣ ΚΟΤΑΣ",
+   "baseType": "stock-cube",
+   "offeredType": "stock-cube",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 172,
+   "family": "meat",
+   "kind": "comparison-only",
+   "base": "Veggie chicken",
+   "offered": "Tofu, Smoked",
+   "baseType": "meat-alternative",
+   "offeredType": "tofu",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 188,
+   "family": "biscuit",
+   "kind": "higher-grade",
+   "base": "Μπισκότα μπανάνα αλατινη",
+   "offered": "biscotta miranta 30% ligo.zax.",
+   "baseType": "biscuit:sweet-biscuit",
+   "offeredType": "biscuit:sweet-biscuit",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 198,
+   "family": "fish",
+   "kind": "higher-grade",
+   "base": "Tuna Salad with turmeric rice, black chickpeas and orange",
+   "offered": "τόνος σε νερό",
+   "baseType": "prepared-salad",
+   "offeredType": "fish:canned-tuna",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 202,
+   "family": "meal",
+   "kind": "comparison-only",
+   "base": "Pork Tenderloin With Rice And Vegetables",
+   "offered": "Chicken patty with rice & vegetables",
+   "baseType": "meal:prepared-meal",
+   "offeredType": "meal:prepared-meal",
+   "stillOffered": false,
+   "reason": "product-use-unconfirmed"
+  },
+  {
+   "id": 205,
+   "family": "nut",
+   "kind": "higher-grade",
+   "base": "Peanuts roasted & salted",
+   "offered": "Roasted hazelnuts",
+   "baseType": "nut:nuts",
+   "offeredType": "nut:nuts",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 210,
+   "family": "sauce",
+   "kind": "comparison-only",
+   "base": "ΧΟΙΡΙΝΟ ΣΝΙΤΣΕΛ ΜΕ ΠΑΤΑΤΕΣ BABY ΣΕ ΣΑΛΤΣΑ ΜΟΥΣΤΑΡΔΑΣ",
+   "offered": "Light mayonnaise",
+   "baseType": "sauce:sauce",
+   "offeredType": "sauce:mayonnaise",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 218,
+   "family": "bar",
+   "kind": "higher-grade",
+   "base": "Μπάρα με πορτοκάλι",
+   "offered": "Granola Bars",
+   "baseType": "bar:snack-bar",
+   "offeredType": "bar:snack-bar",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 221,
+   "family": "cake",
+   "kind": "higher-grade",
+   "base": "Κρουασανάκια",
+   "offered": "Croissant with Strawberry Filling",
+   "baseType": "cake:croissant",
+   "offeredType": "cake:croissant",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 226,
+   "family": "dessert",
+   "kind": "higher-grade",
+   "base": "DELTA advance",
+   "offered": "Free lact",
+   "baseType": "dessert:dessert",
+   "offeredType": "dessert:dessert",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 229,
+   "family": "fish",
+   "kind": "comparison-only",
+   "base": "Tuna Salad with turmeric rice, black chickpeas and orange",
+   "offered": "τόνος σε νερό",
+   "baseType": "prepared-salad",
+   "offeredType": "fish:canned-tuna",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 234,
+   "family": "meat",
+   "kind": "higher-grade",
+   "base": "Smoked Turkey Fillet",
+   "offered": "Καπνιστή Γαλοπούλα Σε Φέτες",
+   "baseType": "meat:ham",
+   "offeredType": "meat:ham",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 241,
+   "family": "sauce",
+   "kind": "nutrient-comparison",
+   "base": "Giant beans in onion & tomato sauce",
+   "offered": "Μουστάρδα 0% Προσθήκη Ζάχαρης",
+   "baseType": "sauce:sauce",
+   "offeredType": "sauce:mustard",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  },
+  {
+   "id": 252,
+   "family": "cake",
+   "kind": "higher-grade",
+   "base": "Νηστίσιμο σταφιδόψωμο",
+   "offered": "Galactic Brownies With Chocolate Candies, Chocolate Candies",
+   "baseType": "cake:cake",
+   "offeredType": "cake:cake",
+   "stillOffered": false,
+   "reason": "grade-evidence-not-comparable"
+  },
+  {
+   "id": 260,
+   "family": "fish",
+   "kind": "higher-grade",
+   "base": "Tuna Salad with turmeric rice, black chickpeas and orange",
+   "offered": "ΤΟΝΟΣ ΣΕ ΝΕΡΟ",
+   "baseType": "prepared-salad",
+   "offeredType": "fish:canned-tuna",
+   "stillOffered": false,
+   "reason": "different-product-use"
+  }
+ ]
+}

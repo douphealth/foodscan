@@ -2,7 +2,7 @@ import test, { before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { APP, ROOT, catalogue, importFile } from './helpers.mjs';
+import { APP, ROOT, ACTIVE_CATALOGUE_DIR, catalogue, importFile } from './helpers.mjs';
 
 // The Worker, run in Node with an ASSETS binding over the built tree and the upstream food API unreachable.
 let worker; const { byCode } = catalogue();
@@ -15,7 +15,7 @@ before(async () => {
 
 test('health reports this release and the shipped catalogue', async () => {
   const r = await call('/api/health'), j = await r.json();
-  assert.equal(r.status, 200); assert.equal(j.version, JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')).version); assert.equal(j.catalogue.status, 'ready'); assert.equal(j.catalogue.products, 12113);
+  assert.equal(r.status, 200); assert.equal(j.version, JSON.parse(readFileSync(join(ROOT, 'release.json'), 'utf8')).version); assert.equal(j.catalogue.status, 'ready'); assert.equal(j.catalogue.products, JSON.parse(readFileSync(join(ACTIVE_CATALOGUE_DIR, 'index.json'), 'utf8')).productCount);
 });
 
 test('a barcode from the catalogue is answered with the upstream down, dated and labelled', async () => {

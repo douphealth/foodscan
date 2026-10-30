@@ -17,8 +17,8 @@ const clean = v => String(v).replace(/[\t\r\n]+/g, ' ');
 /** The Open Food Facts CSV shape (tab separated, tags comma separated, one column per nutrient) made from the shipped records, plus rows that must be rejected. */
 function syntheticCsv() {
   const nutrients = [...new Set(records.flatMap(r => Object.keys(r.raw.nutriments)))].sort();
-  const header = ['code', 'url', ...TEXTS, ...LISTS, ...NUMS, ...nutrients], rows = [header.join('\t')];
-  const row = raw => header.map(h => h === 'code' ? raw.code : h === 'url' ? 'https://world.openfoodfacts.org/product/' + raw.code : LISTS.includes(h) ? clean((raw[h] || []).join(',')) : TEXTS.includes(h) ? clean(raw[h] ?? '') : NUMS.includes(h) ? (raw[h] ?? '') : (raw.nutriments[h] ?? '')).join('\t');
+  const REAL = { allergens_tags: 'allergens', image_front_url: 'image_url', image_front_small_url: 'image_small_url' }, header = ['code', 'url', ...TEXTS.filter(h => !REAL[h]), ...LISTS.filter(h => !REAL[h]), ...NUMS, ...Object.values(REAL), ...nutrients], rows = [header.join('\t')];
+  const row = raw => header.map(h => h === 'code' ? raw.code : h === 'url' ? 'https://world.openfoodfacts.org/product/' + raw.code : Object.values(REAL).includes(h) ? clean([].concat(raw[Object.keys(REAL).find(k => REAL[k] === h)] || []).join(',')) : LISTS.includes(h) ? clean((raw[h] || []).join(',')) : TEXTS.includes(h) ? clean(raw[h] ?? '') : NUMS.includes(h) ? (raw[h] ?? '') : (raw.nutriments[h] ?? '')).join('\t');
   for (const { raw } of records) rows.push(row(raw));
   const base = records[0].raw;
   rows.push(row({ ...base, code: '1234567890123' }));                                              // bad check digit

@@ -7,15 +7,15 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright-core';
-import { ROOT } from './helpers.mjs';
+import { ROOT, APP } from './helpers.mjs';
 
 const PORT = 8811, BASE = `http://localhost:${PORT}`;
-const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
+const CHROME = [process.env.CHROME_PATH, '/usr/bin/google-chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
 let server, browser;
 const bases = JSON.parse(readFileSync(join(ROOT, 'tests', 'fixtures', 'rec-bases.json'), 'utf8'));
 
 before(async () => {
-  server = spawn(process.execPath, [join(ROOT, 'tools', 'serve.mjs'), '--port', String(PORT), '--offline'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+  server = spawn(process.execPath, [join(ROOT, 'tools', 'serve.mjs'), '--dir', APP, '--port', String(PORT), '--offline'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => { const t = setTimeout(() => reject(new Error('server did not start')), 20000); server.stdout.on('data', d => { if (String(d).includes('emulator')) { clearTimeout(t); resolve(); } }); server.on('exit', c => reject(new Error('server exited ' + c))); });
   browser = await chromium.launch({ executablePath: CHROME, headless: true });
 });

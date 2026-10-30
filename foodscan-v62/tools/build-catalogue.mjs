@@ -5,7 +5,7 @@
  * Output files (schema 2, read by src/market-catalogue.mjs and the Worker): index.json (SHA-256 per shard), part-<family>-<n>.json,
  * codes-00..31.json (barcode -> shard), categories.json (category tag -> shards), search.json, ATTRIBUTION.txt, build-summary.json.
  * Source data: Open Food Facts contributors, ODbL 1.0 (database) / DbCL (contents). Country tags are listings, not stock. */
-import { createReadStream, writeFileSync, mkdirSync, rmSync, readFileSync } from 'node:fs';
+import { createReadStream, writeFileSync, mkdirSync, rmSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { createGunzip } from 'node:zlib';
 import { createInterface } from 'node:readline';
 import { createHash } from 'node:crypto';
@@ -23,9 +23,12 @@ const NUMBER_FIELDS = ['last_modified_t', 'serving_quantity', 'product_quantity'
 const num = v => { if (v === undefined || v === '') return undefined; const n = Number(v); return Number.isFinite(n) ? n : undefined; };
 const tags = v => (v ? v.split(',').map(x => x.trim()).filter(Boolean) : []);
 
+// The real export names a few columns differently from the shard fields (checked against en.openfoodfacts.org.products.csv.gz, 30 Oct 2026):
+// allergens (tag list) -> allergens_tags; image_url / image_small_url (the front photo) -> image_front_url / image_front_small_url.
+const ALIASES = { allergens_tags: ['allergens_tags', 'allergens'], image_front_url: ['image_front_url', 'image_url'], image_front_small_url: ['image_front_small_url', 'image_small_url'] };
 /** One CSV row (header-indexed) -> the record shape the shards use. Only fields the source actually has are written. */
 export function recordFromRow(row, header, country) {
-  const get = name => { const i = header.get(name); return i === undefined ? '' : (row[i] ?? '').trim(); };
+  const get = name => { for (const n of ALIASES[name] || [name]) { const i = header.get(n); if (i !== undefined && (row[i] ?? '').trim()) return row[i].trim(); } return ''; };
   const code = get('code').replace(/\s/g, '');
   if (!validBarcode(code)) return { skip: 'invalid-barcode' };
   const countries = tags(get('countries_tags'));
@@ -37,8 +40,9 @@ export function recordFromRow(row, header, country) {
   for (const f of LIST_FIELDS) { const v = tags(get(f)); if (f === 'countries_tags' || v.length) rec[f] = v; }
   for (const f of NUMBER_FIELDS) { const v = num(get(f)); if (v !== undefined) rec[f] = v; }
   rec.nutriments = nutriments; rec.catalogue_export_format = 'csv';
-  // a row is kept when it says anything about the product (name, brand, size, category, ingredients, nutrition, photo); a bare barcode is not a product
-  const says = rec.product_name || rec.brands || rec.generic_name || rec.quantity || rec.ingredients_text || rec.image_front_url || rec.image_front_small_url || (rec.categories_tags || []).length || Object.keys(nutriments).length;
+  // A row is kept when it says what the product is (name, brand, generic name, pack size) or what is in it (nutrition, ingredients). A photo or a category tag alone is not a product:
+  // the first run on the real export found 2,129 such rows (barcode + photo + categories) that the shipped 12,113-record catalogue rightly leaves out.
+  const says = rec.product_name || rec.brands || rec.generic_name || rec.quantity || rec.ingredients_text || Object.keys(nutriments).length;
   if (!says) return { skip: 'no-usable-identity' };
   return { rec };
 }
@@ -55,12 +59,22 @@ export function familyOf(rec) {
   return discoveryFamily(product, legacyFamily) || 'other';
 }
 
-export async function buildCatalogue({ csv, country = 'greece', out, revision, exportedAt, version = '' }) {
+/** barcode -> family for every product of an existing catalogue directory (the shard files carry their family). */
+export function inheritFamilies(dir) {
+  const map = new Map(); if (!dir || !existsSync(dir)) return map;
+  for (const f of readdirSync(dir).filter(f => /^part-.*\.json$/.test(f))) { const d = JSON.parse(readFileSync(join(dir, f), 'utf8')); for (const p of d.products) map.set(String(p.code).padStart(14, '0'), d.family); }
+  return map;
+}
+
+export async function buildCatalogue({ csv, country = 'greece', out, revision, exportedAt, version = '', previous = '' }) {
+  const inherited = inheritFamilies(previous ? resolve(previous) : '');
   const input = createReadStream(csv); const lines = createInterface({ input: csv.endsWith('.gz') ? input.pipe(createGunzip()) : input, crlfDelay: Infinity });
   let header = null, rows = 0; const kept = new Map(), skipped = {};
   for await (const line of lines) {
     if (!header) { header = new Map(line.split('\t').map((n, i) => [n.trim(), i])); if (!header.has('code') || !header.has('countries_tags')) throw new Error('the CSV has no code/countries_tags columns: is this the Open Food Facts export?'); continue; }
-    rows++; const { rec, skip } = recordFromRow(line.split('\t'), header, country);
+    rows++;
+    if (!line.includes(`en:${country}`)) { skipped['not-listed'] = (skipped['not-listed'] || 0) + 1; continue; } // cheap pre-filter: the real export has millions of rows
+    const { rec, skip } = recordFromRow(line.split('\t'), header, country);
     if (skip) { skipped[skip] = (skipped[skip] || 0) + 1; continue; }
     const key = rec.code.padStart(14, '0'); const old = kept.get(key);
     if (old) { skipped.duplicate = (skipped.duplicate || 0) + 1; if ((rec.last_modified_t || 0) <= (old.last_modified_t || 0)) continue; }
@@ -71,7 +85,7 @@ export async function buildCatalogue({ csv, country = 'greece', out, revision, e
   const exportedMs = exportedAt ? Date.parse(exportedAt) : Date.now(); if (!Number.isFinite(exportedMs)) throw new Error('bad --exported-at');
   const rev = revision || `off-csv-${new Date(exportedMs).toISOString().slice(0, 10)}`;
   const byFamily = {};
-  for (const rec of [...kept.values()].sort((a, b) => (a.code < b.code ? -1 : 1))) (byFamily[familyOf(rec)] ||= []).push(rec);
+  for (const rec of [...kept.values()].sort((a, b) => (a.code < b.code ? -1 : 1))) (byFamily[inherited.get(rec.code.padStart(14, '0')) || familyOf(rec)] ||= []).push(rec);
   const shards = {}, families = {}, codes = Array.from({ length: BUCKETS }, () => ({})), categories = {}, searchRows = [];
   for (const family of Object.keys(byFamily).sort()) {
     const files = []; let part = [], n = 0;
@@ -92,13 +106,13 @@ export async function buildCatalogue({ csv, country = 'greece', out, revision, e
   const source = 'https://static.openfoodfacts.org/data/en.openfoodfacts.org.products.csv.gz';
   writeFileSync(join(out, 'index.json'), JSON.stringify({ schema: 2, integrity: 'sha256', version, country, exportedAt: exportedMs, revision: rev, source, license: 'ODbL-1.0', productCount: kept.size, coverage: 'Open Food Facts country listings, not a complete inventory of Greek supermarkets or proof of current stock.', barcodeBuckets: BUCKETS, families, shards }));
   writeFileSync(join(out, 'ATTRIBUTION.txt'), `Open Food Facts contributors. Derived ${country} catalogue built ${new Date(exportedMs).toISOString().slice(0, 10)}.\nDatabase: https://world.openfoodfacts.org/data\nSource: ${source}\nDerived database license: ODbL 1.0 https://opendatacommons.org/licenses/odbl/1-0/\nCountry listings are not current retailer stock.\n`);
-  const summary = { revision: rev, exportedAt: new Date(exportedMs).toISOString(), sourceRows: rows, products: kept.size, skipped, families: Object.fromEntries(Object.entries(families).map(([k, v]) => [k, v.count])), shards: Object.keys(shards).length };
+  const summary = { revision: rev, exportedAt: new Date(exportedMs).toISOString(), sourceRows: rows, products: kept.size, skipped, inheritedFamilies: [...kept.keys()].filter(k => inherited.has(k)).length, families: Object.fromEntries(Object.entries(families).map(([k, v]) => [k, v.count])), shards: Object.keys(shards).length };
   writeFileSync(join(out, 'build-summary.json'), JSON.stringify(summary, null, 1));
   return summary;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const csv = arg('--csv'); if (!csv) { console.error('usage: node tools/build-catalogue.mjs --csv <export.csv[.gz]> --out <dir> [--country greece] [--revision ..] [--exported-at ..]'); process.exit(2); }
-  const summary = await buildCatalogue({ csv: resolve(csv), country: arg('--country', 'greece'), out: resolve(arg('--out', 'build/catalogue')), revision: arg('--revision', ''), exportedAt: arg('--exported-at', ''), version: arg('--version', '') });
+  const summary = await buildCatalogue({ csv: resolve(csv), country: arg('--country', 'greece'), out: resolve(arg('--out', 'build/catalogue')), revision: arg('--revision', ''), exportedAt: arg('--exported-at', ''), version: arg('--version', ''), previous: arg('--previous', '') });
   console.log(JSON.stringify(summary));
 }

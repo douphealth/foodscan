@@ -1,4 +1,4 @@
-import {productUseMatch,nutritionDistance} from './match-policy.mjs';
+import {productUseMatch,nutritionDistance,isSupplement} from './match-policy.mjs';
 /** Discovery classification only. Never supplies categories to the grade calculator. */
 export const FAMILY_LABELS=Object.freeze({bread:'Bread & wraps',yogurt:'Yogurt & kefir',milk:'Milk',cheese:'Cheese',cereal:'Breakfast cereals',bar:'Cereal & snack bars',biscuit:'Biscuits',cake:'Cakes',chocolate:'Chocolate',spread:'Sweet spreads',juice:'Juice',soda:'Soft drinks',water:'Water','plant-drink':'Plant drinks',dessert:'Dairy desserts','ice-cream':'Ice cream',pasta:'Pasta','rice-grain':'Rice & grains',sauce:'Sauces',pizza:'Pizza',meat:'Meat',fish:'Fish',soup:'Soups',fat:'Oils & fats',meal:'Prepared meals','dried-fruit':'Dried fruit',nut:'Nuts','legume-veg':'Legumes & vegetables',sweets:'Sweets','coffee-tea':'Coffee & tea','savoury-snack':'Savoury snacks'});
 export const FAMILY_TAGS=Object.freeze({bread:'en:breads',yogurt:'en:yogurts',milk:'en:milks',cheese:'en:cheeses',cereal:'en:breakfast-cereals',bar:'en:cereal-bars',biscuit:'en:biscuits',cake:'en:cakes',chocolate:'en:chocolates',spread:'en:sweet-spreads',juice:'en:fruit-juices',soda:'en:sodas',water:'en:waters','plant-drink':'en:plant-based-milk-alternatives',dessert:'en:dairy-desserts','ice-cream':'en:ice-creams',pasta:'en:pastas','rice-grain':'en:rices',sauce:'en:sauces',pizza:'en:pizzas',meat:'en:meats',fish:'en:fishes',soup:'en:soups',fat:'en:vegetable-oils',meal:'en:meals','dried-fruit':'en:dried-fruits',nut:'en:nuts','legume-veg':'en:legumes',sweets:'en:candies','coffee-tea':'en:teas','savoury-snack':'en:salty-snacks'});
@@ -24,7 +24,7 @@ const EXCLUDED=/protein powder|whey powder|βρεφ|infant|baby food|supplement|
 const INGREDIENT=/\bflour\b|\bsemolina\b|αλευρι|σιμιγδαλι|σιμογδαλι/;
 export function discoveryFamily(product,legacyFamily=()=>'',explicit=''){
  const text=folded(product?.name),tags=(product?.categories||[]).join(' ');
- if(EXCLUDED.test(text)||/en:(?:baby-foods|infant-formula|dietary-supplements|pet-foods|non-food-products)(?: |$)/.test(tags))return '';
+ if(isSupplement(product)||EXCLUDED.test(text)||/en:(?:baby-foods|infant-formula|dietary-supplements|pet-foods|non-food-products)(?: |$)/.test(tags))return '';
  if(INGREDIENT.test(text)&&!/(?:bread|cake|ψωμι|κεικ|wrap|tortilla)/.test(text))return '';
  if(explicit&&FAMILY_LABELS[explicit]&&!legacyFamily(product))return explicit;
  if(/(?:chicken|tuna|ham|beef|κοτοπουλ|τονο|ζαμπον).*(?:wrap|sandwich|τορτιγια)|(?:wrap|sandwich|τορτιγια).*(?:chicken|tuna|ham|beef|κοτοπουλ|τονο|ζαμπον)/.test(text))return 'meal';

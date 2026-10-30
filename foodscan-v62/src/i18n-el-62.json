@@ -23,5 +23,9 @@
   "The source did not identify its grade version. FoodScan independently reproduced this grade and its {points} points with the 2023 rules for this kind of food; this is not a physical-package verification.": "Η πηγή δεν δηλώνει την έκδοση του βαθμού. Το FoodScan αναπαρήγαγε ανεξάρτητα αυτόν τον βαθμό και τους {points} πόντους του με τους κανόνες 2023 για αυτό το είδος τροφίμου· δεν αποτελεί επαλήθευση με τη φυσική συσκευασία.",
   "This catalogue snapshot is more than 90 days old, so its grade may not be current. Check the live record or the package.": "Αυτό το στιγμιότυπο καταλόγου είναι παλαιότερο από 90 ημέρες, οπότε ο βαθμός του μπορεί να μην είναι τρέχων. Ελέγξτε την τρέχουσα εγγραφή ή τη συσκευασία.",
   "Show more results": "Περισσότερα αποτελέσματα",
-  "Not a health score": "Δεν είναι βαθμός υγείας"
+  "Not a health score": "Δεν είναι βαθμός υγείας",
+  "The published points ({points}) agree with the nutrition shown, but the record does not report {list}, and the letter could be {letters} depending on it. This is the source's own grade, not used to claim a higher grade than another product.": "Οι δημοσιευμένοι πόντοι ({points}) συμφωνούν με τη διατροφική αξία που εμφανίζεται, αλλά η εγγραφή δεν αναφέρει: {list}, και το γράμμα θα μπορούσε να είναι {letters} ανάλογα. Είναι ο βαθμός της ίδιας της πηγής και δεν χρησιμοποιείται για να υποστηριχθεί ότι ένα προϊόν έχει υψηλότερο βαθμό από άλλο.",
+  "fibre": "φυτικές ίνες",
+  "protein": "πρωτεΐνη",
+  "sweeteners": "γλυκαντικά"
 }

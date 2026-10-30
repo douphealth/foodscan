@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { catalogue, CATALOGUE_DIR, APP, SUFFIX, domain, diskFetcher } from './helpers.mjs';
+import { catalogue, CATALOGUE_DIR, ACTIVE_CATALOGUE_DIR, APP, SUFFIX, domain, diskFetcher } from './helpers.mjs';
+import { verifyCatalogue } from '../tools/verify-catalogue.mjs';
 import { createCatalogue, skeleton } from '../src/market-catalogue.mjs';
 
 const { manifest, records, byCode } = catalogue();
@@ -33,8 +34,10 @@ test('code buckets point at the shard that holds each barcode, and the search in
   for (let i = 0; i < manifest.barcodeBuckets; i++) buckets[i] = JSON.parse(readFileSync(join(CATALOGUE_DIR, `codes-${String(i).padStart(2, '0')}.json`), 'utf8')).codes;
   for (const { raw, file } of records) { const key = String(raw.code).padStart(14, '0'), b = Number(key.slice(-6)) % manifest.barcodeBuckets; assert.equal(buckets[b][key], file, raw.code); }
   const search = JSON.parse(readFileSync(join(APP, 'assets', `search-index-${SUFFIX}.json`), 'utf8'));
-  assert.equal(search.revision, manifest.revision); assert.equal(search.rows.length, 12113);
-  assert.deepEqual(new Set(search.rows.map(r => r[0])), new Set(records.map(r => r.raw.code)));
+  // the reference snapshot's own search index is the baseline search.json (the shipped index may be a newer catalogue's: see the active-catalogue test)
+  const ref = JSON.parse(readFileSync(join(CATALOGUE_DIR, 'search.json'), 'utf8'));
+  assert.equal(ref.revision, manifest.revision); assert.equal(ref.rows.length, 12113);
+  assert.deepEqual(new Set(ref.rows.map(r => r[0])), new Set(records.map(r => r.raw.code)));
 });
 
 test('licence and provenance travel with the data', () => {
@@ -106,4 +109,13 @@ test('graceful expiry: after 90 days lookups and search still work (labelled), r
     await assert.rejects(createCatalogue(diskFetcher).product('5201673006909'), /catalogue_expired/);
   } finally { Date.now = real; }
   const fresh = dom.assessGrade(await createCatalogue(diskFetcher).product('5201673006909')); assert.doesNotMatch(fresh.caveats.join('|'), /more than 90 days old/);
+});
+
+test('the catalogue this release ships passes every refresh gate, is at least as large as the reference snapshot, and has a matching search index', () => {
+  const r = verifyCatalogue(ACTIVE_CATALOGUE_DIR, { previous: CATALOGUE_DIR === ACTIVE_CATALOGUE_DIR ? '' : CATALOGUE_DIR, maxAgeDays: 400 });
+  assert.equal(r.ok, true, JSON.stringify(r.checks.filter(c => !c.ok)));
+  const active = JSON.parse(readFileSync(join(ACTIVE_CATALOGUE_DIR, 'index.json'), 'utf8')), search = JSON.parse(readFileSync(join(APP, 'assets', `search-index-${SUFFIX}.json`), 'utf8'));
+  assert.equal(search.revision, active.revision); assert.equal(search.rows.length, active.productCount); assert.ok(active.productCount >= manifest.productCount);
+  const shipped = new Set(JSON.parse(readFileSync(join(CATALOGUE_DIR, 'index.json'), 'utf8')) && records.map(r => String(r.raw.code).padStart(14, '0')));
+  const codes = new Set(search.rows.map(x => String(x[0]).padStart(14, '0'))); for (const k of shipped) assert.ok(codes.has(k), `reference product ${k} is missing from the shipped catalogue`);
 });

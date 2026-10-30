@@ -11,6 +11,22 @@ const fold = v => String(v || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLo
 const has = (re, s) => re.test(s);
 
 // 1. cross-family types, first match wins. Written against folded text (no accents, final sigma = σ).
+// Supplements (whey, isolates, creatine, "dietary supplement" in any language) are never a food or drink to swap with: hard exclusion.
+const SUPPLEMENT_TAG = /supplement|συμπληρωμ|sports-nutrition|protein-powder|nutritional-powder/;
+// A powder, capsule or isolate is a supplement whatever else the name says; "whey", "collagen", "vitamin" or a supplement category make a supplement
+// unless the product is plainly a food form (a protein BAR or a collagen COOKIE is a snack and is compared as one).
+const SUPPLEMENT_STRONG = /protein powder|(?:whey|protein|collagen|creatine|bcaa|amino)[^|]{0,14}(?:powder|σκονη)|drink mix|powder drink|isolate|creatine|casein|bcaa|capsule|tablet|effervescent|multivitamin|gainer|pre-?workout/;
+const SUPPLEMENT_SOFT = /(?:^|[^a-zα-ω])(?:whey|collagen|vitamin|supplement)|συμπληρωμα/;
+const FOOD_FORM = /(?:^|[^a-zα-ω])(?:bars?|cookies?|biscuits?|wafers?|crackers?|chocolate|snacks?|cakes?|pancakes?|spreads?|pudding|yogh?urt|cereal|pasta|bread|chips|brownie|muffin|granola|muesli|drink|juice|nectar|smoothie|saft|riegel|barre|barrita|barretta|crunch)(?![a-zα-ω])|riegel|μπαρ|μπισκοτ|σοκολατ/;
+export const isSupplement = p => {
+  const name = fold(p?.name);
+  if (SUPPLEMENT_STRONG.test(name)) return true;
+  const tagHit = (p?.categories || []).some(c => SUPPLEMENT_TAG.test(fold(c)));
+  return (tagHit || SUPPLEMENT_SOFT.test(name)) && !FOOD_FORM.test(name);
+};
+// The head noun of a name: what the product IS, before "with dressing", "in tomato sauce", "με σάλτσα". Qualifiers never decide the use.
+const headOf = name => name.split(/\s(?:with|in|and|from|containing|served|made)\s|\s(?:με|σε|και|απο)\s|[,;&(]/)[0].trim();
+const PLANT = /(?:^|[^a-zα-ω])(?:veggie|vegan|vegetarian|plant[- ]based|meat[- ]free|meatless)(?![a-zα-ω])|φυτικ|χορτοφαγικ/;
 const GLOBAL = [
  ['plant-drink', s => /(?:almond|oat|soy|soya|rice|coconut|hazelnut|cashew|pea|plant|vegetable|vegan|αμυγδαλ|βρωμ|σογια|ρυζι|καρυδα|φουντουκ|φυτικ|amande|avoine|mandel|hafer|mandorla|avena)[^|]{0,28}(?:drink|milk|boisson|bevanda|getrank|bebida|ροφημα|γαλα|lait|latte|milch|leche)|(?:ροφημα|γαλα|drink|milk|boisson|bevanda|lait)[^|]{0,18}(?:almond|oat|soy|soya|rice|coconut|hazelnut|αμυγδαλ|βρωμ|σογια|ρυζι|καρυδα|φουντουκ|plant|φυτικ)|plant-based-milk-alternatives|alpro|plant protein drink/.test(s) && !/seeds?(?![a-zα-ω])|σπορ/.test(s)],
  ['cocoa-powder', s => (/(?:^|[^a-zα-ω])(?:cocoa|cacao|κακαο)(?![a-zα-ω])/.test(s) && !/chocolat|σοκολατ|(?:^|[^a-zα-ω])bars?(?![a-zα-ω])|μπαρα|biscuit|cookie|cream|κρεμα|milk|γαλα|spread|drink|ροφημα|nuts?|candy|cereal|δημητριακ|ice|παγωτο|wafer|γκοφρετ|cake|κεικ/.test(s)) || /cocoa-powders?|cocoa-and-chocolate-powders/.test(s)],
@@ -23,10 +39,19 @@ const GLOBAL = [
  ['pizza-base', s => /(?:pizza|πιτσα)[^|]{0,12}(?:base|βαση|dough|ζυμη)|(?:βαση|ζυμη)[^|]{0,12}(?:pizza|πιτσα)/.test(s)],
  ['potato-fries', s => /pre-?fried potato|french fries|(?:^|[^a-zα-ω])fries(?![a-zα-ω])|προτηγανισμεν|πατατεσ τηγανητεσ|πατατεσ για τηγανισμα|oven chips|frozen potato|πατατακια φουρνου/.test(s) || /potatoes? (?:in|with)[^|]{0,12}oil/.test(s)],
  ['ready-meal', s => /mousak|μουσακα|pastitsi|παστιτσι|stuffed (?:tomato|pepper|vine)|γεμιστα(?: ντοματ| πιπερ|(?:^|[^a-zα-ω]))|ready meal|ετοιμο γευμα|γλυκοξιν|sweet (?:and|&) sour|with basmati|με μπασματι|(?:^|[^a-zα-ω])curry(?![a-zα-ω])|μαγειρευτ|ριζοτο|risotto|γιουβετσι|σουτζουκακ|gyros kit|brizola meal|lasagne ready/.test(s) && !/μπισκοτ|biscuit|cookie/.test(s)],
+ ['tofu', s => /(?:^|[^a-zα-ω])tofu(?![a-zα-ω])|τοφου/.test(s)],
+ ['tempeh', s => /tempeh|τεμπε/.test(s)],
+ ['seitan', s => /seitan|σεϊταν|σειταν/.test(s)],
+ ['plant-burger', s => PLANT.test(s) && /burger|μπιφτεκ|patt(?:y|ies)/.test(s)],
+ ['plant-sausage', s => PLANT.test(s) && /sausage|λουκανικ|frankfurter/.test(s)],
+ ['plant-nuggets', s => PLANT.test(s) && /nugget|schnitzel|σνιτσελ|παναρ|crispy/.test(s)],
+ ['plant-mince', s => PLANT.test(s) && /mince|κιμα/.test(s)],
+ ['plant-deli', s => PLANT.test(s) && /slices|deli|ζαμπον|σαλαμι|cold cut|φετεσ/.test(s)],
  ['meat-alternative', s => /(?:^|[^a-zα-ω])tofu(?![a-zα-ω])|τοφου|tempeh|seitan|(?:veggie|vegan|vegetarian|plant[- ]based|φυτικ|χορτοφαγικ)[^|]{0,22}(?:burger|sausage|chicken|nugget|schnitzel|mince|μπιφτεκ|λουκανικ|κοτοπουλ|ντονερ|steak|fillet)/.test(s)],
  ['cheese-vegan', s => /(?:vegan|plant[- ]based|φυτικ)[^|]{0,18}(?:cheese|τυρι)|(?:cheese|τυρι)[^|]{0,14}(?:vegan|φυτικ|plant)/.test(s)],
  ['puffed-cake', s => /rice[- ]?cakes?|ricecake|corn[- ]?cakes?|puffed[- ]cereal[- ]cakes?|wafle (?:kukurydz|ryz)|puffed (?:rice|corn)|ρυζογκοφρετ|πουφακια|puffed-corn-cakes|puffed-rice-cakes/.test(s)],
- ['sauce-condiment', s => /(?:^|[^a-zα-ω])(?:sauce|ketchup|mayonnaise|mustard|dressing|vinaigrette)(?![a-zα-ω])|σαλτσα|κετσαπ|μαγιονεζα|μουσταρδα/.test(s) && !/ice cream|παγωτο|pasta|ζυμαρικ/.test(s)],
+ ['sauce-condiment', (s, h) => /(?:^|[^a-zα-ω])(?:sauce|ketchup|mayonnaise|mustard|dressing|vinaigrette)(?![a-zα-ω])|σαλτσα|κετσαπ|μαγιονεζα|μουσταρδα/.test(h) && !/ice cream|παγωτο|pasta|ζυμαρικ/.test(h)],
+ ['prepared-salad', (s, h) => /(?:^|[^a-zα-ω])salad|σαλατ/.test(h) && !/dressing|sauce|σαλτσα/.test(h)],
  ['pastry-pie', s => /μπουγατσα|bougatsa|τυροπιτα|σπανακοπιτα|κρεατοπιτα|μηλοπιτα|κολοκυθοπιτα|(?:^|[^a-z])pie(?![a-z])|μπουρεκι|bourek/.test(s) && !/pizza|πιτσα/.test(s)],
  ['cream-dessert', s => /κρεμα (?:βανιλια|σοκολατα|καραμελε|ζαχαρωτη)|πουτιγκα|pudding|creme (?:caramel|brulee)|panna cotta|mousse|(?:^|[^a-zα-ω])μους(?![a-zα-ω])|ρυζογαλο|custard/.test(s) && !/μπισκοτ|biscuit|cookie|cake|κεικ/.test(s)],
  ['flavoured-milk-drink', s => /(?:^|[^a-zα-ω])(?:choco ?milk|chocolate milk|milko(?![a-zα-ω])|γαλα σοκολατουχο|σοκολατουχο γαλα|tou topou mas|τοσ τοπου μασ|ροφημα γαλακτοσ|ροφημα σοκολατασ|(?:milk|γαλα)[^|]{0,10}(?:chocolat|cocoa|σοκολατ|κακαο|strawberry|φραουλα|banana|μπανανα|vanilla|βανιλια|caramel|καραμελα))(?![a-zα-ω])/.test(s) && !/(?:^|[^a-zα-ω])bar(?![a-zα-ω])|cookie|biscuit/.test(s)]
@@ -51,7 +76,7 @@ const FAMILY = {
   ['bread', /bread|pain(?![a-zα-ω])|ψωμι|ψωμακ|ψωμαι|τοστ|brot(?![a-zα-ω])|pane(?![a-zα-ω])|pan de/]] },
  yogurt: { def: 'yogurt', list: [['drinking-yogurt', /kefir|κεφιρ|drinking[- ]yog|drinkable|ayran|ariani|αριανι|ποσιμο/],['plant-yogurt', /(?:soy|soya|oat|coconut|almond|plant|vegan|φυτικ|σογια)[^|]{0,20}(?:yogh?urt|γιαουρτ)|(?:yogh?urt|γιαουρτ)[^|]{0,16}(?:soy|soya|oat|coconut|almond|plant|vegan|φυτικ|σογια)/],['yogurt', /yogh?urt|γιαουρ|skyr|σκυρ/]] },
  milk: { def: 'milk', list: [['powdered-milk', /powder|σκονη/],['condensed-milk', /condensed|evaporated|συμπυκνωμ|εβαπορε|ζαχαρουχο/],['flavoured-milk', /flavoured|flavored|chocolat|cocoa|κακαο|σοκολατ|strawberry|φραουλα|banana|μπανανα|vanilla|βανιλια/],['milk', /milk|lait|milch|γαλα(?:\s|$|κτοσ)/]] },
- sauce: { def: 'sauce', list: [['mayonnaise', /mayonnaise|μαγιονεζ|(?:^|[^a-zα-ω])mayo(?![a-zα-ω])/],['ketchup', /ketchup|κετσαπ/],['mustard', /mustard|moutarde|μουσταρδ|senf/],['soy-sauce', /soy[- ]sauce|soya[- ]sauce|σαλτσα.{0,12}σογια|^soja(?![a-zα-ω])|(?:^|[^a-zα-ω])soja sauce|shoyu|tamari/],['pesto', /pesto|πεστο/],['tomato-sauce', /tomato|bolognese|passata|pasta[- ]sauce|ντοματ|τοματ|arrabbiata|napoletana/],['salad-dressing', /dressing|vinaigrette|σαλατασ|balsamic|βαλσαμικ|vinegar|ξυδι|aceto/],['hot-sauce', /(?:^|[^a-zα-ω])hot sauce|sriracha|tabasco|chili sauce|chilli sauce|πικαντικη σαλτσα|sweet chilli|μπαρμπεκιου|(?:^|[^a-zα-ω])bbq(?![a-zα-ω])|barbecue/]] },
+ sauce: { def: 'sauce', list: [['mayonnaise', /mayonnaise|μαγιονεζ|(?:^|[^a-zα-ω])mayo(?![a-zα-ω])/],['ketchup', /ketchup|κετσαπ/],['mustard', /mustard|moutarde|μουσταρδ|senf/],['soy-sauce', /soy[- ]sauce|soya[- ]sauce|σαλτσα.{0,12}σογια|^soja(?![a-zα-ω])|(?:^|[^a-zα-ω])soja sauce|shoyu|tamari/],['pesto', /pesto|πεστο/],['tomato-sauce', /tomato|tomate|pomodoro|tomaten|bolognese|passata|pasta[- ]sauce|ντοματ|τοματ|arrabbiata|napoletana/],['salad-dressing', /dressing|vinaigrette|σαλατασ|balsamic|βαλσαμικ|vinegar|ξυδι|aceto/],['hot-sauce', /(?:^|[^a-zα-ω])hot sauce|sriracha|tabasco|chili sauce|chilli sauce|πικαντικη σαλτσα|sweet chilli|μπαρμπεκιου|(?:^|[^a-zα-ω])bbq(?![a-zα-ω])|barbecue/]] },
  cereal: { def: 'breakfast-cereal', list: [['protein-snack', /protein|whey|πρωτειν|high protein|hipro|(?:^|[^a-z])pro(?![a-z])/],['oats', /rolled[- ]oats|oat[- ]flakes|porridge|oatmeal|νιφαδ.{0,12}βρωμ|κουακερ|(?:^|[^a-zα-ω])βρωμη(?![a-zα-ω])|(?:^|[^a-zα-ω])oats(?![a-zα-ω])/],['bran', /(?:^|[^a-zα-ω])bran(?![a-zα-ω])|πιτυρο/],['muesli-granola', /muesli|musli|granola|μουσλι|γκρανολα/],['breakfast-cereal', /breakfast[- ]cereal|cereals|corn[- ]?flakes|δημητριακ|κορν φλεικ|weetabix|chocos|(?:^|[^a-zα-ω])puffs?(?![a-zα-ω])|(?:^|[^a-zα-ω])flakes(?![a-zα-ω])|müsli/]] },
  cheese: { def: '', list: [
   ['feta', /(?:^|[^a-zα-ω])feta(?![a-zα-ω])|φετα(?![a-zα-ω])|φετεσ ?(?:ελλ|π\.?ο\.?π|βαρελ)|white brined|brined cheese/],
@@ -92,6 +117,7 @@ const FAMILY = {
 };
 const states = [ ['dried', /(?:^|[-\s])dried|dehydrated|αποξηρα/], ['powder', /powder|σκονη/], ['prepared', /(?:^|[-\s])cooked|prepared[- ]|ready[- ]|μαγειρεμ/], ['canned', /canned|preserved|κονσερβ/], ['raw', /(?:^|[-\s])raw|fresh|νωπ/] ];
 const strictFamilies = new Set(Object.keys(FAMILY));
+const HEAD_ONLY = new Set(['sauce', 'legume-veg', 'meal', 'fish']);
 // Families whose default type is too wide to stand on its own ("meal", "vegetable", "meat"): two unresolved products of such a family are only
 // comparable when their category tags share something specific.
 const LOOSE = new Set(['legume-veg', 'meal', 'fat', 'meat', 'fish', 'cheese', 'sweets', 'dessert', 'soup', 'savoury-snack', 'dried-fruit', 'sauce', 'spread']);
@@ -111,13 +137,18 @@ function computeKind(p, family) {
  const name = fold(p?.name), tags = (p?.categories || []).map(fold).join(' '), s = name + ' | ' + tags;
  const text = name + ' ' + fold(p?.brand);
  // 1. cross-family type from the name (tags only when the name is silent: tags are inherited and noisy)
- let type = (GLOBAL.find(([, test]) => test(name + ' |'))?.[0]) || '';
+ if (isSupplement(p)) return { family, subtype: 'supplement', type: 'excluded:supplement', global: true, resolved: true, loose: false, preparation: null, strict: true };
+ const head = headOf(name);
+ let type = (GLOBAL.find(([, test]) => test(name + ' |', head + ' |'))?.[0]) || '';
+ // inside the sauce family the subtype (ketchup, mayonnaise, mustard, dressing...) decides; the cross-family sauce type only catches strays in other aisles
+ if (type === 'sauce-condiment' && family === 'sauce') type = '';
  if (!type) type = (GLOBAL.find(([, test]) => /plant-based-milk-alternatives|cocoa-powders?|cocoa-and-chocolate-powders|puffed-(?:rice|corn|cereal)-cakes?/.test(tags) && test(tags))?.[0]) || '';
  const entry = FAMILY[family];
  let subtype = '';
  if (entry) {
   // category tags are inherited parents ("ice-creams-and-sorbets" would make every tub a sorbet), so they never pick a subtype
-  subtype = entry.list.find(([, re]) => re.test(name))?.[0] || entry.list.find(([, re]) => re.test(text))?.[0] || entry.def;
+  // In aisles where the name routinely carries a qualifier ("giant beans in tomato sauce", "tuna salad", "chicken with rice") only the head noun decides.
+  subtype = entry.list.find(([, re]) => re.test(head))?.[0] || (HEAD_ONLY.has(family) ? '' : entry.list.find(([, re]) => re.test(name))?.[0] || entry.list.find(([, re]) => re.test(text))?.[0]) || entry.def;
  }
  const preparation = ['meat','fish','legume-veg','pasta','rice-grain','coffee-tea'].includes(family) ? states.find(([, re]) => re.test(s))?.[0] || 'unknown' : null;
  if (!type && (family === 'pasta' || family === 'pizza') && subtype === family) type = family; // the family default is the same type as the cross-family one
@@ -126,6 +157,7 @@ function computeKind(p, family) {
 }
 export function productUseMatch(base, candidate, family) {
  const a = productKind(base, family), b = productKind(candidate, family);
+ if (a.type === 'excluded:supplement' || b.type === 'excluded:supplement') return { ok: false, reason: 'supplement', a: a.type, b: b.type };
  if (a.type !== b.type) return { ok: false, reason: 'different-product-use', a: a.type, b: b.type };
  if (a.preparation && b.preparation && a.preparation !== b.preparation && a.preparation !== 'unknown' && b.preparation !== 'unknown') return { ok: false, reason: 'different-preparation' };
  const categories = new Set((base.categories || []).filter(c => !broad.test(c)));

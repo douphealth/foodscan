@@ -1,0 +1,68 @@
+{
+ "dir": "D:\\Claude\\FoodScan\\v62-src\\build\\catalogue-real",
+ "ok": true,
+ "revision": "off-csv-2026-10-30",
+ "products": 12137,
+ "checks": [
+  {
+   "name": "manifest",
+   "ok": true,
+   "detail": "off-csv-2026-10-30"
+  },
+  {
+   "name": "snapshot date",
+   "ok": true,
+   "detail": "0.1 days old"
+  },
+  {
+   "name": "shards",
+   "ok": true,
+   "detail": "55 shards verified"
+  },
+  {
+   "name": "product count",
+   "ok": true,
+   "detail": "12137"
+  },
+  {
+   "name": "duplicates",
+   "ok": true,
+   "detail": "none"
+  },
+  {
+   "name": "barcodes",
+   "ok": true,
+   "detail": "all valid"
+  },
+  {
+   "name": "market",
+   "ok": true,
+   "detail": "all listed for greece"
+  },
+  {
+   "name": "families",
+   "ok": true,
+   "detail": "32"
+  },
+  {
+   "name": "indexes",
+   "ok": true,
+   "detail": "codes, search and categories agree with the shards"
+  },
+  {
+   "name": "quarantine share",
+   "ok": true,
+   "detail": "241 records (2.0%) would be withheld"
+  },
+  {
+   "name": "product count change",
+   "ok": true,
+   "detail": "12113 -> 12137 (0.2%)"
+  },
+  {
+   "name": "newer than previous",
+   "ok": true,
+   "detail": "2026-10-29 -> 2026-10-30"
+  }
+ ]
+}

@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : d; };
 const base = arg('--base', 'http://localhost:8802'), S = arg('--suffix', 'v620'), cat = arg('--catalogue', 'greece-v610'), n = Number(arg('--n', 60)), cpu = Number(arg('--cpu', 1));
 const dir = resolve(arg('--dir', `app/assets/${cat}`));
-const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
+const chrome = [process.env.CHROME_PATH, '/usr/bin/google-chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
 const all = [];
 for (const f of readdirSync(dir).filter(f => /^part-.*\.json$/.test(f))) for (const p of JSON.parse(readFileSync(join(dir, f), 'utf8')).products) all.push(p);

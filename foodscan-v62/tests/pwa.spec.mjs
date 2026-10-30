@@ -8,10 +8,10 @@ import { chromium } from 'playwright-core';
 import { ROOT, APP } from './helpers.mjs';
 
 const PORT = 8813, BASE = `http://localhost:${PORT}`;
-const CHROME = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
+const CHROME = [process.env.CHROME_PATH, '/usr/bin/google-chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
 let server, browser;
 before(async () => {
-  server = spawn(process.execPath, [join(ROOT, 'tools', 'serve.mjs'), '--port', String(PORT), '--offline'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+  server = spawn(process.execPath, [join(ROOT, 'tools', 'serve.mjs'), '--dir', APP, '--port', String(PORT), '--offline'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
   await new Promise((resolve, reject) => { const t = setTimeout(() => reject(new Error('no server')), 20000); server.stdout.on('data', d => { if (String(d).includes('emulator')) { clearTimeout(t); resolve(); } }); });
   browser = await chromium.launch({ executablePath: CHROME, headless: true });
 });

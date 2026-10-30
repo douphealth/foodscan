@@ -10,7 +10,7 @@ import { join, resolve, dirname } from 'node:path';
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : d; };
 const base = arg('--base', 'http://localhost:8802'), S = arg('--suffix', 'v620'), dir = resolve(arg('--dir', `app/assets/greece-${S}`));
 const out = arg('--out', ''), perFamily = Number(arg('--per-family', 3)), country = arg('--country', 'greece');
-const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
+const chrome = [process.env.CHROME_PATH, '/usr/bin/google-chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
 
 // Deterministic sample: the same codes every run (sorted by a hash of the barcode), spread over families and over source grades.
 let codes = arg('--codes', '') ? arg('--codes', '').split(',') : [];

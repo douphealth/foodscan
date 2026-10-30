@@ -1,38 +1,8 @@
 {
- "version": "63.0.0",
+ "version": "64.0.0",
  "ranOn": "2026-10-30, Windows 11, Node 24.3, Google Chrome (headless), real _worker.js behind tools/serve.mjs",
- "unitAndContract": {
-  "command": "npm test",
-  "tests": 54,
-  "passed": 54,
-  "failed": 0,
-  "files": [
-   "grading",
-   "relevance",
-   "catalogue (incl. paging, expiry)",
-   "consistency",
-   "worker",
-   "package",
-   "sync (6 abuse cases on SQLite)",
-   "refresh (builder round trip)"
-  ]
- },
- "browser": {
-  "command": "npm run e2e",
-  "tests": 16,
-  "passed": 16,
-  "failed": 0,
-  "files": [
-   "e2e.spec (8)",
-   "recommendations.spec (6)",
-   "pwa.spec (2)"
-  ]
- },
- "notRun": [
-  "Cloudflare staging deployment",
-  "physical-device camera scanning",
-  "builder against the real Open Food Facts export",
-  "D1-backed index and public-catalogue modes",
-  "independent review of comparison pairs"
- ]
+ "unitAndContract": { "command": "npm test", "tests": 68, "passed": 68, "failed": 0, "files": ["grading", "golden (133 real OFF records, source component points)", "relevance (incl. the 3 audited pairs and variants)", "catalogue (paging, expiry, active-catalogue gates)", "consistency", "worker", "package", "sync (6 abuse cases on SQLite)", "refresh (builder round trip, real column names)", "promote (gates, damage, atomic promotion, rollback)"] },
+ "browser": { "command": "npm run e2e", "tests": 16, "passed": 16, "failed": 0, "files": ["e2e.spec (8)", "recommendations.spec (6)", "pwa.spec (2)"], "alsoRunAgainst": "the app built with the real refreshed catalogue (build/app-staging): 16 of 16" },
+ "realExportRun": { "file": "en.openfoodfacts.org.products.csv.gz", "bytes": 1525386608, "rows": 4883884, "products": 12137, "buildSeconds": 112, "gates": "12 of 12 pass" },
+ "notRun": ["Cloudflare staging deployment", "physical-device scanning and field LCP/INP", "scheduled production refresh with alerting", "human adjudication of the 260-pair review packet", "Search Console / analytics validation"]
 }

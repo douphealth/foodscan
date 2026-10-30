@@ -104,7 +104,13 @@ export function createCatalogue(fetcher=(...args)=>fetch(...args)){
  const info=(m,country='',rest={})=>({status:'ready',count:m.productCount,exportedAt:m.exportedAt,source:m.source,revision:m.revision,market:country||'any',datasetMarket:'greece',marketCoverage:country&&country!=='greece'?'listed-subset':'greece-snapshot',...rest});
  async function query(plan,{country='greece',signal}={}){
   country=market(country);const m=await manifest(signal);let files=[],filterTags=null;
-  if(plan?.family&&m.families[plan.family])files=m.families[plan.family].files;
+  if(plan?.family&&m.families[plan.family]){
+   files=[...m.families[plan.family].files];
+   // 64.0: a refreshed catalogue is partitioned by the builder's family guess, which can differ from the app's for some products. The shards that hold the
+   // product's own SPECIFIC category tags (a handful of shards, never a broad tag) are read as well, so a partition difference cannot hide a candidate.
+   if(plan.candidates?.length){const {data:index}=await waitFor(read('categories.json'),signal);checkRevision(index,m);
+    for(const c of plan.candidates){if(c.family)continue;const tagFiles=index.categories?.[c.tag]||[];if(tagFiles.length&&tagFiles.length<=6)files.push(...tagFiles);}}
+  }
   else if(plan?.candidates?.length){const {data:index}=await waitFor(read('categories.json'),signal);checkRevision(index,m);filterTags=plan.candidates.map(c=>c.tag);files=filterTags.flatMap(tag=>index.categories?.[tag]||[]);}
   const data=await rows(m,files,signal);
   const products=data.products.filter(p=>listed(p,country)&&(!filterTags||p.categories.some(c=>filterTags.includes(c))));

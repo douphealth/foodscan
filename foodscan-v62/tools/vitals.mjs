@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : d; };
 const base = arg('--base'), paths = arg('--paths', '/').split(','), runs = Number(arg('--runs', 5)), cpu = Number(arg('--cpu', 4)), down = Number(arg('--down', 1.6)), rtt = Number(arg('--rtt', 150));
-const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe'].find(existsSync);
+const chrome = [process.env.CHROME_PATH, '/usr/bin/google-chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe'].find(existsSync);
 const median = a => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
 const browser = await chromium.launch({ executablePath: chrome, headless: true });
 const out = {};
