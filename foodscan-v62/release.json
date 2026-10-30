@@ -1,9 +1,9 @@
 {
-  "version": "62.0.0",
-  "codename": "Verified-Points",
-  "build": "6200verifiedpoints",
-  "cache": "foodscan-6200-verifiedpoints1",
-  "suffix": "v620",
+  "version": "63.0.0",
+  "codename": "Steady-Catalogue",
+  "build": "6300steadycatalogue",
+  "cache": "foodscan-6300-steady1",
+  "suffix": "v630",
   "baselineSuffix": "v610",
   "baselineVersion": "61.0.0",
   "baselineBuild": "6100relevantfast26",
@@ -16,7 +16,7 @@
   },
   "assetQuery": {
     "from": "58",
-    "to": "62"
+    "to": "63"
   },
   "baselineZip": "baseline/FoodScan-61.0.0-Fast-Relevant-Choices-Cloudflare-Pages.zip",
   "baselineZipSha256": "b83aab2c52c672ba61217d2e0922711d47797bf8614c98e000472cfd21f4cba8"

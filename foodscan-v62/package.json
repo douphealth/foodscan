@@ -1,17 +1,20 @@
 {
   "name": "foodscan-v62",
-  "version": "62.0.0",
+  "version": "63.0.0",
   "private": true,
   "type": "module",
   "description": "FoodScan 62 workspace: deployable tree (app/), tests, QA tools and catalogue tooling.",
   "scripts": {
-    "test": "node --test tests/grading.test.mjs tests/relevance.test.mjs tests/catalogue.test.mjs tests/consistency.test.mjs tests/worker.test.mjs tests/package.test.mjs",
-    "e2e": "node --test tests/e2e.spec.mjs && node --test tests/recommendations.spec.mjs",
-    "build": "node tools/build-v62.mjs --zip FoodScan-62.0.0-Verified-Points-Cloudflare-Pages.zip",
+    "test": "node --test tests/grading.test.mjs tests/relevance.test.mjs tests/catalogue.test.mjs tests/consistency.test.mjs tests/worker.test.mjs tests/package.test.mjs tests/sync.test.mjs tests/refresh.test.mjs",
+    "e2e": "node --test tests/e2e.spec.mjs && node --test tests/recommendations.spec.mjs && node --test tests/pwa.spec.mjs",
+    "build": "node tools/build-v62.mjs --zip FoodScan-63.0.0-Steady-Catalogue-Cloudflare-Pages.zip",
     "serve": "node tools/serve.mjs --port 8802",
     "audit": "node tools/audit-catalogue.mjs --domain src/domain.mjs --out release-qa/catalogue-audit.json",
     "parity": "node tools/live-parity.mjs --n 60",
-    "quarantine": "node tools/make-quarantine.mjs"
+    "quarantine": "node tools/make-quarantine.mjs",
+    "catalogue": "node tools/build-catalogue.mjs --csv <export.csv.gz> --out build/catalogue",
+    "sitemap": "node tools/reconcile-sitemap.mjs",
+    "review": "node tools/make-review-pairs.mjs <rec-harness.json> && node tools/score-review.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.0",

@@ -71,3 +71,39 @@ test('another market never inherits Greece-only records', async () => {
   const r = await cat.search('feta', { country: 'france' });
   for (const p of r.products) assert.ok(p.countries.includes('en:france'));
 });
+
+test('search is paged over the whole ranking: no matching product is silently excluded (no five-shard ceiling)', async () => {
+  const cat = createCatalogue(diskFetcher);
+  for (const query of ['γάλα', 'cheese', 'ψωμί', 'chocolate', 'bio', 'τυρί']) {
+    const tokens = skeleton(query).split(' ').filter(Boolean);
+    const expected = records.filter(({ raw }) => (raw.countries_tags || []).includes('en:greece')).filter(({ raw }) => { const text = ' ' + skeleton(`${raw.product_name || ''} ${raw.brands || ''}`) + ' '; return tokens.every(t => text.includes(' ' + t + ' ') || t.length >= 4 && text.includes(' ' + t)); }).map(r => String(r.raw.code));
+    const got = []; let page = 1, files = new Set(), last;
+    do { last = await cat.search(query, { country: 'greece', page, limit: 30 }); assert.ok(last.products.length <= 30); assert.equal(last.page, page); assert.equal(last.total, expected.length, `${query}: total`); for (const p of last.products) { got.push(String(p.barcode).replace(/^0+(?=\d{8})/, '')); files.add(records.find(r => String(r.raw.code) === String(p.barcode))?.file); } page++; } while (last.hasMore && page < 60);
+    assert.equal(last.unavailable, 0);
+    assert.equal(got.length, expected.length, `${query}: ${got.length} returned, ${expected.length} match`);
+    assert.deepEqual(new Set(got.map(c => c.padStart(14, '0'))), new Set(expected.map(c => c.padStart(14, '0'))), `${query}: sets differ`);
+    assert.equal(new Set(got).size, got.length, `${query}: duplicates across pages`);
+    if (expected.length > 150) assert.ok(files.size > 5, `${query}: only ${files.size} shards`);
+  }
+});
+
+test('a failed shard is reported, not silently dropped', async () => {
+  const flaky = url => String(url).includes('part-cheese-0') ? Promise.resolve(new Response('x', { status: 500 })) : diskFetcher(url);
+  const r = await createCatalogue(flaky).search('feta', { country: 'greece', limit: 30 });
+  assert.equal(r.partial, true); assert.ok(r.catalogue.failedFiles.length > 0); assert.ok(r.unavailable > 0, 'the records it could not load are counted'); assert.equal(r.catalogue.status, 'partial');
+});
+
+test('graceful expiry: after 90 days lookups and search still work (labelled), recommendations stop; after a year nothing is served', async () => {
+  const real = Date.now, shift = days => { Date.now = () => real() + days * 864e5; };
+  const dom = await domain();
+  try {
+    shift(120);
+    const cat = createCatalogue(diskFetcher), p = await cat.product('5201673006909');
+    assert.ok(p, 'lookup works at 120 days'); assert.ok((await cat.search('feta', { country: 'greece' })).products.length > 5); assert.equal((await cat.search('feta', { country: 'greece' })).catalogue.expired, true);
+    await assert.rejects(cat.query({ family: 'bread' }, { country: 'greece' }), /catalogue_expired/);
+    const a = dom.assessGrade(p); assert.match(a.caveats.join('|'), /more than 90 days old/);
+    shift(400);
+    await assert.rejects(createCatalogue(diskFetcher).product('5201673006909'), /catalogue_expired/);
+  } finally { Date.now = real; }
+  const fresh = dom.assessGrade(await createCatalogue(diskFetcher).product('5201673006909')); assert.doesNotMatch(fresh.caveats.join('|'), /more than 90 days old/);
+});

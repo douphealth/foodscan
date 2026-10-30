@@ -1,34 +1,38 @@
 {
- "measuredOn": "Chromium, CPU 4x, 1.6 Mbps, 150 ms RTT, cache disabled, medians of 5 runs; emulator serves uncompressed bytes",
- "home_v61": [
-  {
-   "fcp": 2572,
-   "tbt": 940,
-   "kb": 686
+ "measuredOn": "Chromium, CPU 4x, 1.6 Mbps, 150 ms RTT, cache disabled, medians of 5 runs, emulator serves uncompressed bytes",
+ "v61_v62_home": {
+  "fcpMs": "2560-2600",
+  "blockingMs": "~1000"
+ },
+ "modulepreloadExperiment": {
+  "withHints": {
+   "fcpMs": [
+    2612,
+    2572,
+    2560,
+    2588
+   ],
+   "appUiReadyMs": [
+    5484,
+    5507
+   ]
   },
-  {
-   "fcp": 2592,
-   "tbt": 1037
+  "withoutHints": {
+   "fcpMs": [
+    1740,
+    1820,
+    1844,
+    1864
+   ],
+   "appUiReadyMs": [
+    5490,
+    5494
+   ]
   },
-  {
-   "fcp": 2600,
-   "tbt": 981
-  }
- ],
- "home_v62": [
-  {
-   "fcp": 2592,
-   "tbt": 1143,
-   "kb": 739
-  },
-  {
-   "fcp": 2580,
-   "tbt": 997
-  },
-  {
-   "fcp": 2560,
-   "tbt": 1034
-  }
- ],
- "verdict": "no measurable change in first/largest contentful paint or blocking time; +53 KB uncompressed (engine, product-type lexicon, Greek strings)"
+  "verdict": "first paint about 0.7 s earlier; time until the real app UI is on screen unchanged; shipped in 63.0.0"
+ },
+ "notMeasured": [
+  "INP",
+  "field data on real phones"
+ ]
 }

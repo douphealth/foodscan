@@ -1,0 +1,44 @@
+# Monthly catalogue refresh rehearsal for FoodScan. Builds the Greek catalogue from Open Food Facts' bulk CSV export and uploads it, with its
+# build summary, as an ARTIFACT. It never commits, never deploys and never touches Cloudflare: a person reviews the summary, then adopts the
+# catalogue with release.json (catalogueSource / catalogueDir), runs the tests and stages the ZIP (see docs/DEPLOYMENT).
+# Open Food Facts asks bulk users to download the export, not to page through the API (15 product reads / 10 searches per minute per IP).
+name: FoodScan catalogue refresh (rehearsal)
+on:
+  schedule:
+    - cron: '17 4 2 * *'   # 04:17 UTC on the 2nd of each month, after the export of the 1st is published
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-catalogue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: foodscan-v62
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download the Open Food Facts export (once, with a descriptive User-Agent)
+        run: |
+          curl -fL --retry 3 --retry-delay 30 -A "FoodScan-catalogue-build/1.0 (+https://food-scan.gearuptofit.com/how/)" \
+            -o /tmp/off.csv.gz https://static.openfoodfacts.org/data/en.openfoodfacts.org.products.csv.gz
+          ls -l /tmp/off.csv.gz
+      - name: Build the Greece catalogue
+        run: |
+          STAMP=$(date -u +%Y-%m-%d)
+          node tools/build-catalogue.mjs --csv /tmp/off.csv.gz --country greece --out build/catalogue --revision "off-csv-$STAMP" --exported-at "${STAMP}T00:00:00Z" | tee build/summary.json
+      - name: Sanity gates (refuse a catalogue that shrank or lost its families)
+        run: |
+          node -e "
+          const s=require('./build/catalogue/build-summary.json');
+          if (s.products < 9000) { console.error('catalogue has only', s.products, 'products'); process.exit(1); }
+          if (Object.keys(s.families).length < 25) { console.error('too few families'); process.exit(1); }
+          console.log('ok', s.products, 'products,', Object.keys(s.families).length, 'families');"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: greece-catalogue
+          path: foodscan-v62/build/catalogue
+          retention-days: 30

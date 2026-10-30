@@ -123,3 +123,30 @@ test('Greek interface: grade explanations are Greek', async () => {
   assert.doesNotMatch(text, /The source did not identify|independently reproduced/);
   await ctx.close();
 });
+
+test('claims need evidence: a missing nutrient is "not reported", never zero, never "low"; no composite 0-100 score anywhere', async () => {
+  for (const [code, missing] of [['0633710237406', ['Total sugars', 'Salt']], ['5200146980012', ['Saturated fat']]]) {
+    const { ctx, page } = await open(`/p/${code}`);
+    const facts = await page.locator('.fact').allInnerTexts();
+    for (const m of missing) { const row = facts.find(f => f.replace(/\s+/g, ' ').startsWith(m)); assert.ok(row, `${code}: ${m} row`); assert.match(row, /not reported/i, `${code}: ${m} must say not reported: ${row}`); assert.doesNotMatch(row, /\b(low|medium|high)\b(?! fibre)/i, `${code}: ${m} must not be rated: ${row}`); }
+    const title = await page.locator('.nutri-radar__title').innerText();
+    assert.match(title, /Incomplete label/); assert.doesNotMatch(title, /\/100/);
+    await ctx.close();
+  }
+  const { ctx, page } = await open('/p/5201673006909');
+  const title = await page.locator('.nutri-radar__title').innerText();
+  assert.match(title, /Not a health score/); assert.doesNotMatch(await page.locator('#app').innerText(), /\d+\s*\/\s*100/);
+  await ctx.close();
+});
+
+test('search results are paged: "Show more" appends the next page, never repeats a product, and ends', async () => {
+  const { ctx, page } = await open('/#/s/cheese', { wait: 4500, locale: 'el-GR' });
+  const count = () => page.locator('ul.plist a[href^="#/p/"]').count();
+  const first = await count(); assert.ok(first >= 15 && first <= 30, `first page ${first}`);
+  let total = first, rounds = 0;
+  while (await page.locator('[data-act="s:more"]').count() && rounds < 40) { await page.locator('[data-act="s:more"]').click(); await page.waitForTimeout(700); const now = await count(); assert.ok(now > total, 'each click adds products'); total = now; rounds++; }
+  const hrefs = await page.locator('ul.plist a[href^="#/p/"]').evaluateAll(a => a.map(x => x.getAttribute('href')));
+  assert.equal(new Set(hrefs).size, hrefs.length, 'no product listed twice');
+  assert.ok(total > first && rounds >= 1, `total ${total} after ${rounds} more`);
+  await ctx.close();
+});

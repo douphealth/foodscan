@@ -426,6 +426,7 @@ function assessGrade(p, { estimate = true } = {}) {
   if (Number.isFinite(p.pointsDiffer)) caveats.push(p.nutritionEstimated
     ? t("Some values in this record were estimated from the ingredient list, so the nutrition shown works out to {score} points, not the {published} the source published from the label. Check the package.", { score: p.pointsDiffer, published: p.nutriScoreValue })
     : t("The nutrition shown works out to {score} points, not the {published} the source published, so the record may have been edited after it was graded. Check the package.", { score: p.pointsDiffer, published: p.nutriScoreValue }));
+  if (snapshotExpired(p)) caveats.push(t("This catalogue snapshot is more than 90 days old, so its grade may not be current. Check the live record or the package."));
   if (quality.unnamed) caveats.push(t("The source has no product name. The grade follows the barcode and the numbers; check that the photo matches your pack."));
   if (p.basisSource === "assumed") caveats.push(t("The record does not say whether values are per 100 g or 100 ml, so per 100 g was assumed for the facts below."));
   const fields = fieldCount(p);
@@ -435,6 +436,7 @@ function assessGrade(p, { estimate = true } = {}) {
   const confidence = p.partial ? "low" : fields >= 6 && anatomy ? "high" : fields >= 3 ? "medium" : "low";
   return { status: p.partial ? "preview" : "reported", grade: p.nutriScore, score: Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null, confidence, caveats, reasons: [], anatomy, method: p.nutriScoreMethod || (anatomy ? "2023" : null), quality };
 }
+const snapshotExpired = p => Number.isFinite(p?.catalogueSnapshot?.exportedAt) && Date.now() - p.catalogueSnapshot.exportedAt > 90 * 864e5;
 function reproducedByPoints(p, quality, proof) {
   const data = ns23Data(proof.calc, proof.input, proof.kind);
   const anatomy = explainGrade({ ...p, nutriScore: proof.calc.grade, nutriScoreValue: proof.calc.score, nutriScoreData: data });
@@ -442,7 +444,7 @@ function reproducedByPoints(p, quality, proof) {
   const caveat = t("The source did not identify its grade version. FoodScan independently reproduced this grade and its {points} points with the 2023 rules for this kind of food; this is not a physical-package verification.", { points: proof.calc.score });
   // Status stays "reported": the grade is the SOURCE's, and FoodScan's own calculation reproduced it point for point. Only grades FoodScan
   // had to calculate itself are "estimated" (and shown as calculated). The method marks it comparable with other 2023 grades.
-  return { status: "reported", grade: proof.calc.grade, score: proof.calc.score, confidence: fieldCount(p) >= 6 ? "high" : "medium", caveats: [caveat], reasons: [], anatomy, method: "2023-calculated", quality,
+  return { status: "reported", grade: proof.calc.grade, score: proof.calc.score, confidence: fieldCount(p) >= 6 ? "high" : "medium", caveats: snapshotExpired(p) ? [caveat, t("This catalogue snapshot is more than 90 days old, so its grade may not be current. Check the live record or the package.")] : [caveat], reasons: [], anatomy, method: "2023-calculated", quality,
     estimate: { ok: true, grade: proof.calc.grade, score: proof.calc.score, range: [proof.calc.score, proof.calc.score], data, assumptions: [] }, sourceGrade: p.nutriScore, sourceGradeVersion: null, reproducedSourceGrade: true, reproducedByPoints: true, reproducedKind: proof.kind };
 }
 function calculated(p, quality, said) {

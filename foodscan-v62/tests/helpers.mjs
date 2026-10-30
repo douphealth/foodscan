@@ -21,7 +21,7 @@ export function catalogue() {
 }
 /** A fetch() that serves /assets/* from disk, as the browser sees it. */
 export const diskFetcher = (url) => {
-  const file = join(APP, decodeURIComponent(String(url).split('?')[0]));
+  const file = join(APP, decodeURIComponent(String(url).split('?')[0]).replace('{{catalogue}}', 'greece-v610')); // src/ modules carry the {{catalogue}} placeholder the build fills in
   if (!existsSync(file)) return Promise.resolve(new Response('not found', { status: 404 }));
   return Promise.resolve(new Response(readFileSync(file), { status: 200 }));
 };

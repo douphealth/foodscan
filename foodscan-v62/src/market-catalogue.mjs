@@ -1,9 +1,11 @@
 import {parseProduct,validBarcode} from './domain.mjs';
-export const CATALOGUE_URL='/assets/greece-v610/index.json';
+export const CATALOGUE_URL='/assets/{{catalogue}}/index.json';
 export const SNAPSHOT_MAX_AGE=90*86400000;
-const ROOT='/assets/greece-v610/';
+const ROOT='/assets/{{catalogue}}/';
 const SEARCH_URL='/assets/search-index-{{suffix}}.json';
-const ageOK=(at,now=Date.now())=>Number.isFinite(at)&&at>0&&at<=now+300000&&now-at<=SNAPSHOT_MAX_AGE;
+const ageOK=(at,now=Date.now(),max=SNAPSHOT_MAX_AGE)=>Number.isFinite(at)&&at>0&&at<=now+300000&&now-at<=max;
+/** Past 90 days a snapshot is no longer evidence for recommendations, but lookups and search keep working (labelled) for up to a year. */
+export const LOOKUP_MAX_AGE=365*86400000;
 export function snapshotUsable(p,now=Date.now()) {
  const s=p?.catalogueSnapshot;
  return p?.provenance==='off'&&!p.partial&&validBarcode(String(p.barcode||''))&&s?.provider==='openfoodfacts-daily-export'&&ageOK(s.exportedAt,now);
@@ -47,9 +49,9 @@ export function createCatalogue(fetcher=(...args)=>fetch(...args)){
    }catch(e){if(e.name==='AbortError')throw new CatalogueError('catalogue_asset_timeout');throw e;}finally{clearTimeout(timer);}
   })();cache.set(file,job);job.catch(()=>{if(cache.get(file)===job)cache.delete(file);});trimLRU(cache,16,'index.json');return job;
  }
- async function manifest(signal){
+ async function manifest(signal,{allowExpired=false}={}){
   const {data:m}=await waitFor(read('index.json'),signal);
-  if(m.country!=='greece'||!ageOK(m.exportedAt))throw new CatalogueError('catalogue_expired');
+  if(m.country!=='greece'||!ageOK(m.exportedAt,Date.now(),allowExpired?LOOKUP_MAX_AGE:SNAPSHOT_MAX_AGE))throw new CatalogueError('catalogue_expired');
   if(!m.shards||!m.families||m.barcodeBuckets!==32||!Number.isInteger(m.productCount)||m.productCount<=0)throw new CatalogueError('catalogue_asset_invalid');return m;
  }
  function checkRevision(batch,m){if(batch.revision!==m.revision||batch.schema!==2)throw new CatalogueError('catalogue_revision_mismatch');}
@@ -109,7 +111,7 @@ export function createCatalogue(fetcher=(...args)=>fetch(...args)){
   return {products,catalogue:info(m,country,{status:data.failed.length?(data.loaded?'partial':'unavailable'):'ready',loadedFiles:data.loaded,totalFiles:data.requested,failedFiles:data.failed,matchingRecords:products.length,family:plan?.family||null})};
  }
  async function product(code,{signal}={}){
-  if(!validBarcode(String(code)))return null;const m=await manifest(signal),key=keyOf(code),bucket=String(Number(key.slice(-6))%m.barcodeBuckets).padStart(2,'0');
+  if(!validBarcode(String(code)))return null;const m=await manifest(signal,{allowExpired:true}),key=keyOf(code),bucket=String(Number(key.slice(-6))%m.barcodeBuckets).padStart(2,'0');
   const {data:index}=await waitFor(read(`codes-${bucket}.json`),signal);checkRevision(index,m);const file=index.codes?.[key];if(!file)return null;
   if(!m.shards[file])throw new CatalogueError('catalogue_invalid_path');
   const shard=await loadRaw(m,file,signal),raw=shard.byRaw.get(key);
@@ -127,10 +129,14 @@ export function createCatalogue(fetcher=(...args)=>fetch(...args)){
    return index.rows.map(row=>{const norm=skeleton(row[1]+' '+row[2]);return {code:row[0],file:row[3],countries:row[4],text:' '+norm+' ',norm};});
   })();searchIndexes.set(m.revision,job);job.catch(()=>{if(searchIndexes.get(m.revision)===job)searchIndexes.delete(m.revision);});return job;
  }
- async function search(query,{country='greece',signal,limit=20}={}){
+ /** Ranked, country-filtered, PAGED search over the whole index. 63.0: nothing that matches is dropped: the page is cut from the full ranking
+  * (no five-shard / 80-hit ceiling), only that page's shards are fetched, and a shard that fails to load is reported (failedFiles, unavailable)
+  * instead of silently shrinking the list. */
+ async function search(query,{country='greece',signal,limit=20,page=1}={}){
   country=market(country);const text=skeleton(query),tokens=text.split(' ').filter(Boolean);
-  if(text.length<2)return {products:[],partial:false,hasMore:false};
-  const m=await manifest(signal);const index=await waitFor(searchIndex(m,signal),signal);
+  const size=Math.max(1,Math.min(30,Math.floor(Number(limit))||20)),pageNo=Math.max(1,Math.min(500,Math.floor(Number(page))||1));
+  if(text.length<2)return {products:[],partial:false,hasMore:false,total:0,page:pageNo,pageSize:size};
+  const m=await manifest(signal,{allowExpired:true});const index=await waitFor(searchIndex(m,signal),signal);
   const hits=[];
   for(const x of index){
    if(country&&x.countries&&!x.countries.includes('en:'+country))continue;
@@ -138,14 +144,16 @@ export function createCatalogue(fetcher=(...args)=>fetch(...args)){
    if(!ok)continue;
    hits.push({...x,rank:(x.norm.startsWith(text)?20:0)+(x.norm.includes(text)?10:0)-x.norm.length*.001});
   }
-  hits.sort((a,b)=>b.rank-a.rank||String(a.code).localeCompare(String(b.code)));hits.length=Math.min(hits.length,80);
-  // Only the matched records are parsed (62.0): the shards are fetched and verified, but a search no longer parses every record they hold.
-  const files=[...new Set(hits.map(x=>x.file))].filter(f=>m.shards[f]).slice(0,5),failed=[],shards=new Map();
-  const settled=await Promise.allSettled(files.map(f=>loadRaw(m,f,signal)));
-  settled.forEach((r,i)=>{if(r.status==='fulfilled')shards.set(files[i],r.value);else{if(signal?.aborted)throw abortError();failed.push({file:files[i],code:r.reason.code||'catalogue_asset_unavailable'});}});
-  const matched=[];
-  for(const x of hits){const shard=shards.get(x.file),raw=shard?.byRaw.get(keyOf(x.code));if(!raw)continue;const p=parseOne(m,shard,raw);if(p&&listed(p,country))matched.push(p);}
-  return {products:matched.slice(0,Math.min(30,limit)),partial:false,recordMode:'dated-catalogue-record-v1',provider:'off-catalogue',source:'Open Food Facts catalogue snapshot',hasMore:matched.length>limit,total:matched.length,catalogue:info(m,country,{matchingRecords:matched.length,failedFiles:failed,status:failed.length?'partial':'ready'})};
+  hits.sort((a,b)=>b.rank-a.rank||String(a.code).localeCompare(String(b.code)));
+  const total=hits.length,slice=hits.slice((pageNo-1)*size,pageNo*size),expired=!ageOK(m.exportedAt);
+  const files=[...new Set(slice.map(x=>x.file))].filter(f=>m.shards[f]),failed=[],shards=new Map();
+  for(let i=0;i<files.length;i+=3){
+   const settled=await Promise.allSettled(files.slice(i,i+3).map(f=>loadRaw(m,f,signal)));
+   settled.forEach((r,j)=>{if(r.status==='fulfilled')shards.set(files[i+j],r.value);else{if(signal?.aborted)throw abortError();failed.push({file:files[i+j],code:r.reason.code||'catalogue_asset_unavailable'});}});
+  }
+  const products=[];let unavailable=0;
+  for(const x of slice){const shard=shards.get(x.file),raw=shard?.byRaw.get(keyOf(x.code));if(!raw){unavailable++;continue;}const p=parseOne(m,shard,raw);if(p&&listed(p,country))products.push(p);else unavailable++;}
+  return {products,partial:failed.length>0,recordMode:'dated-catalogue-record-v1',provider:'off-catalogue',source:'Open Food Facts catalogue snapshot',hasMore:pageNo*size<total,total,page:pageNo,pageSize:size,unavailable,catalogue:info(m,country,{matchingRecords:total,failedFiles:failed,status:failed.length?'partial':expired?'expired':'ready',expired})};
  }
  return {query,product,search,manifest,stats:()=>({...counters,rawFiles:cache.size,normalizedShards:normalized.size}),clear:()=>{cache.clear();raws.clear();normalized.clear();searchRows.clear();searchIndexes.clear();}};
 }

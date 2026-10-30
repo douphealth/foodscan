@@ -21,7 +21,9 @@ for (const path of paths) {
     await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: rtt, downloadThroughput: down * 125000, uploadThroughput: down * 125000 / 4 });
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
     await page.addInitScript(() => {
-      window.__m = { lcp: 0, cls: 0, fcp: 0, tbt: 0 };
+      window.__m = { lcp: 0, cls: 0, fcp: 0, tbt: 0, ready: 0 };
+      // the moment the real app UI (not the static boot text) is on screen
+      new MutationObserver((_, o) => { if (document.querySelector('.hero21, .report, .page')) { window.__m.ready = performance.now(); o.disconnect(); } }).observe(document, { childList: true, subtree: true });
       new PerformanceObserver(l => { for (const e of l.getEntries()) window.__m.lcp = e.startTime; }).observe({ type: 'largest-contentful-paint', buffered: true });
       new PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__m.cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
       new PerformanceObserver(l => { for (const e of l.getEntries()) if (e.name === 'first-contentful-paint') window.__m.fcp = e.startTime; }).observe({ type: 'paint', buffered: true });
@@ -35,7 +37,7 @@ for (const path of paths) {
     samples.push({ ...m, requests, kb: Math.round(bytes / 1024), js });
     await ctx.close();
   }
-  out[path] = Object.fromEntries(['fcp', 'lcp', 'cls', 'tbt', 'requests', 'kb', 'js'].map(k => [k, Math.round(median(samples.map(s => s[k])) * 1000) / 1000]));
+  out[path] = Object.fromEntries(['fcp', 'lcp', 'ready', 'cls', 'tbt', 'requests', 'kb', 'js'].map(k => [k, Math.round(median(samples.map(s => s[k])) * 1000) / 1000]));
 }
 console.log(JSON.stringify({ base, throttle: { cpu, downMbps: down, rttMs: rtt }, runs, medians: out }, null, 1));
 await browser.close();

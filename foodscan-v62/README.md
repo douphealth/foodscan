@@ -1,4 +1,4 @@
-# FoodScan 62 workspace
+# FoodScan 63 workspace
 
 `app/` is the deployable Cloudflare Pages tree and is **generated**: `npm run build` rebuilds it from `baseline/` (the v61 ZIP as received, hash-pinned in `release.json`) plus `src/` and `tools/patches-v62.mjs`.
 
@@ -8,9 +8,11 @@
 | `src/match-policy.mjs`, `src/comparison-guards.mjs` | what counts as the same kind of product; guards |
 | `src/market-catalogue.mjs` | catalogue reader, lazy parsing, Greek/Greeklish search skeleton |
 | `src/i18n-el-62.json` | Greek strings added for engine messages |
-| `tools/` | build, Pages emulator (`serve.mjs`), catalogue audit/quarantine, live parity check, recommendation harness, perf/vitals |
-| `tests/` | 53 tests: `npm test` (39) and `npm run e2e` (+ `tests/pwa.spec.mjs`) |
+| `tools/` | build, catalogue builder (`build-catalogue.mjs`), Pages emulator (`serve.mjs`), catalogue audit/quarantine, live parity check, recommendation harness, perf/vitals |
+| `tests/` | 70 tests: `npm test` (54) and `npm run e2e` (16) |
 | `release-qa/` | evidence files produced by the tools |
 | `docs/` | release notes, validation report, deployment guide |
 
 The v61 bundle had no source tree; unchanged chunks are carried over byte for byte (renamed to `-v620` so immutable caching cannot serve old code).
+
+**63.0.0 additions:** `tools/build-catalogue.mjs` (Open Food Facts CSV → catalogue; `release.rehearsal.json` shows how a rebuilt catalogue is adopted), `tools/reconcile-sitemap.mjs`, `tools/make-review-pairs.mjs` / `score-review.mjs` (independent relevance review), `tools/snippets/` (exact-match patch bodies), `docs/foodscan-catalogue-refresh.yml` (artifact-only monthly job).

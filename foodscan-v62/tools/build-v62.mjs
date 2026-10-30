@@ -22,7 +22,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : d; };
 const OUT = resolve(root, arg('--out', 'app'));
 const ZIP = arg('--zip', '');
-const CFG = JSON.parse(readFileSync(join(root, 'release.json'), 'utf8'));
+const CFG = JSON.parse(readFileSync(join(root, process.env.FS_RELEASE || 'release.json'), 'utf8'));
 // The baseline is the v61 ZIP exactly as received (hash-checked), extracted once into build/baseline. --base <dir> uses an already-extracted tree.
 function baselineDir() {
   if (arg('--base', '')) return resolve(root, arg('--base'));
@@ -45,7 +45,8 @@ function replaceOnce(text, find, replacement, label) {
   return parts.join(replacement);
 }
 // The catalogue data directory keeps its v610 name: the records are byte-identical, so the immutable URLs stay valid and 14 MB is not shipped twice.
-const suffixText = text => text.split(`-${OLD}`).join(`-${NEW}`).split(`greece-${NEW}`).join(`greece-${OLD}`);
+const CATALOGUE_DIR = CFG.catalogueDir || `greece-${OLD}`;
+const suffixText = text => text.split(`-${OLD}`).join(`-${NEW}`).split(`greece-${NEW}`).join(`greece-${OLD}`).split(`greece-${OLD}`).join(CATALOGUE_DIR);
 
 // 1. baseline copy
 if (!existsSync(join(BASE, '_worker.js'))) throw new Error(`baseline not found at ${BASE}: extract the v61 ZIP there`);
@@ -66,8 +67,10 @@ for (const name of readdirSync(assets)) {
   writeFileSync(target, TEXT.test(name) ? suffixText(read(full)) : readFileSync(full));
 }
 // Catalogue: data unchanged (greece-v610), plus the 62.0 search index (precomputed Greek/Latin skeletons).
-const catalogueIndex = JSON.parse(read(join(assets, `greece-${OLD}`, 'index.json')));
-execFileSync(process.execPath, [join(root, 'tools/build-search-index.mjs'), join(assets, `greece-${OLD}`), join(assets, `search-index-${NEW}.json`)], { stdio: 'inherit' });
+// A refreshed catalogue (tools/build-catalogue.mjs output named in release.json: catalogueSource, catalogueDir) replaces the baseline data; its directory name changes with it.
+if (CFG.catalogueSource) cpSync(resolve(root, CFG.catalogueSource), join(assets, CATALOGUE_DIR), { recursive: true });
+const catalogueIndex = JSON.parse(read(join(assets, CATALOGUE_DIR, 'index.json')));
+execFileSync(process.execPath, [join(root, 'tools/build-search-index.mjs'), join(assets, CATALOGUE_DIR), join(assets, `search-index-${NEW}.json`)], { stdio: 'inherit' });
 
 // root documents and the service worker point at the new URLs
 for (const f of ['index.html', 'demo/index.html', 'how/index.html', 'challenge/index.html', '404.html', 'sw.js']) {
@@ -77,6 +80,12 @@ for (const f of ['index.html', 'demo/index.html', 'how/index.html', 'challenge/i
 // the growth pages (Fridge Challenge, shared helpers) are plain files with a cache-busting query: a changed fridge-core.mjs needs a new one
 for (const f of ['index.html', 'demo/index.html', 'how/index.html', 'challenge/index.html', 'challenge/challenge.js', 'growth-ui.js', 'sw.js']) {
   const p = join(OUT, f); if (existsSync(p)) writeFileSync(p, read(p).split(`?v=${CFG.assetQuery.from}`).join(`?v=${CFG.assetQuery.to}`));
+}
+
+// 63.0: the entry script already imports these chunks statically; the 12 modulepreload hints only fought the stylesheet for bandwidth.
+// Measured (4x CPU, 1.6 Mbps, 150 ms RTT, 10 runs): first/largest paint 2.57 s -> 1.84 s, time until the app UI is on screen unchanged (5.5 s).
+for (const f of ['index.html', 'demo/index.html', 'how/index.html', 'challenge/index.html']) {
+  const p = join(OUT, f); if (existsSync(p)) writeFileSync(p, read(p).split('\n').filter(l => !/^<link rel="modulepreload"/.test(l)).join('\n'));
 }
 
 // 3. canonical readable modules
@@ -93,7 +102,7 @@ function domainBody() {
 const MODULES = CFG.modules; // canonical name -> asset base name
 for (const [canonical, asset] of Object.entries(MODULES)) {
   const f = join(root, 'src', canonical);
-  let text = (canonical === 'domain.mjs' ? domainBody() : read(f).replace(/\r/g, '')).split('{{suffix}}').join(NEW);
+  let text = (canonical === 'domain.mjs' ? domainBody() : read(f).replace(/\r/g, '')).split('{{suffix}}').join(NEW).split('{{catalogue}}').join(CATALOGUE_DIR);
   text = text.replace(/from\s*(['"])\.\/([a-z-]+)\.mjs\1/g, (_, q, name) => `from ${q}./${MODULES[`${name}.mjs`] ?? name}-${NEW}.mjs${q}`);
   writeFileSync(join(assets, `${asset}-${NEW}.mjs`), text);
 }
@@ -132,6 +141,9 @@ for (const name of readdirSync(assets).filter(n => new RegExp(`-${NEW}\\.js$`).t
   const p = join(OUT, 'index.html'); writeFileSync(p, replaceOnce(read(p), `data-foodscan-version="${CFG.baselineVersion}"`, `data-foodscan-version="${CFG.version}"`, 'index version'));
   const sw = join(OUT, 'sw.js'); writeFileSync(sw, replaceOnce(read(sw), `const CACHE = '${CFG.baselineCache}';`, `const CACHE = '${CFG.cache}';`, 'sw cache'));
 }
+
+// the product sitemap lists only pages the Worker would index (tools/reconcile-sitemap.mjs)
+if (existsSync(join(root, 'src', 'sitemap-products.xml'))) cpSync(join(root, 'src', 'sitemap-products.xml'), join(OUT, 'sitemap-products.xml'));
 
 // 6. release metadata
 for (const f of readdirSync(OUT).filter(n => /^RELEASE-/.test(n))) rmSync(join(OUT, f));
