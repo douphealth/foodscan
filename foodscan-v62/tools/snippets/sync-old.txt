@@ -1,0 +1,25 @@
+      if (url.pathname === "/api/sync") {
+        if (!env?.FOOD_DB) return error("d1_not_bound", "Cloud sync requires D1 storage binding.", 503);
+        try {
+          if (request.method === "POST") {
+            let body = await boundedRequest(request, 1e6);
+            let parsedBody = JSON.parse(body);
+            let token = String(parsedBody.token || "").slice(0, 120);
+            let data = String(parsedBody.data || "").slice(0, 5e6);
+            if (!token || !data) return error("bad_request", "Missing token or data.", 400);
+            await env.FOOD_DB.prepare("CREATE TABLE IF NOT EXISTS cloud_sync(token TEXT PRIMARY KEY, payload TEXT, updated_at INTEGER)").run();
+            await env.FOOD_DB.prepare("INSERT INTO cloud_sync(token, payload, updated_at) VALUES(?,?,?) ON CONFLICT(token) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at").bind(token, data, Date.now()).run();
+            return new Response(null, { status: 204 });
+          }
+          if (request.method === "GET") {
+            let token = url.searchParams.get("token") || "";
+            if (!token) return error("bad_request", "Missing token.", 400);
+            let row = await env.FOOD_DB.prepare("SELECT payload FROM cloud_sync WHERE token=?").bind(token).first();
+            if (!row) return error("not_found", "No backup found.", 404);
+            return json({ status: "success", data: row.payload });
+          }
+          return error("method_not_allowed", "Use GET or POST.", 405);
+        } catch (e) {
+          return error("sync_error", "Cloud sync operation failed.", 500);
+        }
+      }

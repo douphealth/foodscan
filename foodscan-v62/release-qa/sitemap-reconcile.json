@@ -1,0 +1,126 @@
+{
+ "checkedAt": "2026-10-30T11:08:12.568Z",
+ "listed": 13,
+ "indexable": 13,
+ "unverified": [],
+ "removed": [],
+ "rows": [
+  {
+   "code": "20006105",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Roggenvollkornbrot: source-reported Nutri-Score A | FoodScan"
+  },
+  {
+   "code": "3161711001971",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Fromage de France: source-reported Nutri-Score D | FoodScan"
+  },
+  {
+   "code": "7622300441937",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Philadelphia Original: source-reported Nutri-Score D | FoodScan"
+  },
+  {
+   "code": "5000157024671",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Beanz in a rich tomato sauce: source-reported Nutri-Score A | FoodScan"
+  },
+  {
+   "code": "5201193100019",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Spaghetti n6: source-reported Nutri-Score A | FoodScan"
+  },
+  {
+   "code": "8076800195057",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Spaghetti Nº5: source-reported Nutri-Score A | FoodScan"
+  },
+  {
+   "code": "7394376616228",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "The original oat-ly barista edition oat drink: source-reported Nutri-Score D | FoodScan"
+  },
+  {
+   "code": "5449000000996",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Coca-Cola Original: source-reported Nutri-Score E | FoodScan"
+  },
+  {
+   "code": "5449000131805",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Coca-Cola Zero Sugar: source-reported Nutri-Score C | FoodScan"
+  },
+  {
+   "code": "5449000011527",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "fanta Orange 0,33: source-reported Nutri-Score C | FoodScan"
+  },
+  {
+   "code": "3017624010701",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Nutella: source-reported Nutri-Score E | FoodScan"
+  },
+  {
+   "code": "3068320114453",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Badoit 1 L PET: source-reported Nutri-Score A | FoodScan"
+  },
+  {
+   "code": "5201054017432",
+   "status": 200,
+   "robots": "index, follow, max-image-preview:large",
+   "indexable": true,
+   "unverified": false,
+   "lastmod": null,
+   "title": "Total 5% Fat Greek Yogurt: source-reported Nutri-Score B | FoodScan"
+  }
+ ]
+}

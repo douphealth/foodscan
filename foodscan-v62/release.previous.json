@@ -1,0 +1,23 @@
+{
+  "version": "64.0.0",
+  "codename": "Qualified-Evidence",
+  "build": "6400qualifiedevidence",
+  "cache": "foodscan-6400-qualified1",
+  "suffix": "v640",
+  "baselineSuffix": "v610",
+  "baselineVersion": "61.0.0",
+  "baselineBuild": "6100relevantfast26",
+  "baselineCache": "foodscan-6100-relevantfast26",
+  "modules": {
+    "domain.mjs": "domain",
+    "match-policy.mjs": "match-policy",
+    "market-catalogue.mjs": "market-catalogue",
+    "comparison-guards.mjs": "comparison-guards"
+  },
+  "assetQuery": {
+    "from": "58",
+    "to": "64"
+  },
+  "baselineZip": "baseline/FoodScan-61.0.0-Fast-Relevant-Choices-Cloudflare-Pages.zip",
+  "baselineZipSha256": "b83aab2c52c672ba61217d2e0922711d47797bf8614c98e000472cfd21f4cba8"
+}

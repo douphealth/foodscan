@@ -1,0 +1,43 @@
+# Clean-checkout gate for FoodScan: rebuild the release from the hash-pinned baseline and run every automated test.
+# Uses the baseline catalogue (release.ci.json): the refreshed catalogue directory is not committed (14 MB of ODbL data); refreshes are gated by
+# tools/verify-catalogue.mjs instead. Nothing here deploys.
+name: FoodScan CI
+on:
+  pull_request:
+    paths: ['foodscan-v62/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: foodscan-v62
+    env:
+      FS_RELEASE: release.ci.json
+      CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: foodscan-v62/package-lock.json
+      - run: npm ci
+      - name: Build the release (hash-pinned baseline; the build fails if any patch no longer matches)
+        run: node tools/build-v62.mjs --zip /tmp/foodscan.zip
+      - name: Unit and contract tests
+        run: npm test
+      - name: Browser tests (real Chrome)
+        run: npm run e2e
+      - name: Reproducibility (a second build must be byte-identical)
+        run: |
+          node tools/build-v62.mjs --zip /tmp/foodscan-2.zip >/dev/null
+          test "$(sha256sum < /tmp/foodscan.zip)" = "$(sha256sum < /tmp/foodscan-2.zip)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foodscan-release-zip
+          path: /tmp/foodscan.zip
+          retention-days: 14
