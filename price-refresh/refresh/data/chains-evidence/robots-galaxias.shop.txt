@@ -1,0 +1,18 @@
+# Galaxias E-Shop - Allow search engine indexing for production only
+# Block indexing for staging domain (devgalaxeshop.eu)
+
+User-agent: *
+# Production domain (galaxias.shop) - Allow indexing
+Allow: /
+
+# Disallow admin/private areas only
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/payment/
+Disallow: /account/orders/
+
+# Sitemap location (production only)
+Sitemap: https://galaxias.shop/sitemap.xml
+
+# NOTE: For staging domain (devgalaxeshop.eu), use server-side robots.txt
+# that blocks all indexing with "Disallow: /"
