@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /netvolution
+Disallow: /*.aspx$
+Sitemap: https://www.sklavenitis.gr/sitemap/Collections/sitemap_index.xml
+Sitemap: https://www.sklavenitis.gr/sitemap/Pages/sitemap_index.xml
+Sitemap: https://www.sklavenitis.gr/sitemap/ProductCategories/sitemap_index.xml
+Sitemap: https://www.sklavenitis.gr/sitemap/Products/sitemap_index.xml

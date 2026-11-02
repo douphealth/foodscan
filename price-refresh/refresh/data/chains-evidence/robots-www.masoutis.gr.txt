@@ -1,0 +1,5 @@
+﻿User-agent:*
+Disallow: mainsite/*
+Disallow: categories/index/search?text
+Sitemap: https://www.masoutis.gr/images/sitemapthree.xml
+Sitemap: https://www.masoutis.gr/images/sitemapfirst.xml

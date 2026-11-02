@@ -1,0 +1,118 @@
+/* FoodScan 80: readable Greek/English layouts. Keep source facts, controls and focus visible. */
+:root{--fs76-dock-space:104px;--fs76-text:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+html{scroll-padding-block:84px calc(var(--fs76-dock-space) + 24px);text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body{overflow-wrap:break-word}
+:lang(el){--font-display:var(--fs76-text);--font-mono:var(--fs76-text)}
+:lang(el) :is(h1,h2,h3,.eyebrow,.snip__kicker,.fp-eyebrow){letter-spacing:normal}
+:where(button,a,input,select,textarea):focus-visible{outline:3px solid #4c99ec;outline-offset:3px}
+:where(button,.btn){white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+:where(.page,.report,.card,.report__main,.report__side,.hero,.swap,.swap__body,.snip,.snip__verdict){min-width:0}
+#view{padding-bottom:calc(var(--fs76-dock-space) + env(safe-area-inset-bottom,0px))}
+:where([id],input,select,button,a,summary){scroll-margin-block:86px calc(var(--fs76-dock-space) + 28px)}
+.report .hero{padding:20px;gap:14px;border-radius:28px}
+.report .hero__prod{gap:12px;align-items:center}
+.report .hero__img{width:74px;height:82px;flex:0 0 74px}
+.report .hero__img :is(img,svg){max-width:100%;max-height:100%;object-fit:contain}
+.report .hero__name h1{font-size:clamp(1.25rem,4vw,1.7rem);line-height:1.2;overflow-wrap:anywhere}
+.report .hero__name p{line-height:1.5;overflow-wrap:anywhere;font-size:.8rem}
+.report .hero .snip__head{flex-wrap:wrap;align-items:flex-start;gap:8px}
+.report .hero .snip__kicker{white-space:normal;flex-wrap:wrap;line-height:1.5;letter-spacing:.06em;font-size:.72rem}
+.report .hero .snip__state{white-space:normal;max-width:100%;line-height:1.4;box-shadow:none;font-size:.7rem;padding:5px 9px;align-items:flex-start}
+.report .hero .snip__state svg{flex:none;margin-top:2px}
+.report .hero .snip__core,.report .hero:not(.hero--none) .snip__core{display:grid;grid-template-columns:minmax(0,1fr) 102px;gap:18px;min-height:130px;padding:12px 0}
+.report .hero .snip__verdict{grid-column:1;grid-row:1;min-width:0}
+.report .hero .snip__seal,.report .hero:not(.hero--none) .snip__seal{grid-column:2;grid-row:1;width:96px;max-width:100%;box-shadow:0 0 0 7px #ffffff20,0 12px 24px -15px #0008;animation:none}
+.report .hero .snip__seal b,.report .hero:not(.hero--none) .snip__seal b{font-size:4.3rem}
+.report .hero .snip__ring{animation:none}
+.report .hero .snip__verdict strong,.report .hero:not(.hero--none) .snip__verdict strong{font-size:clamp(1.6rem,5.8vw,2.2rem);line-height:1.12;text-shadow:none;letter-spacing:-.02em}
+html:lang(el) .report .hero .snip__verdict strong{font:750 clamp(1.25rem,5vw,1.75rem)/1.2 var(--fs76-text);letter-spacing:0}
+.report .hero .snip__verdict span{font-size:.85rem!important;line-height:1.5!important}
+.report .hero .snip__score{flex-wrap:wrap;align-items:center;gap:7px 12px;padding:11px 13px!important}
+.report .hero .snip__scorenum{flex:1 1 140px;min-width:0;flex-wrap:wrap}
+.report .hero .snip__split{flex:0 1 110px;text-align:start;overflow-wrap:anywhere;line-height:1.5;font-size:.78rem!important}
+.report .hero .snip__scorenum em{flex-basis:100%;font-size:.73rem!important;line-height:1.5}
+.report .hero .snip__foot{gap:6px;line-height:1.5}
+.report .hero .snip__foot span:last-child{white-space:normal}
+.report .hero .stat{padding:11px 7px;gap:6px;min-width:0}
+.report .hero .stat span{font-size:.76rem;line-height:1.4;white-space:normal;flex-wrap:wrap;justify-content:center;text-align:center;overflow-wrap:anywhere}
+.report .hero .stat b{font-size:1.08rem;white-space:normal}
+.report .hero .hero__stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.report .hero .hero__stats .hero__cubes-bar,.report .hero .hero__stats .hero__unit{grid-column:1/-1}
+.report .why--split{grid-template-columns:22px minmax(0,1fr) auto;gap:9px;padding:12px 10px}
+.report .why__main :is(b,small){white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+.report .why__pts{max-width:66px;min-width:36px}
+/* The price panel is part of the grade component, directly beneath its points row. */
+/* Dense content is optional; safety warnings remain expanded. */
+.fs76-details{border:1px solid var(--line,#d4ded5);background:var(--surface,#fff);border-radius:19px;min-width:0;overflow:clip}
+.fs76-details>summary{padding:17px 18px;cursor:pointer;font:700 .98rem/1.5 var(--fs76-text);color:var(--ink,#142d20);overflow-wrap:anywhere}
+.fs76-details>.card{margin:0;border:0;border-top:1px solid var(--line,#d4ded5);border-radius:0;box-shadow:none}
+.fs76-details>.card>.card__head h2{font-size:.9rem}
+.fp71-slot{max-width:100%;min-width:0;gap:6px}
+.fp71c{border-radius:11px;flex-wrap:wrap;line-height:1.45;max-width:100%;padding:6px 9px;overflow-wrap:anywhere}
+.fp71c small{white-space:normal;line-height:1.5}.fp71c b{white-space:nowrap}
+.fp71-row th{white-space:normal!important;font-size:.76rem;overflow-wrap:anywhere}
+.fp71-cell :is(a,small){min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+:where(.vs2__head,.cmpn__table th,.cmpn__table td){min-width:0;overflow-wrap:anywhere}
+.swap__foot{display:flex;flex-wrap:wrap;gap:8px}.swap__foot .btn{height:auto;min-height:40px;white-space:normal}
+.card__head{flex-wrap:wrap}.card__head h2{min-width:0;line-height:1.4}
+.report__bar{gap:6px!important}.report__bar .btn{min-width:0;white-space:normal;font-size:.76rem;padding:9px;line-height:1.35}
+.dock.fp-dock-expanded{box-sizing:border-box;grid-template-columns:repeat(6,minmax(0,1fr));bottom:max(8px,env(safe-area-inset-bottom,0px));padding:8px 4px;max-width:calc(100% - 16px);width:min(600px,calc(100% - 16px));gap:1px;min-height:70px}
+.dock.fp-dock-expanded>a{min-width:0;min-height:44px;line-height:1.35;padding-inline:2px;font-size:.65rem;white-space:normal;text-align:center}
+.dock.fp-dock-expanded .dock__scan span{height:52px;width:52px;max-width:100%}
+.toast,.fp-toast{bottom:calc(var(--fs76-dock-space) + env(safe-area-inset-bottom,0px))!important;max-width:calc(100% - 24px);white-space:normal}
+/* Full comparison workspace uses the same restrained spacing and evidence language. */
+.fp-body{font-family:var(--fs76-text);line-height:1.55}
+.fp-frame{min-width:0}.fp-head__row{flex-wrap:wrap}.fp-head__nav{flex-wrap:wrap}.fp-hero h1{line-height:1.13}
+.fp-btn{white-space:normal;line-height:1.45;height:auto;min-height:44px;text-align:center;overflow-wrap:anywhere;padding-block:10px}
+.fp-searchbox__row{min-width:0}.fp-inputwrap{min-width:0}.fp-searchbox input{min-width:0;max-width:100%;font-size:16px}
+.fp-offer :is(h3,p,span),.fp-product :is(h2,p){overflow-wrap:anywhere}
+.fp-hero__chips>span{white-space:normal;line-height:1.5}
+@media(max-width:600px){.fp-head__nav{display:none}.fp-hero{padding-block:22px}.fp-hero__art{display:none}.fp-hero h1{font-size:2.2rem}.fp-topbar{flex-wrap:wrap;gap:10px}.fp-searchbox__row{display:grid;grid-template-columns:1fr}.fp-region{align-items:flex-start;flex-wrap:wrap;gap:12px}.fp-region__actions{flex-wrap:wrap}.fp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:900px){:root{--fs76-dock-space:24px}.dock.fp-dock-expanded{display:none}.report .hero{padding:22px}.report .hero .snip__core{min-height:138px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.fp71__spin{animation:none}}
+.report .hero__img>*,.report .hero__img .pimg{box-sizing:border-box;width:100%!important;height:100%!important;min-width:0!important;max-width:100%!important;border-radius:18px}
+.report .hero__prod{display:grid!important;grid-template-columns:74px minmax(0,1fr)!important}
+/* Mobile content has its own viewport above the navigation: the dock cannot cover a price or button. */
+@media(max-width:899px){body:has(>#app){height:100dvh;overflow:hidden}#app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}#app>#view{flex:1;min-height:0;overflow-y:auto;overflow-x:clip;overscroll-behavior-y:contain;width:100%;margin-bottom:calc(86px + env(safe-area-inset-bottom,0px));padding-bottom:28px;scroll-padding-block:76px 28px}#app>.top{flex:none}#app>.dock{z-index:35}#app>#view :where([id],button,input,summary){scroll-margin-block:76px 28px}}
+.fsc-growth-cta{min-width:0}.fs76-details:has(>.fsc-growth-cta){margin-top:16px}.fs76-details>.fsc-growth-cta{margin:0;border-radius:0}
+/* Prevent added price chips from becoming implicit width-defining grid columns. */
+.vs2__head{grid-template-columns:64px minmax(0,1fr) 56px;gap:10px}
+.vs2__head .fp71-slot--vs,.vs2__head .vs2__trust{grid-column:1/-1;max-width:100%;min-width:0}
+.vs2__name{min-width:0;overflow-wrap:anywhere}.vs2__name b{line-height:1.35}
+.vs2__img .pimg{width:100%;height:100%;min-width:0}
+.page .btn,.report .btn,.scan .btn,.row-actions .btn{white-space:normal;max-width:100%;min-width:0;height:auto;min-height:40px;line-height:1.4;overflow-wrap:anywhere;text-align:center}
+.page .btn svg,.report .btn svg,.scan .btn svg{flex-shrink:0}
+.page :is(section,article,header,div,h1,h2,h3),.report :is(section,article,header,div,h1,h2,h3){min-width:0}
+.row-actions{flex-wrap:wrap}
+.scan{grid-template-columns:minmax(0,1fr)}.scan__panel,.scan__top{min-width:0;width:100%;max-width:100%}
+.scan .finder{display:grid;grid-template-columns:minmax(0,1fr) 48px;min-width:0;max-width:100%;gap:8px}
+.scan .finder input{min-width:0;max-width:100%;width:100%;font-size:16px}
+.scan__alts{flex-wrap:wrap;min-width:0;gap:8px}.scan__alts .btn{flex:1 1 120px}
+.scroller:has(>.sample){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;overflow:visible;margin-inline:0;padding-inline:0}
+.scroller>.sample{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+@media(min-width:900px){.scroller:has(>.sample){grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:360px){.scroller:has(>.sample){grid-template-columns:minmax(0,1fr)}.vs2__head{grid-template-columns:52px minmax(0,1fr) 48px;padding:12px;gap:8px}.vs2__head .vs2__img{width:52px;height:60px}.vs2__head>.gchip{width:48px;height:48px;font-size:1.8rem}}
+/* When opened from a score card, show that product's prices instead of asking for a second scan. */
+#fpSearchDetails{margin-bottom:18px}
+#fpSearchDetails>summary{padding:12px 15px;cursor:pointer;border:1px solid var(--fp-line,#dbe4db);border-radius:14px;background:var(--fp-white,#fff);font-weight:650;line-height:1.45}
+body:not(.fp-has-code) #fpSearchDetails>summary{display:none}
+#fpSearchDetails[open]>summary{margin-bottom:12px}
+@media(max-width:600px){.fp-section-head{flex-direction:column;align-items:stretch;gap:14px}.fp-section-head>.fp-actions{display:flex;flex-wrap:wrap;gap:8px}.fp-section-head .fp-actions>.fp-btn{flex:1 1 125px}.fp-product h2{font-family:var(--fs76-text)}.fp-offer__title{font-family:var(--fs76-text)}}
+
+/* 80: long product names stay inside the card instead of filling the screen; Greek microcopy */
+.report .hero .hero__name h1.fs80-long{font-size:clamp(1.12rem,4.9vw,1.5rem)!important;line-height:1.2!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+html:lang(el) .fp71__eyebrow,html:lang(el) .fp-eyebrow{letter-spacing:.05em}
+/* 80: estimate / none cards use one column; the estimate range may wrap instead of overflowing */
+html:lang(el) .fp-body :is(h1,h2,h3,h4){font-family:var(--fs76-text)}
+
+/* 80: the action bar of the product view (back, share verdict, compare, image, save) fits a 320-390 px phone in Greek:
+   the long label shrinks with an ellipsis, the icon buttons keep their size, the product mini-title steps aside */
+.report__bar{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%}
+.report__bar>.btn--xs{min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.report__bar>.icon-btn{flex:0 0 auto}
+.report__bar-title{min-width:0;flex:0 1 auto;overflow:hidden}
+@media(max-width:560px){.report__bar-title{display:none}}
+/* price strip: Greek text wraps instead of overflowing, numerals keep one font */
+.fp75,.fp75 *{min-width:0}
+.fp75 :is(.fp75__store b,.fp75__store span,.fp80-kind,.fp80-stale,.fp75__none span){overflow-wrap:anywhere}
+html:lang(el) .fp75__eyebrow{letter-spacing:.04em}

@@ -1,0 +1,32 @@
+User-agent: *
+Disallow: /*/login/*
+Disallow: /*/cart
+Disallow: /*/carts/*
+Disallow: /*/carts/*
+Disallow: /*/login
+Disallow: /*/signup
+Disallow: /*/user
+Disallow: /*/privacy
+Disallow: /*/password/reset
+Disallow: /*/wishlist
+Disallow: /*/vivasmart
+Disallow: /*/local-stores
+Disallow: /chiliometra-prosforas/
+Disallow: /*?specs_free_from_el=*
+Disallow: /*?free_from=*
+
+# Don't waste crawl budget.
+Disallow: /*?*-and-*
+Disallow: /*?*query=*
+Disallow: /*?*sort=*
+Disallow: /*?*perPage=*
+Disallow: /*?*categories=*
+Disallow: /*?*brand=*
+Disallow: /*?*in_offer=*
+Disallow: /*?*price=*
+Disallow: /*?*diaper_size=*
+Disallow: /*?*diaper_type=*
+Disallow: /*?*specs_*
+Disallow: /*/search*
+
+Sitemap: https://www.mymarket.gr/sitemap.xml
