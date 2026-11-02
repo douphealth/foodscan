@@ -107,8 +107,11 @@ export function checkPayload(p, now = Date.now()) {
     .map(o => ({...o, rankingEligible:false})).sort((a, b) => b.date.localeCompare(a.date));
   // 'incomplete' (78): some sources did not answer and the others had nothing. Never shown as a definite "no price".
   const status = ['observations_available', 'estimate_only', 'no_data', 'incomplete', 'temporarily_unavailable'].includes(p.status) ? p.status : 'no_data';
-  const estimate = checkEstimate(p.estimate);
-  return summarize({barcode, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
+  // 81: no estimated price is ever shown, whatever an older or remote engine sends. Close products with their OWN recorded prices may be listed.
+  const estimate = null;
+  const related = (Array.isArray(p.related) ? p.related : []).slice(0, 20).map(x => ({name:text(x?.name, 90), price:num(x?.price), source:text(x?.source, 30), date:isoDate(x?.date), similarity:Math.min(100, Math.max(0, Math.round(num(x?.similarity) || 0)))}))
+    .filter(x => x.name && x.price > 0 && x.price < 5000 && x.date && x.similarity >= 55).slice(0, 3);
+  return summarize({barcode, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, related, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
     status:offers.length || elsewhere.length ? 'observations_available' : estimate ? 'estimate_only' : status === 'observations_available' || status === 'estimate_only' ? 'no_data' : status,
     checkedAt:text(p.checkedAt, 40), transport:text(p.transport, 40)});
 }

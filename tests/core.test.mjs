@@ -30,20 +30,26 @@ test('offers without evidence are refused', () => {
     assert.equal(checkOffer(offer(bad), null, NOW), null, JSON.stringify(bad));
 });
 
-test('lead: current price > last recorded price > estimate > none', () => {
+test('lead: current price > last recorded price > none; an estimate is never shown (81)', () => {
   assert.equal(checkPayload(payload({ offers: [offer()], estimate: estimate() }), NOW).lead.kind, 'current');
   const older = checkPayload(payload({ offers: [offer({ date: day(30) })], estimate: estimate() }), NOW);
   assert.equal(older.lead.kind, 'older'); assert.equal(older.best, null); assert.equal(older.lead.offer.price, 1.3);
   const hist = checkPayload(payload({ offers: [offer({ date: day(140), id: 'ek:2026-06-16:ab:05201054015360', source: 'e-katanalotis', match: 'barcode' })], estimate: estimate() }), NOW);
   assert.equal(hist.lead.kind, 'historical');
   const est = checkPayload(payload({ status: 'estimate_only', estimate: estimate() }), NOW);
-  assert.equal(est.lead.kind, 'estimate'); assert.equal(est.best, null); assert.equal(est.offers.length, 0); assert.equal(est.status, 'estimate_only');
+  assert.equal(est.lead.kind, 'none'); assert.equal(est.estimate, null); assert.equal(est.best, null); assert.equal(est.offers.length, 0); assert.equal(est.status, 'no_data');
   const none = checkPayload(payload({ status: 'no_data' }), NOW); assert.equal(none.lead.kind, 'none'); assert.equal(none.status, 'no_data');
 });
 
 test('a price the worker tied to ANOTHER pack size is not "the last recorded price" of this product', () => {
   const other = checkPayload(payload({ offers: [offer({ date: day(1), rankingEligible: false, packMismatch: true, tier: 'otherSize' })], estimate: estimate() }), NOW);
-  assert.equal(other.latest, null); assert.equal(other.lead.kind, 'estimate');
+  assert.equal(other.latest, null); assert.equal(other.lead.kind, 'none');
+});
+
+test('81: related products keep their OWN recorded price; incomplete or weak ones are dropped; at most 3', () => {
+  const rel = (over = {}) => ({ name: 'Fage Total 2% 200g', price: 1.3, source: 'Παρατηρητήριο Τιμών', date: day(1), similarity: 64, ...over });
+  const r = checkPayload(payload({ status: 'no_data', related: [rel(), rel({ similarity: 40 }), rel({ price: 0 }), rel({ name: '' }), rel({ date: 'x' }), rel(), rel(), rel()] }), NOW);
+  assert.equal(r.related.length, 3); assert.ok(r.related.every(x => x.price === 1.3 && x.similarity >= 55)); assert.equal(r.lead.kind, 'none'); assert.equal(r.best, null); assert.equal(r.currentCount, 0);
 });
 
 test('an estimate is never an offer: not ranked, not counted, not compared per kg', () => {

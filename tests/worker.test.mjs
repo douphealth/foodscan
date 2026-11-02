@@ -12,7 +12,7 @@ const NONE = (() => { for (let n = 4001234560000; ; n++) { const s = String(n).s
 
 test('version, identity and the 7-day window are the release’s', async () => {
   const { body, res } = await compare(CUR);
-  assert.equal(res.status, 200); assert.equal(body.version, '80.0.0'); assert.equal(body.barcode, CUR);
+  assert.equal(res.status, 200); assert.equal(body.version, '81.0.0'); assert.equal(body.barcode, CUR);
 });
 
 test('a barcode with recorded prices returns dated, sourced offers; no estimate rides along', async () => {
@@ -39,16 +39,16 @@ test('freshness: a seed price older than 7 days is "older" and never the lowest 
   assert.ok(worker);
 });
 
-test('a barcode with no recorded price gets a labelled estimate, not an offer', async () => {
+test('81: a barcode with no recorded price gets NO estimate; close products are listed with their own recorded prices', async () => {
   const { body } = await compare(EST_B);
-  assert.equal(body.status, 'estimate_only'); assert.equal(body.offers.length, 0); assert.equal(body.summary.lowestCurrentPrice, null); assert.equal(body.summary.bestOfferId, null);
-  const e = body.estimate; assert.ok(e && e.unitLow > 0 && e.unitLow <= e.unitMid && e.unitMid <= e.unitHigh);
-  assert.ok(Array.isArray(e.pack) && e.pack[0] <= e.pack[1] && e.pack[1] <= e.pack[2]); assert.ok(e.n >= 2);
-  assert.ok(e.validation && e.validation.tested > 100, 'the error of the method is reported with its sample size');
+  assert.equal(body.status, 'no_data'); assert.equal(body.offers.length, 0); assert.equal(body.summary.lowestCurrentPrice, null); assert.equal(body.summary.bestOfferId, null);
+  assert.equal(body.estimate, null); assert.ok(!JSON.stringify(body).includes('unitLow'));
+  assert.ok(Array.isArray(body.related) && body.related.length <= 3);
+  for (const x of body.related) { assert.ok(x.name && x.price > 0 && x.source); assert.match(x.date, /^\d{4}-\d{2}-\d{2}$/); assert.ok(x.similarity >= 55); }
 });
 
-test('class E (typical for the product type) has no neighbour examples and rests on a stated number of products', async () => {
-  const { body } = await compare(EST_E); assert.equal(body.estimate.cls, 'E'); assert.deepEqual(body.estimate.examples, []); assert.ok(body.estimate.n >= 8);
+test('class E (typical for the product type) lists no related products and no estimate', async () => {
+  const { body } = await compare(EST_E); assert.equal(body.estimate, null); assert.deepEqual(body.related, [], 'a "typical for the type" match is too loose to list'); assert.equal(body.status, 'no_data');
 });
 
 test('unknown barcode: honest no_data, never a made-up price', async () => {
@@ -61,10 +61,10 @@ test('every source down and nothing bundled: reported as an outage, not as "no p
   assert.ok(['temporarily_unavailable', 'incomplete'].includes(body.status), body.status);
 });
 
-test('an Open Prices outage does not hide bundled prices or estimates', async () => {
+test('an Open Prices outage does not hide bundled prices', async () => {
   const down = [[/prices\.openfoodfacts\.org/, () => new Response('down', { status: 503 })]];
   assert.equal((await compare(CUR, { handlers: down })).body.status, 'observations_available');
-  assert.equal((await compare(EST_B, { handlers: down })).body.status, 'estimate_only');
+  assert.ok(['no_data', 'incomplete'].includes((await compare(EST_B, { handlers: down })).body.status), 'a missing source is reported, never covered by a guess');
 });
 
 test('the live shop check corrects a stale seed price and never invents one', async () => {
@@ -90,7 +90,7 @@ test('invalid input is rejected', async () => { assert.equal((await compare('123
 test('/api/prices/health reports the estimator and the remote-data setting', async () => {
   const worker = await loadWorker();
   const res = await withNetwork(noOpenPrices, () => worker.fetch(new Request('https://food-scan.test/api/prices/health'), makeEnv(), { waitUntil() {} }));
-  const h = await res.json(); assert.equal(h.version, '80.0.0'); assert.ok(h.estimator.estimates > 5000 && h.estimator.validation.A.usable); assert.ok(h.remote.url);
+  const h = await res.json(); assert.equal(h.version, '81.0.0'); assert.ok(h.estimator.estimates > 5000 && h.estimator.validation.A.usable); assert.ok(h.remote.url);
 });
 
 test('remote data: a NEWER seed manifest + shard wins; older, truncated, invalid or failing remotes are ignored', async () => {

@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { APP, read } from './helpers.mjs';
 
-const V = '80.0.0', BUILD = '8000-price-intelligence', rx = s => s.replace(/\./g, '\\.');
+const V = '81.0.0', BUILD = '8100-honest-prices', rx = s => s.replace(/\./g, '\\.');
 
 test('release identity is the same everywhere', () => {
   assert.match(read('_worker.js'), new RegExp(`var VERSION = "${rx(V)}";`)); assert.match(read('_worker.js'), new RegExp(`var BUILD = "${BUILD}";`));
   assert.match(read('sw.js'), new RegExp(`const CACHE = 'foodscan-${rx(V)}'`)); assert.match(read('prices/native-v80.js'), new RegExp(`export const BUILD = 'foodscan-${rx(V)}'`));
   for (const f of ['index.html', 'prices/index.html', 'demo/index.html', 'how/index.html']) assert.match(read(f), new RegExp(`data-foodscan-version="${rx(V)}"`), f);
-  assert.match(read('RELEASE-80.0.0.md'), /80\.0\.0/);
+  assert.match(read('RELEASE-81.0.0.md'), /81\.0\.0/);
 });
 
 test('every service-worker precache entry exists in the package, so activation can never fail on a 404', () => {

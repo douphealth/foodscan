@@ -73,7 +73,7 @@ Object.assign(EN,{
   estValid:(m,n)=>`On ${n} products with known prices the typical error was ${m}%.`,sim:'match',
   estKinds:{close:'Very similar products',similar:'Similar products',broad:'Broadly similar products',rough:'Rough estimate: few close matches',typical:'Rough estimate: typical for this kind of product'},
   agePill:a=>`Recorded ${a}`,staleNote:a=>`Recorded ${a}: it may have changed. Check the shelf.`,
-  noPrice:'No verified price for this barcode',noPriceSub:'No supermarket price is on record for it yet, and no comparable priced products were found. That does not mean it is not sold. You can add a price you saw.',
+  noPrice:'No verified price for this barcode',noPriceSub:'No supermarket price is on record for it yet. FoodScan does not guess prices. That does not mean it is not sold. You can add a price you saw.',relHead:'Recorded prices of the closest products · not this product',
   onlyHistoric:'No recent price, only older records',onlyHistoricSub:'Older recorded prices are listed with their dates. They may have changed.',
   chainsHead:'Chains with a recorded price',chainsNone:'No recorded price at:'});
 Object.assign(I18N.el,{
@@ -85,7 +85,7 @@ Object.assign(I18N.el,{
   estValid:(m,n)=>`Σε ${n} προϊόντα με γνωστή τιμή το τυπικό σφάλμα ήταν ${m}%.`,sim:'ομοιότητα',
   estKinds:{close:'Πολύ παρόμοια προϊόντα',similar:'Παρόμοια προϊόντα',broad:'Σχετικά παρόμοια προϊόντα',rough:'Πρόχειρη εκτίμηση: λίγα κοντινά προϊόντα',typical:'Πρόχειρη εκτίμηση: τυπική τιμή για αυτό το είδος προϊόντος'},
   agePill:a=>`Καταγράφηκε ${a}`,staleNote:a=>`Καταγράφηκε ${a} και ίσως έχει αλλάξει. Ελέγξτε στο ράφι.`,
-  noPrice:'Δεν βρέθηκε επαληθευμένη τιμή',noPriceSub:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό το barcode και δεν βρέθηκαν συγκρίσιμα προϊόντα με τιμή. Δεν σημαίνει ότι το προϊόν δεν πωλείται. Μπορείτε να προσθέσετε μια τιμή που είδατε.',
+  noPrice:'Δεν βρέθηκε επαληθευμένη τιμή',noPriceSub:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό το barcode. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται. Μπορείτε να προσθέσετε μια τιμή που είδατε.',relHead:'Καταγεγραμμένες τιμές των πιο κοντινών προϊόντων · όχι αυτού του προϊόντος',
   onlyHistoric:'Δεν υπάρχει πρόσφατη τιμή, μόνο παλαιότερες καταγραφές',onlyHistoricSub:'Οι παλαιότερες καταγεγραμμένες τιμές εμφανίζονται με τις ημερομηνίες τους. Ίσως έχουν αλλάξει.',
   chainsHead:'Αλυσίδες με καταγεγραμμένη τιμή',chainsNone:'Χωρίς καταγεγραμμένη τιμή σε:'});
 const STORES={ab:'AB Βασιλόπουλος',sklavenitis:'Σκλαβενίτης',lidl:'Lidl',mymarket:'My market',masoutis:'Μασούτης',kritikos:'Κρητικός',galaxias:'Γαλαξίας',marketin:'Market In',synka:'ΣΥΝΚΑ',chalkiadakis:'Χαλκιαδάκης',bazaar:'Bazaar'};
@@ -158,8 +158,10 @@ function heroCard(data){
   // 80: the last recorded price is shown as the price, with its age; an estimate is labelled and never styled as a recorded price.
   if(last)return `<section class="fp71 fp71--page">${head}<span class="fp71__pill fp71__pill--stale">${h(T('agePill')(whenText(last,L)))}</span></header><div class="fp71__main"><div class="fp71__price"><small>${h(T('lastTitle'))}</small><strong>${euro(last.price)}</strong>${last.unitPrice!=null?`<em>${h(unitText(last,L))}</em>`:''}</div><div class="fp71__store"><b>${h(last.retailer)}${last.city?' · '+h(last.city):''}</b><span>${h(T('observed'))} ${h(day(last.date))}</span><span>${h(srcShort(last))}</span></div></div><p class="fp71__sub">${h(T('staleNote')(whenText(last,L)))}</p><div class="fp71__row">${link}</div></section>`;
   if(est)return `<section class="fp71 fp71--page fp80-is-est">${head}<span class="fp71__pill fp80-pill-est">${h(T(est.cls==='D'||est.cls==='E'?'estRough':'estBadge'))}</span></header><div class="fp71__main"><div class="fp71__price fp80-est"><small>${h(T('estTitle'))}</small><strong>${h(estRange(est))}</strong><em>${h(T('estPer')(euro(est.unitMid),coreT(L,est.unit)))}${est.pack?' · '+h(T('perPack')):''}</em></div><div class="fp71__store"><b>${h(T('notRecorded'))}</b><span>${h(T('estNone'))}</span><span>${h(T(est.cls==='E'?'estBasisType':'estBasis')(est.n))}</span></div></div><p class="fp71__sub">${h(T('estKinds')[est.kind]||'')}</p>${estWhy(est)}<div class="fp71__row">${link}</div></section>`;
-  return `<section class="fp71 fp71--page fp80-is-none">${head}</header><p class="fp71__na">${h(T('noPrice'))}</p><p class="fp71__sub">${h(data.status==='incomplete'?T('partialNone'):T('noPriceSub'))}</p><div class="fp71__row">${link}</div></section>`;
+  return `<section class="fp71 fp71--page fp80-is-none">${head}</header><p class="fp71__na">${h(T('noPrice'))}</p><p class="fp71__sub">${h(data.status==='incomplete'?T('partialNone'):T('noPriceSub'))}</p>${relatedHTML(data)}<div class="fp71__row">${link}</div></section>`;
 }
+// 81: closest products with THEIR OWN recorded prices, labelled as not this product. Never a range, never an estimate.
+const relatedHTML=d=>d.related?.length?`<div class="fp81-rel"><p class="fp81-rel__head">${h(T('relHead'))}</p><ul class="fp80-ex">${d.related.map(x=>`<li><span>${h(x.name)}</span><b>${euro(x.price)}</b><small>${h(x.source)} · ${h(day(x.date))}</small></li>`).join('')}</ul></div>`:'';
 const estRange=e=>e.pack?`${euro(e.pack[0])} – ${euro(e.pack[2])}`:`${euro(e.unitLow)} – ${euro(e.unitHigh)}${coreT(state.lang,e.unit)}`;
 function estWhy(e){const v=e.validation&&e.validation.medianErrorPct!=null&&e.validation.tested?`<p class="fp80-valid">${h(T('estValid')(Math.round(e.validation.medianErrorPct),e.validation.tested))}</p>`:'';
   return `<details class="fp80-why" open><summary>${h(T('how'))}</summary><p>${h(T('howBody'))}</p><ul class="fp80-ex">${(e.examples||[]).map(x=>`<li><span>${h(x.name)}</span><b>${euro(x.price)}</b><small>${h(x.source)} · ${h(day(x.date))} · ${h(T('sim'))} ${x.similarity}%</small></li>`).join('')}</ul>${v}</details>`;}
