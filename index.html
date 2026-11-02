@@ -1,49 +1,42 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-foodscan-version="80.0.0">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f7f2">
-<meta name="description" content="Scan packaged foods for source-backed nutrition, ingredients and allergens. Calculate your portion and keep a private food diary.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FoodScan · Food grades you can actually trust</title>
+<meta name="description" content="Scan supported food barcodes, read source-reported nutrition grades, check ingredients and compare possible alternatives. Saved foods work offline. No account required.">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://food-scan.gearuptofit.com/">
+<meta name="theme-color" content="#F4EFE2">
+<meta name="color-scheme" content="light dark">
 <meta name="application-name" content="FoodScan">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FoodScan">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="canonical" href="https://food-scan.gearuptofit.com/">
+<link rel="preconnect" href="https://images.openfoodfacts.org" crossorigin>
+<link rel="dns-prefetch" href="https://world.openfoodfacts.org">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FoodScan">
-<meta property="og:title" content="FoodScan: Free food barcode scanner and grocery companion">
-<meta property="og:description" content="Understand food labels, check your portion, and keep a private food diary. No account required.">
+<meta property="og:title" content="FoodScan · Food grades you can actually trust">
+<meta property="og:description" content="Scan supported food barcodes, read source-reported nutrition grades, check ingredients and compare possible alternatives. Saved foods work offline. No account required.">
 <meta property="og:url" content="https://food-scan.gearuptofit.com/">
 <meta property="og:image" content="https://food-scan.gearuptofit.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="FoodScan: source-backed food facts">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FoodScan · Food grades you can actually trust">
+<meta name="twitter:description" content="Scan supported food barcodes, read source-reported nutrition grades, check ingredients and compare possible alternatives. Saved foods work offline. No account required.">
 <meta name="twitter:image" content="https://food-scan.gearuptofit.com/og.png">
-<meta name="color-scheme" content="light dark">
-<title>FoodScan | Food Scanner and Private Diary</title>
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon-192.png">
-<link rel="manifest" href="/manifest.webmanifest">
-<script src="/assets/release-11.10.0/boot.js"></script>
-<link rel="stylesheet" href="/assets/release-11.20.0/app.css">
-<link rel="preconnect" href="https://world.openfoodfacts.org" crossorigin>
-<script type="importmap">{"imports":{"/assets/release-11.3.0/lib/views.js":"/assets/release-11.20.0/views.js","/assets/release-11.3.0/lib/decision-ui.js":"/assets/release-11.20.0/result.js","/assets/release-11.3.0/lib/model.js":"/assets/release-11.20.0/model.js","/assets/release-11.3.0/lib/api.js":"/assets/release-11.20.0/api.js","/assets/release-11.3.0/lib/store.js":"/assets/release-11.10.0/store.js","/assets/release-11.3.0/lib/meal-diary.js":"/assets/release-11.14.0/meal-diary.js"}}</script>
-<script type="module" src="/assets/release-11.20.0/app.js"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FoodScan","url":"https://food-scan.gearuptofit.com/","applicationCategory":"HealthApplication","operatingSystem":"Any","isAccessibleForFree":true,"softwareVersion":"11.20.0","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
-</head>
+<link rel="stylesheet" href="/assets/app-V52SOTA1-v7540.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"FoodScan","url":"https://food-scan.gearuptofit.com/","applicationCategory":"HealthApplication","operatingSystem":"Any","description":"Scan supported food barcodes, read source-reported nutrition grades, check ingredients and compare possible alternatives. Saved foods work offline. No account required.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true}</script>
+<link rel="stylesheet" href="/prices/native-v80.css">
+<link rel="stylesheet" href="/ui-v80.css"></head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
-<div id="header"></div>
-<main id="main" tabindex="-1" aria-label="FoodScan application"><div class="container startup"><h1>FoodScan</h1><p role="status">Opening FoodScan…</p></div></main>
-<div id="footer"></div>
-<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-<input type="file" id="photo-input" accept="image/*" class="sr-only" tabindex="-1" aria-label="Choose a barcode photo">
-<input type="file" id="label-photo-input" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" aria-label="Choose a private food label photo">
-<input type="file" id="import-input" accept="application/json,.json" class="sr-only" tabindex="-1" aria-label="Choose a FoodScan backup">
-<noscript><div class="container"><h2>JavaScript is required for scanning.</h2><p>Enable JavaScript. Always confirm allergens against the physical package.</p></div></noscript>
+<div id="app"><!--boot--><div class="boot"><h1>Food grades you can actually trust.</h1><p>Look up supported food barcodes, examine source-reported nutrition and ingredients, and compare possible alternatives. Incomplete or inconsistent data is identified; ingredient checks are not allergy clearance. Saved records can be used offline.</p><ul><li>Source-reported grades, with eligible calculated estimates labelled separately</li><li>Reasons shown point by point</li><li>Possible alternatives from a limited category sample</li><li>Allergen cross-check and data-error guard</li><li>No account; history and rules are stored on your device</li></ul><p class="boot__load">Loading FoodScan…</p><p><a href="/demo/">Explore the example tour</a> · <a href="/how/">Read the method and limitations</a></p><p><a href="https://gearuptofit.com/nutrition/free-food-scanner-app/">Free Food Scanner App Guide</a> · <a href="https://gearuptofit.com/nutrition/is-nutella-healthy/">Is Nutella Healthy?</a> · <a href="https://gearuptofit.com/fitness-and-health-calculators/health-and-fitness-calculators/">Health &amp; Macro Calculators</a> · <a href="https://gearuptofit.com/fitness-plan/">Free 8-Week Fitness Plan</a> · <a href="https://gearuptofit.com/">GearUpToFit.com</a></p></div><!--/boot--></div>
+<noscript><p class="noscript">FoodScan needs JavaScript to scan barcodes and show your results. Please enable it and reload.</p></noscript>
+<script src="/market-hint-v71.js"></script><link rel="stylesheet" href="/growth-ui.css?v=75"><script type="module" src="/growth-ui.js?v=75"></script><script type="module" src="/assets/app-V52SOTA1-v7550.js"></script><script type="module" src="/prices/native-v80.js"></script>
 </body>
 </html>

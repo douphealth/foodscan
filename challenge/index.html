@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#092b29">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex,follow">
+<title>7-Discovery Fridge Challenge — FoodScan</title>
+<meta name="description" content="Turn seven familiar food labels into seven useful discoveries. Scan, compare source-reported facts, keep your finds private, and share only your progress. No account.">
+<link rel="canonical" href="https://food-scan.gearuptofit.com/challenge/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="FoodScan">
+<meta property="og:title" content="Seven foods. Seven discoveries. · FoodScan">
+<meta property="og:description" content="A small curiosity challenge for your kitchen. Inspect food labels, save discoveries privately and invite a friend. No account or health rankings.">
+<meta property="og:url" content="https://food-scan.gearuptofit.com/challenge/">
+<meta property="og:image" content="https://food-scan.gearuptofit.com/challenge/og-challenge.png?v=75"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="/challenge/challenge.css?v=75">
+<script type="module" src="/challenge/challenge.js?v=75"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="site-header"><div class="shell nav">
+ <a href="/" class="logo" aria-label="FoodScan home"><span class="brand-mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 14.5 9.3 19l9.7-13.5" stroke="currentColor" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 5.5h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>Food<span>Scan</span></a>
+ <nav aria-label="Primary navigation"><a href="/how/">How grades work</a><a class="nav-scan" href="/#/scan">Open scanner <span aria-hidden="true">↗</span></a></nav>
+</div></header>
+<main id="main">
+ <div class="shell">
+  <section class="hero" aria-labelledby="hero-title">
+   <div class="hero-copy">
+    <div class="eyebrow"><span class="eyebrow-bullet" aria-hidden="true"></span> THE FOODSCAN 7-DISCOVERY QUEST</div>
+    <h1 id="hero-title">Your everyday foods. <span>Extraordinary little discoveries.</span></h1>
+    <p class="lede">Meet seven products in your kitchen a little more closely. Read real label facts, save what you explored, and turn curiosity into a shareable moment.</p>
+    <div class="hero-actions"><a id="scan-next" class="btn btn-lime" href="/#/scan"><svg width="19" height="19" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 9V5a1 1 0 0 1 1-1h4m6 0h4a1 1 0 0 1 1 1v4M4 15v4a1 1 0 0 0 1 1h4m6 0h4a1 1 0 0 0 1-1v-4M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Scan my first food <span aria-hidden="true">↗</span></a><button id="open-import" type="button" class="btn btn-glass">Use my saved reports</button></div>
+    <div class="trustline"><span><i aria-hidden="true">✓</i> No account</span><span><i aria-hidden="true">✓</i> Private on your device</span><span><i aria-hidden="true">✓</i> No food shaming</span></div>
+   </div>
+   <div class="hero-visual" aria-label="Personal challenge progress">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="visual-heading"><span class="visual-eyebrow"><span class="live-dot" aria-hidden="true"></span> YOUR COLLECTION</span><span class="visual-edition">01 / FIELD NOTES</span></div>
+    <div class="visual-center"><div class="ring" id="ring" aria-hidden="true"><div class="ring-center"><strong id="count">0</strong><span>OF 7</span></div></div><div class="visual-message"><span id="phase-label">LET'S BEGIN</span><strong id="visual-headline">A little curiosity goes a long way.</strong><p id="milestone" aria-live="polite">Your first discovery starts with a food you already know.</p></div></div>
+    <div class="mini-shelf" id="mini-shelf" aria-hidden="true"><span class="mini-slot">01</span><span class="mini-slot">02</span><span class="mini-slot">03</span><span class="mini-slot">04</span><span class="mini-slot">05</span><span class="mini-slot">06</span><span class="mini-slot">07</span></div>
+    <div class="progress-line" role="progressbar" id="progress" aria-label="Challenge progress" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0"><span id="fill"></span></div>
+    <div class="stat-bottom"><div><b id="reports-count">0</b><small>Saved report snapshots</small></div><div><b id="codes-count">0</b><small>Barcode-only entries</small></div></div>
+   </div>
+   <div class="hero-orbit orbit-a" aria-hidden="true"></div><div class="hero-orbit orbit-b" aria-hidden="true"></div>
+  </section>
+ </div>
+ <div class="shell main-content">
+  <section class="next-step" aria-labelledby="next-step-title"><div class="next-symbol" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 32 32" fill="none"><path d="m16 2 3.8 10.2L30 16l-10.2 3.8L16 30l-3.8-10.2L2 16l10.2-3.8L16 2Z" stroke="currentColor" stroke-width="1.7"/><circle cx="16" cy="16" r="3" fill="currentColor"/></svg></div><div class="next-text"><span class="micro">YOUR NEXT SMALL MISSION</span><h2 id="next-step-title">Start with breakfast</h2><p id="next-tip">Grab something from your breakfast shelf. Look at its nutrition facts per 100 g or 100 ml.</p></div><a href="/#/scan" class="next-link" id="next-action">Explore a food <span aria-hidden="true">↗</span></a></section>
+  <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+  <section class="section" id="journey" aria-labelledby="journey-title">
+   <div class="section-head"><div><span class="micro">THE COLLECTION</span><h2 id="journey-title">Seven finds. Seven stories.</h2><p>Every food gives you something to investigate. Pick any packaged product; these prompts are inspiration, not requirements.</p></div><span class="section-label" id="progress-label">0 / 7 EXPLORED</span></div>
+   <div id="discoveries" class="discovery-grid"><p>Preparing your private discovery collection…</p></div>
+  </section>
+  <section class="two-col" aria-label="Add discoveries and invite a friend">
+   <section class="panel input-card" aria-labelledby="add-title"><div class="panel-top"><span class="micro">ADD ONE MORE</span><span class="glyph" aria-hidden="true">⌗</span></div><h2 id="add-title">Already have the barcode?</h2><p>Record a packaged food you explored, even when you can't scan its label right now.</p>
+    <form id="barcode-form"><label for="barcode">Barcode number (GTIN, UPC or EAN)</label><div class="input-row"><input id="barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" maxlength="22" pattern="[0-9\s-]{8,22}" placeholder="e.g. 3017624010701" required><button class="btn btn-dark" type="submit">Add to collection <span aria-hidden="true">→</span></button></div></form><p class="footnote"><span aria-hidden="true">ⓘ</span> A valid barcode check digit does not verify the product or its nutrition. For facts, open the full FoodScan report.</p>
+   </section>
+   <section class="panel invite-card" aria-labelledby="share-title"><div class="panel-top"><span class="micro">PASS ON THE CURIOSITY</span><span class="glyph" aria-hidden="true">↗</span></div><h2 id="share-title">Curiosity is contagious.</h2><p>Invite someone to try seven finds of their own, or share a story card with your progress. Your product list stays yours.</p>
+    <div class="share-actions"><button class="btn btn-lime" id="share-card" type="button">Share progress card <span aria-hidden="true">↗</span></button><button class="btn btn-outline" id="copy-invite" type="button">Copy invitation</button><button class="text-btn" id="download-card" type="button">Download story image ↓</button></div><div class="share-promise"><span aria-hidden="true">◈</span> Only the count is shared. Never product names or barcodes.</div>
+   </section>
+  </section>
+  <section class="panel import-panel" id="import-panel" hidden aria-labelledby="import-title"><div class="section-head compact"><div><span class="micro">YOUR DEVICE, YOUR CHOICE</span><h2 id="import-title">Bring in saved FoodScan reports</h2><p>Choose exactly which reports to add. No automatic import or account required.</p></div><button id="close-import" class="text-btn" type="button">Close ✕</button></div><div id="import-options" class="import-options"></div><div class="import-footer"><span id="import-count">0 selected</span><button id="confirm-import" class="btn btn-dark" type="button" disabled>Add selected discoveries</button></div></section>
+  <section class="insight" id="insight-section" aria-labelledby="insight-title"><div class="insight-icon" aria-hidden="true">✦</div><div><span class="micro">AN INTERESTING THING TO NOTICE</span><h2 id="insight-title">Small facts, better questions.</h2><p id="insight-text">When a barcode matches a FoodScan report saved on this device, you can inspect its source-reported facts here. A barcode alone is not a verified food record.</p></div></section>
+  <section class="panel extras" id="extra-panel" hidden><div class="section-head compact"><div><span class="micro">KEEP GOING</span><h2>More discoveries</h2></div><span id="extra-count"></span></div><div id="extra-entries" class="extra-list"></div></section>
+  <section class="completion" id="completion" hidden aria-live="polite"><div class="completion-mark" aria-hidden="true">✷</div><div><span class="micro">COLLECTION COMPLETE</span><h2>Seven foods. A whole new way to look.</h2><p>You explored seven labels—not seven health improvements. Revisit any full report, compare similar products, or invite someone to explore their own kitchen.</p><button class="btn btn-outline" id="restart" type="button">Start a new collection</button></div></section>
+  <section class="method" aria-labelledby="method-title"><div class="method-top"><span class="micro">THE FOODSCAN WAY</span><h2 id="method-title">A better question changes everything.</h2><p>Use these three quick checks to make every discovery more meaningful.</p></div><div class="method-grid"><div><span class="method-symbol" aria-hidden="true">01 /</span><h3>Read the real numbers.</h3><p>Look at the data source, units and grade confidence. Missing is never zero.</p></div><div><span class="method-symbol" aria-hidden="true">02 /</span><h3>Compare fairly.</h3><p>Use the same measurement basis and genuinely comparable foods. Check the package for allergens.</p></div><div><span class="method-symbol" aria-hidden="true">03 /</span><h3>Decide for yourself.</h3><p>Use verified facts to inform shopping—not a judgement about what you eat.</p></div></div></section>
+  <div class="privacy"><span class="privacy-symbol" aria-hidden="true">◈</span><p><strong>A private little project.</strong> Your recorded products stay on this device. Shared progress never contains them. Clearing browser storage removes the collection. The challenge does not track what you ate or claim health improvements.</p></div>
+ </div>
+</main>
+<footer><div class="shell footer-inner"><a class="logo" href="/">Food<span>Scan</span></a><p>Curiosity, backed by evidence. Check your pack for the latest ingredient and allergen information.</p><div><a href="/how/">Our methodology</a><a href="/#/scan">Scan a food ↗</a></div></div></footer>
+</body></html>

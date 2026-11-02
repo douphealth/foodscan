@@ -1,14 +1,75 @@
 /*
   X-Content-Type-Options: nosniff
-  Referrer-Policy: no-referrer
-  Permissions-Policy: camera=(self), microphone=(self), geolocation=(), payment=()
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(self), payment=(), interest-cohort=()
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-iSWUYiW1uCCucRpmZsqRlDtmZ5rj1J1gIL/Ox6tQ2Bc='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://images.openfoodfacts.org https://static.openfoodfacts.org; media-src 'self' blob:; connect-src 'self' https://*.openfoodfacts.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://images.openfoodfacts.org https://static.openfoodfacts.org https://prices.openfoodfacts.org; media-src 'self' blob:; connect-src 'self' https://world.openfoodfacts.org https://prices.openfoodfacts.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   Cache-Control: public, max-age=0, must-revalidate
 /assets/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
+/icon-192.png
+  ! Cache-Control
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/icon-512.png
+  ! Cache-Control
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/icon-maskable-512.png
+  ! Cache-Control
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/og.png
+  ! Cache-Control
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 /sw.js
+  ! Cache-Control
   Cache-Control: no-cache, no-store, must-revalidate
+  CDN-Cache-Control: no-store
   Service-Worker-Allowed: /
 /manifest.webmanifest
+  ! Cache-Control
   Cache-Control: no-cache
+  Content-Type: application/manifest+json
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex, nofollow
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex, nofollow
+
+/public-catalog.css
+  Cache-Control: public, max-age=86400, s-maxage=86400
+/public-catalog.js
+  Cache-Control: public, max-age=86400, s-maxage=86400
+
+/growth-ui.js
+  Cache-Control: public, max-age=3600
+/growth-ui.css
+  Cache-Control: public, max-age=3600
+/battle-ui.js
+  Cache-Control: public, max-age=3600
+/challenge/*
+  Cache-Control: public, max-age=300, must-revalidate
+
+/fridge-core.mjs
+  Content-Type: text/javascript; charset=utf-8
+  Cache-Control: public, max-age=300, must-revalidate
+/challenge/og-challenge.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/prices/*
+  Cache-Control: no-cache, must-revalidate
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.openfoodfacts.org https://static.openfoodfacts.org https://prices.openfoodfacts.org; connect-src 'self' https://prices.openfoodfacts.org https://world.openfoodfacts.org; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+/prices/*.js
+  Cache-Control: public, max-age=3600
+
+/prices/*.css
+  Cache-Control: public, max-age=3600
+
+/prices/ocr/*
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+  Cache-Control: public, max-age=604800
+
+/prices/*.mjs
+  Content-Type: text/javascript; charset=utf-8
+  Cache-Control: public, max-age=3600

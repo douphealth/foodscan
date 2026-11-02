@@ -1,1 +1,85 @@
-{"id":"/","name":"FoodScan: Your everyday food companion","short_name":"FoodScan","description":"Check food labels, keep a quick shopping list, track what needs restocking and use your pantry. Free, private and useful every day.","lang":"en","start_url":"/","scope":"/","display":"standalone","orientation":"portrait-primary","background_color":"#f6f7f2","theme_color":"#225b40","categories":["food","health","lifestyle","utilities"],"icons":[{"purpose":"any","sizes":"192x192","src":"/icon-192.png","type":"image/png"},{"purpose":"any","sizes":"512x512","src":"/icon-512.png","type":"image/png"},{"purpose":"maskable","sizes":"512x512","src":"/icon-maskable-512.png","type":"image/png"}],"shortcuts":[{"name":"Today and my shopping list","short_name":"Today","url":"/#home"},{"name":"Scan a barcode","short_name":"Scan","url":"/#scan","icons":[{"sizes":"192x192","src":"/icon-192.png"}]},{"name":"Shopping list","short_name":"List","url":"/#shopping"}]}
+{
+  "id": "/",
+  "name": "FoodScan",
+  "short_name": "FoodScan",
+  "description": "Food barcode scanning, nutrition and allergen checks, Greek supermarket price observations, and a private grocery basket.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F4EFE2",
+  "theme_color": "#F4EFE2",
+  "categories": [
+    "food",
+    "health",
+    "lifestyle",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan a barcode",
+      "short_name": "Scan",
+      "url": "/#/scan",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Compare supermarket prices",
+      "short_name": "Prices",
+      "url": "/prices/",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Choice workspace",
+      "short_name": "Choices",
+      "url": "/#/choices",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Take the tour",
+      "short_name": "Tour",
+      "url": "/demo/",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

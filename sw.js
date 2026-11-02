@@ -1,10 +1,68 @@
-/* FoodScan 11.20.0 static shell. API requests bypass this worker cache. */
-const CACHE='foodscan-shell-11.20.0',BASE='/assets/release-11.3.0/';
-const LIBS=['api','art','barcode','commerce','components','connection-view','decision-ui','decision','demo','features','grocery-ui','grocery','icons','ingredient-parser','meal-diary','model','nutrition','photos','policy','profile','scanner','share','store','swaps','today','transactions','views'];
-const PRECACHE=['/','/index.html','/manifest.webmanifest','/art/produce.webp','/icon.svg','/icon-192.png','/icon-512.png','/icon-maskable-512.png',BASE+'app.css',BASE+'app.js',...LIBS.map(x=>BASE+'lib/'+x+'.js'),...['11.8.0','11.9.0','11.10.0'].flatMap(v=>['app.css','app.js','boot.js','views.js','result.js','model.js'].map(x=>'/assets/release-'+v+'/'+x)),'/assets/release-11.9.0/theme.js',...['api.js','store.js','retry.js'].map(x=>'/assets/release-11.10.0/'+x),...['11.8.0','11.9.0','11.10.0'].flatMap(v=>['views','decision-ui','model'].map(x=>BASE+'lib/'+x+'.js?engine='+v)),BASE+'lib/api.js?engine=11.10.0',BASE+'lib/store.js?engine=11.10.0',...['app.js','app.css','engine.js','comparison-recovery.js','portion-insights.js','meal-diary.js','views.js','model.js'].map(x=>'/assets/release-11.12.0/'+x),BASE+'lib/meal-diary.js?engine=11.12.0',BASE+'lib/model.js?engine=11.12.0',...['app.css','app.js','engine.js','model.js','api.js','category-direct.js','views.js','result.js'].map(x=>'/assets/release-11.13.0/'+x),...['app.css','app.js','result.js','views.js','meal-diary.js','model.js'].map(x=>'/assets/release-11.14.0/'+x),...['app.css','app.js','result.js','model.js'].map(x=>'/assets/release-11.14.1/'+x),...['app.css','app.js','result.js','model.js','record-quality.js','api-core.js','api.js'].map(x=>'/assets/release-11.15.0/'+x),...['app.css','app.js','result.js','model.js','api-core.js','api.js','views.js'].map(x=>'/assets/release-11.16.0/'+x),...['app.css','app.js','result.js','model.js','report-audit.js','api-core.js','api.js','engine.js'].map(x=>'/assets/release-11.17.0/'+x),...['app.css','app.js','result.js','model.js','model-core.js','record-quality.js','report-audit.js','api-core.js','api.js','engine.js'].map(x=>'/assets/release-11.18.0/'+x),...['app.css','app.js','api-core.js','api.js','category-direct.js','catalog.js','report-audit.js','engine.js','views.js','model.js'].map(x=>'/assets/release-11.19.0/'+x),...['app.css','app.js','api-core.js','api.js','report-audit.js','source-trust.js','engine.js','views.js','model.js','result.js'].map(x=>'/assets/release-11.20.0/'+x)];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE))));
-self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
-self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(x=>(x.startsWith('foodscan-shell-')||x==='foodscan-v1')&&x!==CACHE).map(x=>caches.delete(x)));await self.clients.claim();})()));
-self.addEventListener('fetch',event=>{const r=event.request,u=new URL(r.url);if(r.method!=='GET'||u.origin!==self.location.origin||u.pathname.startsWith('/api/'))return;if(/^\/data\/alternatives\/[a-z0-9-]+\.json$/.test(u.pathname)){
- event.respondWith((async()=>{const cache=await caches.open(CACHE);try{const fresh=await fetch(r);if(fresh.ok){await cache.put(r,fresh.clone());return fresh;}}catch{}return await cache.match(r)||new Response('Catalog unavailable',{status:503});})());return;
-}if(r.mode==='navigate'){event.respondWith(fetch(r).catch(async()=>await (await caches.open(CACHE)).match('/index.html')||new Response('Reconnect to open FoodScan.',{status:503})));return;}if(PRECACHE.includes(u.pathname+u.search))event.respondWith(caches.open(CACHE).then(c=>c.match(r)).then(cached=>cached||fetch(r)));});
+/* FoodScan service worker. Offline shell + fast repeat visits. Product data is never cached here: the app keeps
+ * its own validated saved copies, and the server caches API answers.
+ *
+ * Updates (75): a new version installs in the background and takes over at once (skipWaiting + clients.claim), so a
+ * phone never stays on an old build. The page (prices/native-v80.js) reloads itself when idle, or shows a small refresh
+ * bar while the shopper is scanning or typing. A file that fails to precache no longer blocks the update: it is fetched
+ * from the network when first needed. (78: superseded price-file generations were removed; a page left open on an old release reloads into 78 on its next visit.)
+ *
+ * Pages are fetched with a per-minute query added (?_fs=…). A CDN rule that caches HTML for hours (the live zone had one,
+ * serving week-old pages) cannot then hold a controlled phone on an old release: the page comes from the origin. */
+const CACHE = 'foodscan-80.0.0';
+const PRECACHE = ['/prices/','/prices/prices-v80.js','/prices/prices-v80.css','/prices/prices-base-v80.css','/prices/native-v80.js','/prices/native-v80.css','/prices/price-core-v80.mjs','/prices/price-client-v80.mjs','/prices/add-price-v80.mjs','/prices/ocr-parse-v80.mjs','/market-hint-v71.js','/ui-v80.css','/assets/app-V52SOTA1-v7550.js','/assets/chunk-CFDGV521-v7550.js','/assets/match-policy-v7540.mjs', '/assets/profile-evidence-v7540.mjs', '/assets/comparison-guards-v7540.mjs', '/assets/greece-r20261030/index.json', '/assets/market-catalogue-v7540.mjs','/assets/nutrition-choices-v7540.mjs','/assets/domain-v7540.mjs','/assets/recommendations-core-v7540.mjs','/assets/balance-view-v7540.mjs',"/growth-ui.css?v=75","/growth-ui.js?v=75","/fridge-core.mjs?v=75","/challenge/challenge.css?v=75","/challenge/challenge.js?v=75","/","/demo/","/how/","/challenge/","/challenge/challenge.js","/challenge/challenge.css","/growth-ui.js","/growth-ui.css","/fridge-core.mjs","/challenge/og-challenge.png","/public-catalog.css","/public-catalog.js","/battle-ui.js","/manifest.webmanifest","/icon.svg","/icon-192.png","/assets/app-V52SOTA1-v7540.css","/assets/chunk-2H3CV521-v7540.js","/assets/chunk-2OB4V521-v7540.js","/assets/chunk-4O7IN74N-v7540.js","/assets/chunk-4SO6OQI3-v7540.js","/assets/chunk-4U25V521-v7540.js","/assets/chunk-57E5ZLYU-v7540.js","/assets/chunk-5DGYLCD6-v7540.js","/assets/chunk-6K2A3QNO-v7540.js","/assets/chunk-6K6QREZY-v7540.js","/assets/chunk-AHTU2MHF-v7540.js","/assets/chunk-AMKGV521-v7540.js","/assets/chunk-BIWX2LG4-v7540.js","/assets/chunk-BQAK4GGD-v7540.js","/assets/chunk-BQKWV521-v7540.js","/assets/chunk-CMYEZZXL-v7540.js","/assets/chunk-EUIXRGK6-v7540.js","/assets/chunk-FKD7WWRO-v7540.js","/assets/chunk-GA22IG5W-v7540.js","/assets/chunk-I3TRV521-v7540.js","/assets/chunk-IO4NLMGT-v7540.js","/assets/chunk-JLYH5AFS-v7540.js","/assets/chunk-JOUXBJOG-v7540.js","/assets/chunk-LGF5RK5L-v7540.js","/assets/chunk-NAM4V521-v7540.js","/assets/chunk-OJJENOAQ-v7540.js","/assets/chunk-OR7WUKMJ-v7540.js","/assets/chunk-QKBAEP6B-v7540.js","/assets/chunk-QWAD3TTI-v7540.js","/assets/chunk-R4QLF4YV-v7540.js","/assets/chunk-SN3WV521-v7540.js","/assets/chunk-TM35ZLZG-v7540.js","/assets/chunk-TTXUOT36-v7540.js","/assets/chunk-VOAOOBMT-v7540.js","/assets/chunk-XKEZNCT7-v7540.js"];
+const DOCS = ['/', '/demo/', '/how/', '/challenge/', '/prices/'];
+const fresh = url => { const u = new URL(url, location.origin); u.searchParams.set('_fs', String(Math.floor(Date.now() / 60000))); return u.href; };
+
+self.addEventListener('install', event => {
+  // Six downloads at a time, each retried once (42.0): a phone on a weak signal no longer starts 40 requests at once and fails the install.
+  // Hashed assets come from the HTTP cache when the page already loaded them: no second download. Pages always come fresh.
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    let next = 0, docFailed = false;
+    const worker = async () => {
+      while (next < PRECACHE.length) {
+        const path = PRECACHE[next++], doc = DOCS.includes(path), get = () => fetch(doc ? fresh(path) : path, { cache: doc ? 'no-store' : 'reload' });
+        try { let res; try { res = await get(); if (!res.ok) throw new Error(String(res.status)); } catch { res = await get(); }
+          if (res.ok) await cache.put(path, res); else throw new Error(String(res.status)); } catch { if (doc) docFailed = true; /* other files: fetched on first use */ }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(6, PRECACHE.length) }, worker));
+    if (docFailed) throw new Error('precache pages failed'); // offline now: keep the current version and its offline copy
+    await self.skipWaiting();
+  })());
+});
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'GET_BUILD') event.ports?.[0]?.postMessage({ build: CACHE });
+});
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('foodscan-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+/** Where an offline navigation lands: the same page if it was opened before, else its section, else the app. */
+const offlinePage = async url => (await caches.match(url.pathname)) || (await caches.match(url.pathname.startsWith('/demo') ? '/demo/' : url.pathname.startsWith('/how') ? '/how/' : url.pathname.startsWith('/challenge') ? '/challenge/' : url.pathname.startsWith('/prices') ? '/prices/' : '/'));
+self.addEventListener('fetch', event => {
+  const request = event.request, url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/prices/service/') || url.pathname.startsWith('/products/') || url.pathname.startsWith('/scorecards/') || url.pathname.startsWith('/battles/') || url.pathname.startsWith('/battle-cards/') || url.pathname.startsWith('/sitemap-catalog') || request.headers.has('Range')) return;
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('slow')), 3500));
+        let res = await Promise.race([fetch(fresh(request.url), { cache: 'no-store', credentials: 'same-origin', redirect: 'manual' }), timeout]);
+        // A redirect (/demo -> /demo/) is left to the browser, with the address it asked for, not the cache-busting one.
+        if (res.type === 'opaqueredirect') res = await Promise.race([fetch(request), timeout]);
+        // Each page is kept under its own path: /how/ never stands in for the app (31.0 stored every page as "/").
+        else if (res.ok) { const copy = res.clone(); event.waitUntil(caches.open(CACHE).then(c => c.put(url.pathname, copy)).catch(() => {})); }
+        return res;
+      } catch {
+        return (await offlinePage(url)) || Response.error();
+      }
+    })());
+    return;
+  }
+  if (url.pathname.startsWith('/assets/')) {
+    // Content-hashed and immutable: cache first.
+    event.respondWith(caches.match(request).then(hit => hit || fetch(request).then(res => { if (res.ok) { const copy = res.clone(); event.waitUntil(caches.open(CACHE).then(c => c.put(request, copy)).catch(() => {})); } return res; })));
+    return;
+  }
+  event.respondWith(caches.match(request).then(hit => { const refresh = fetch(request).then(res => { if (res.ok) { const copy = res.clone(); event.waitUntil(caches.open(CACHE).then(c => c.put(request, copy)).catch(() => {})); } return res; }).catch(() => hit); return hit || refresh; }));
+});

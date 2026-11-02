@@ -1,19 +1,33 @@
 # FoodScan
 
-> A free web app that turns a packaged-food barcode into plain-English facts: Nutri-Score and NOVA exactly as Open Food Facts publishes them, sugar in teaspoons, allergen and diet flags from the package record, and better choices in the same aisle. No account. Published by GearUpToFit.
+> A packaged-food barcode reader and comparison app published by GearUpToFit. Nutrition and ingredient information comes from Open Food Facts. This is not medical advice, allergy clearance or a guarantee that an alternative exists.
 
 ## Pages
-- [FoodScan](https://food-scan.gearuptofit.com/): barcode lookup, product-name search, saved foods, a shopping list, a pantry review and a compare view (a single-page app)
-- [How FoodScan works](https://food-scan.gearuptofit.com/demo/): a short live walkthrough: scan, understand, swap
+- [FoodScan](https://food-scan.gearuptofit.com/): barcode and name search, product reports, saved workspace, comparisons, daily log and personal ingredient rules.
+- [Example tour](https://food-scan.gearuptofit.com/demo/): interactive examples from bundled dated records, not live product verification.
+- [Method and limits](https://food-scan.gearuptofit.com/how/): scoring, evidence checks and limitations.
+- Product reports: `https://food-scan.gearuptofit.com/p/<barcode>` (EAN-13, EAN-8, UPC-A as its 13-digit form). The server-rendered page states the grade sentence (published, calculated and labelled, on hold with the reason, or none), label values per 100 g or 100 ml, allergens (listed, found in the ingredient text, traces, or unknown), the ingredient list as recorded, the record's last edit date and completeness. Only complete records with a published grade are indexable; the product sitemap is at /sitemap-products.xml.
+- Comparisons: `https://food-scan.gearuptofit.com/compare/<barcodeA>/<barcodeB>`: two records side by side; only differences both records measure on the same unit are stated, energy is shown but never judged, and no overall winner is declared. Comparison pages are not indexed.
 
-## Method and sources
-- Product data: Open Food Facts and contributors (ODbL 1.0); product images CC BY-SA 3.0. Community data can be incomplete, so the package label overrides it.
-- Nutri-Score, NOVA, allergens, labels and additives appear as the source gives them. FoodScan does not invent a score.
-- Colour bands follow the UK FSA front-of-pack thresholds; daily percentages use the EU 1169/2011 reference intakes (2,000 kcal adult); one teaspoon of sugar is counted as 4 g.
-- Not medical advice. Allergen and diet flags come from package records, which can be wrong or out of date.
+## Grades and alternatives
+FoodScan normally displays a source-reported Nutri-Score. For eligible foods with sufficient inputs, a calculated estimate can be shown, explicitly labelled. Source calculation details are shown only when the available components reconcile. Missing or inconsistent values can withhold the grade. A grade is not a personal safety assessment.
+Alternatives come from a limited sample of compatible categories, not an exhaustive search. Known conflicts, unconfirmed active rules, incompatible measurement bases and invalid records are excluded. Known higher NOVA values are rejected when both products report NOVA. Missing processing data is not proof of equal processing. Listed countries are source sales tags, not live stock or price checks. Old bundled examples are not fresh verification.
 
-## Privacy
-- No account. Profiles, lists, the pantry and photos stay on the device; a lookup sends only the barcode digits or the search words.
+## Ingredient rules
+Allergen tags and ingredient text are cross-checked. Optional oil, sweetener and six-colour preferences are separate from allergies and do not alter Nutri-Score. Missing, partial or outdated ingredient records remain unconfirmed for active rules. Text matching is a heuristic, not laboratory testing or guaranteed detection. Always check the current package, especially for allergies.
 
-## Publisher
-- [GearUpToFit](https://gearuptofit.com/): fitness, running and nutrition guides, calculators and tools, including its [nutrition guides](https://gearuptofit.com/nutrition/).
+## Data and privacy
+Open Food Facts community data is licensed under ODbL 1.0; product images are attributed to their source. Records can be incomplete or stale. Saved records and personal rules are kept in browser storage; a new deployment origin cannot automatically read another origin's saved data. Use backup and restore to transfer it.
+Lookups send barcodes or search terms to the same-origin service. Food images and source or shopping links contact their respective providers, which receive ordinary network metadata. No account or advertising tracker is required. Optional operator-configured analytics accepts a limited set of events without personal rules or food lists; shared links carry a random per-share token so shares that lead to scans can be counted, and browsers sending Do Not Track or Global Privacy Control send nothing. Shared-list links reveal their included barcodes to anyone receiving the link, and recipients must approve importing.
+
+## Availability
+New lookups need a network connection and depend on upstream service availability and quotas. Per-instance request budgets and local edge caches are not a globally coordinated quota. An API health endpoint is provided at /api/health. Optional CONTACT_EMAIL identifies the installation; it does not grant priority or unlimited access.
+
+## Companion guides (GearUpToFit)
+- [Free Food Scanner App Guide](https://gearuptofit.com/nutrition/free-food-scanner-app/): complete guide to FoodScan, barcode nutrition grading, NOVA processing, and healthier swaps.
+- [Is Nutella Healthy? Nutrition & Ingredient Analysis](https://gearuptofit.com/nutrition/is-nutella-healthy/): case study of Nutella's label, sugar, palm oil and higher-graded spreads.
+- [Health & Fitness Calculators](https://gearuptofit.com/fitness-and-health-calculators/health-and-fitness-calculators/): free calculators for TDEE, BMR, macros, heart-rate zones and pace.
+- [Free 8-Week Fitness & Body Recomposition Plan](https://gearuptofit.com/fitness-plan/): calorie target, protein and an 8-week workout plan.
+- [Vegan Diet for Fitness](https://gearuptofit.com/nutrition/vegan-diet-for-fitness/): plant protein, leucine and supplement guide for athletes.
+- [Keto Diet in Endurance Sports](https://gearuptofit.com/nutrition/keto-diet-in-endurance-sports/) and [What to Eat Before a Half Marathon](https://gearuptofit.com/nutrition/what-to-eat-before-a-half-marathon/).
+- [Supplement Match](https://gearuptofit.com/supplement-match/) and the [GearUpToFit hub](https://gearuptofit.com/).

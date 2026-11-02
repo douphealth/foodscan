@@ -11,7 +11,8 @@
  *      with their ORIGINAL dates; they are never re-dated.
  *   3. Open Food Facts export (names, brands, pack sizes, categories of the Greek market): re-downloaded when older than 7 days.
  *   4. tools/build-price-data.mjs: calibrated estimates (leave-one-out) for barcodes with no recorded price.
- *   5. gate: nothing is written to --out when the new data lost more than 10 % of the previous barcodes, the estimator is not calibrated,
+ *   5. seeds are published SHARDED (tools/lib/shard-seeds.mjs) so the site's worker parses ~11 KB per lookup, not 1.8 MB.
+ *   6. gate: nothing is written to --out when the new data lost more than 10 % of the previous barcodes, the estimator is not calibrated,
  *      or a source file is incomplete. e-katanalotis is a frozen historical file and is carried forward unchanged. */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { shardSeeds, unshard } from '../../tools/lib/shard-seeds.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.resolve(here, '..', '..');
 const arg = (n, d = null) => { const i = process.argv.indexOf('--' + n); return i > -1 ? process.argv[i + 1] : d; }, flag = n => process.argv.includes('--' + n);
@@ -30,7 +32,8 @@ const readJSON = f => JSON.parse(fs.readFileSync(f, 'utf8'));
 async function download(url, file) { const res = await fetch(url, { headers: { 'User-Agent': UA }, redirect: 'follow' }); if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`); await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(file)); }
 const today = new Date().toISOString().slice(0, 10);
 fs.mkdirSync(work, { recursive: true }); const seeds = path.join(work, 'seeds'); fs.rmSync(seeds, { recursive: true, force: true }); fs.mkdirSync(seeds, { recursive: true });
-const prevSeed = n => { const f = prev && path.join(prev, 'seeds', n); return f && fs.existsSync(f) ? readJSON(f) : null; };
+// the published seeds are SHARDED (manifest + shards); they are read back into the monolithic form the build works on
+const prevSeed = n => { const d = prev && path.join(prev, 'seeds'), f = d && path.join(d, n); if (!f || !fs.existsSync(f)) return null; const doc = readJSON(f); if (!doc.sharded) return doc; const u = unshard(d, n), { sharded, ...rest } = u.manifest; return { ...rest, products: u.products }; };
 const bundledSeed = n => { const f = path.join(repo, 'data/seeds', n); return fs.existsSync(f) ? readJSON(f) : null; };
 const base = n => prevSeed(n) || bundledSeed(n);
 if (!base('posokanei-latest.json') || !base('bazaar-eshop-latest.json') || !base('lidl-eshop-latest.json') || !base('ekatanalotis-latest.json')) throw new Error('no previous seeds: pass --prev <dir with seeds/> or keep data/seeds in the repository');
@@ -100,6 +103,6 @@ for (const c of ['A', 'B', 'C', 'D', 'E']) if (!nm.estimator.classes[c]?.usable)
 for (const [c, h] of Object.entries(nm.estimator.holdout)) if (h.coverage80 < 65 || h.coverage80 > 95) throw new Error(`gate: class ${c} held-out coverage ${h.coverage80}%`);
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(path.join(out, 'seeds'), { recursive: true });
 for (const f of fs.readdirSync(stage)) if (f !== 'validation.json') fs.copyFileSync(path.join(stage, f), path.join(out, f));
-for (const f of fs.readdirSync(seeds)) fs.copyFileSync(path.join(seeds, f), path.join(out, 'seeds', f));
+const shardSummary = shardSeeds(seeds, path.join(out, 'seeds')); // manifest + 100 small shards per source: a lookup parses ~11 KB instead of 1.8 MB
 fs.writeFileSync(path.join(out, 'README.txt'), 'FoodScan price data (generated). Observations are copied from public sources with their dates; estimates are labelled and calibrated (see manifest.json). https://food-scan.gearuptofit.com/how/\n');
-log('written', out, JSON.stringify({ built: nm.built, counts, withEstimate: nm.withEstimate, snapshot: newPk.source.snapshot }));
+log('written', out, JSON.stringify({ built: nm.built, counts, shards: shardSummary, withEstimate: nm.withEstimate, snapshot: newPk.source.snapshot }));
