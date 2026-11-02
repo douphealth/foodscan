@@ -8,6 +8,20 @@ export const TTL = 10 * 60 * 1000; const KEY = 'foodscan:prices:v80:';
 const memory = new Map(), inflight = new Map();
 const PATHS = ['/prices/service/compare', '/api/prices/compare'];
 const store = (() => { try { return globalThis.sessionStorage; } catch { return null; } })();
+/* 82: "This is my product". A barcode with no recorded price may be confirmed, on THIS device, as one of the observatory products the
+ * service suggests (same brand, unlinked). The choice is sent with every price request for that barcode (?pk=) and can be undone. */
+const CONFIRM_KEY = 'foodscan:confirmed:v82';
+const device = (() => { try { return globalThis.localStorage; } catch { return null; } })();
+const readConfirmed = () => { try { const m = JSON.parse(device?.getItem(CONFIRM_KEY) || '{}'); return m && typeof m === 'object' ? m : {}; } catch { return {}; } };
+export function confirmedFor(code) { const v = readConfirmed()[String(code || '')]; return v && /^[0-9a-f]{32}$/.test(String(v.id || '')) ? {id:String(v.id), name:String(v.name || '').slice(0, 120)} : null; }
+export function setConfirmed(code, choice) {
+  code = String(code || ''); if (!validBarcode(code)) return;
+  const m = readConfirmed();
+  if (choice && /^[0-9a-f]{32}$/.test(String(choice.id || ''))) m[code] = {id:String(choice.id), name:String(choice.name || '').slice(0, 120), at:new Date().toISOString().slice(0, 10)};
+  else delete m[code];
+  try { device?.setItem(CONFIRM_KEY, JSON.stringify(m)); } catch {}
+  forgetPrices(code);
+}
 
 function remember(code, result) {
   if (result.status === 'temporarily_unavailable' || result.status === 'incomplete' || result.raw?.kind === 'open') return;
@@ -19,13 +33,14 @@ function recall(code) {
   let e = memory.get(code);
   if (!e) { try { e = JSON.parse(store?.getItem(KEY + code) || 'null'); } catch { e = null; } }
   if (!e || Date.now() - e.at > TTL) return null;
-  const r = e.raw?.kind === 'open' ? fromOpenPrices(e.raw.items, code.split('@')[0], Date.now(), e.raw.quantity) : checkPayload(e.raw);
+  const r = e.raw?.kind === 'open' ? fromOpenPrices(e.raw.items, code.split(/[@#]/)[0], Date.now(), e.raw.quantity) : checkPayload(e.raw);
   return r ? {...r, raw:e.raw, cached:true} : null;
 }
 const timeout = (ms, outer) => { const c = new AbortController(); const id = setTimeout(() => c.abort(), ms); outer?.addEventListener?.('abort', () => c.abort()); return {signal:c.signal, done:() => clearTimeout(id)}; };
 
 async function viaService(code, signal, near, fresh) {
-  const q = (near ? `&lat=${near.lat}&lon=${near.lon}&radius_km=25` : '') + (fresh ? '&fresh=1' : '');
+  const pk = confirmedFor(code);
+  const q = (near ? `&lat=${near.lat}&lon=${near.lon}&radius_km=25` : '') + (fresh ? '&fresh=1' : '') + (pk ? `&pk=${pk.id}` : '');
   for (const path of PATHS) {
     const t = timeout(7000, signal);
     try {
@@ -55,7 +70,8 @@ async function viaOpenPrices(code, signal, quantity) {
 export function getPrices(code, {signal, quantity = '', fresh = false, near = null} = {}) {
   code = String(code || '').trim();
   if (!validBarcode(code)) return Promise.resolve({barcode:code, status:'invalid', offers:[], elsewhere:[], best:null, latest:null});
-  const id = near ? `${code}@${near.lat},${near.lon}` : code;
+  const pk = confirmedFor(code);
+  const id = (near ? `${code}@${near.lat},${near.lon}` : code) + (pk ? `#${pk.id}` : '');
   if (!fresh) { const hit = recall(id); if (hit) return Promise.resolve(hit); }
   if (!fresh && inflight.has(id)) return inflight.get(id);
   const job = (async () => {
@@ -69,6 +85,7 @@ export function getPrices(code, {signal, quantity = '', fresh = false, near = nu
   inflight.set(id, job);
   return job;
 }
-export const peekPrices = code => recall(String(code || ''));
+export const peekPrices = code => { code = String(code || ''); const pk = confirmedFor(code); return recall(code + (pk ? `#${pk.id}` : '')); };
 /** Forget the device copy of one barcode (used before a forced refresh). */
-export const forgetPrices = code => { code = String(code || ''); memory.delete(code); try { store?.removeItem(KEY + code); } catch {} };
+export const forgetPrices = code => { code = String(code || ''); for (const k of [...memory.keys()]) if (k === code || k.startsWith(code + '#')) memory.delete(k);
+  try { for (let i = (store?.length || 0) - 1; i >= 0; i--) { const k = store.key(i); if (k === KEY + code || k?.startsWith(KEY + code + '#')) store.removeItem(k); } } catch {} };

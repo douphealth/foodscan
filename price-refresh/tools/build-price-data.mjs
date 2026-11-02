@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { features, buildIndex, neighbours, estimateFrom, classOf, quantile } from './lib/estimator.mjs';
+import { CHAIN_MAP, quarantineOutliers } from '../refresh/src/posokanei.mjs';
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > -1 ? process.argv[i + 1] : d; };
 const read = f => JSON.parse(fs.readFileSync(f, 'utf8'));
@@ -153,13 +154,19 @@ const CLASS_SHOWN = new Set(Object.entries(classes).filter(([, v]) => v.usable &
 const hasLive = e => e && e.o.some(o => o[0] !== 'ek'); // any recorded price from the web shops or the observatory: the card shows it (with its age), not an estimate
 const universe = new Set([...offBy.keys()].filter(c => offBy.get(c).countries.includes('en:greece') || c.startsWith('05' + '20') || c.startsWith('0520')));
 for (const c of entries.keys()) universe.add(c);
-const samples = []; let made = 0; const byClass = { A: 0, B: 0, C: 0, D: 0 };
+const samples = []; let made = 0, candidates = 0; const byClass = { A: 0, B: 0, C: 0, D: 0 };
 const bumpCount = new Map();
 for (const code of universe) {
   const e = entries.get(code);
   if (hasLive(e)) continue;                       // an exact price exists: no estimate is attached
   const q = queryOf(code); if (!q) continue;
   const nb = neighbours(index, q.f, { limit: 14, minScore: 0.3, skip: own(code) });
+  // 82: candidates the shopper can confirm ("this is my product"): same-brand observatory products that no barcode is linked to,
+  // best first. They are only offered for confirmation; their prices are never shown as this barcode's price until confirmed.
+  const kand = q.f.bkey ? nb.filter(n => { const it = index.items[n.i]; return it.src === 'pk' && !it.barcode && n.brandSame && n.score >= 0.45; })
+    .sort((x, y) => (y.sz > 0.97) - (x.sz > 0.97) || y.score - x.score).slice(0, 4)   // same pack size as the label first
+    .map(n => { const it = index.items[n.i]; return [it.id, it.name.slice(0, 90), it.chains, it.date, Math.round(n.score * 100), it.f.size ? [it.f.size.unit, it.f.size.amount] : null]; }) : [];
+  if (kand.length) { const r0 = ent(code); r0.n ||= q.name; r0.k = kand; candidates++; }
   const est = estimateFrom(index, q.f, nb); if (!est) continue;
   const cls = classOf(est.top); if (!cls || !CLASS_SHOWN.has(cls) || est.n < (cls === 'D' ? 3 : 2)) continue;
   const cal = classes[cls];
@@ -195,16 +202,34 @@ const SHARDS = 64, shards = Array.from({ length: SHARDS }, () => ({}));
 let obsBarcodes = 0;
 for (const [code, e] of entries) {
   if (e.o.length) obsBarcodes++;
-  if (!e.e) continue;                       // v80: the shipped shards hold ESTIMATES only; recorded prices come from the source seeds
+  if (!e.e && !e.k) continue;              // v80: the shipped shards hold ESTIMATES (and, 82, candidates) only; recorded prices come from the source seeds
   const s = Number(code.slice(-6)) % SHARDS;
   const rec = { n: (e.n || '').slice(0, 120) };
-  if (e.q) rec.q = e.q; rec.e = e.e;
+  if (e.q) rec.q = e.q; if (e.e) rec.e = e.e; if (e.k) rec.k = e.k;
   shards[s][code] = rec;
 }
 const stamp = new Date().toISOString();
 shards.forEach((items, i) => fs.writeFileSync(path.join(OUT, `e-${String(i).padStart(2, '0')}.json`), JSON.stringify({ v: 80, built: stamp, shard: i, items })));
+/* 82: every Greek observatory product's own chain prices, by observatory id (o-00..o-63.json). Read only when a shopper has
+ * confirmed that an unlinked barcode IS that product. Tuples are copied from the snapshot with their dates: [chain, price, date, sale]. */
+const OBS_SHARDS = 64, obsShards = Array.from({ length: OBS_SHARDS }, () => ({})); let obsCount = 0;
+for (const p of PK.products) {
+  if (!/^[0-9a-f]{32}$/.test(String(p.id || ''))) continue;
+  // the same rules as the linked observatory prices (refresh/src/posokanei.mjs): FoodScan chain ids, at most 30 days old,
+  // and a chain more than 40 % below the other chains' median is quarantined (a unit or pack error, not a price)
+  const rows = (p.retailer_prices || []).filter(r => r.country === 'GR' && CHAIN_MAP[r.retailer] && r.price >= 0.01 && r.price <= 10000 && /^\d{4}-\d{2}-\d{2}/.test(String(r.last_updated || '')))
+    .map(r => ({ retailer_id: CHAIN_MAP[r.retailer][0], price: round2(r.price), observed_at: String(r.last_updated).slice(0, 10), discount_type: r.is_discount === true ? 'SALE' : '' }))
+    .filter(r => r.observed_at >= DAYS_BEFORE(30) && r.observed_at <= DAYS_BEFORE(-1));
+  const { keep } = quarantineOutliers(rows); if (!keep.length) continue;
+  const u = String(p.unit || '').toLowerCase(), q = Number(p.unit_quantity);
+  const rec = { n: String(p.name || '').replace(/\s+/g, ' ').trim().slice(0, 120), p: keep.map(r => [r.retailer_id, r.price, r.observed_at, r.discount_type ? 1 : 0]) };
+  if (['kg', 'l', 'pcs'].includes(u) && q > 0) rec.q = [u, q];
+  obsShards[parseInt(p.id.slice(0, 6), 16) % OBS_SHARDS][p.id] = rec; obsCount++;
+}
+obsShards.forEach((items, i) => fs.writeFileSync(path.join(OUT, `o-${String(i).padStart(2, '0')}.json`), JSON.stringify({ v: 82, built: stamp, snapshot: PK.date || pk.source.snapshot, shard: i, items })));
+console.error('observatory products by id', obsCount, 'barcodes with candidates', candidates);
 const manifest = {
-  version: 80, built: stamp, shards: SHARDS, barcodes: entries.size, withObservations: obsBarcodes, withEstimate: made, estimatesByClass: byClass,
+  version: 80, built: stamp, shards: SHARDS, observatoryById: { shards: OBS_SHARDS, products: obsCount }, withCandidates: candidates, barcodes: entries.size, withObservations: obsBarcodes, withEstimate: made, estimatesByClass: byClass,
   sources: { posokanei: { snapshot: pk.source.snapshot, fetchedAt: pk.source.fetched_at, products: Object.keys(pk.products).length, reference: PK.products.length, date: PK.date },
     bazaar: { snapshot: bz.source.snapshot, fetchedAt: bz.source.fetched_at, products: Object.keys(bz.products).length },
     lidl: { snapshot: li.source.snapshot, fetchedAt: li.source.fetched_at, products: Object.keys(li.products).length },

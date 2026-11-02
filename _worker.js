@@ -1698,8 +1698,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "81.0.0";
-var BUILD = "8100-honest-prices";
+var VERSION = "82.0.0";
+var BUILD = "8200-confirm-prices-layout";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -3000,7 +3000,7 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
     if (p && !out.pack && (p.u === 'kg' || p.u === 'l') && p.q > 0.005 && p.q <= 50) out.pack = {amount:Math.round(p.q*10000)/10000, unit:p.u, source:id};
   }
   const est = await fsEstimateFor(request, env, code).catch(() => null);
-  if (est) { out.estimate = est.estimate; out.estimateMeta = est.meta; out.estimateName = est.name; }
+  if (est) { out.estimate = est.estimate; out.estimateMeta = est.meta; out.estimateName = est.name; out.candidates = est.candidates || []; }
   await Promise.all(pending);
   return out;
 }
@@ -3091,6 +3091,9 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   const near = !leadable ? (official.estimate || null) : null;
   const related = near && ['A', 'B'].includes(near.cls) ? (near.examples || []).filter(x => x && x.name && x.price > 0 && x.similarity >= 55).slice(0, 3) : [];
   const estimate = null;
+  // 82: same-brand observatory products the shopper may confirm as this one (only while this barcode has no CURRENT price;
+  // an old price, e.g. e-katanalotis from June, is still shown first, with its age)
+  const candidates = !offers.some(o => o.tier === 'current') && !official.confirmed ? (official.candidates || []).slice(0, 4) : [];
   const status = offers.length || others.length ? 'observations_available' : !active.length || down === active.length ? 'temporarily_unavailable' : down ? 'incomplete' : 'no_data';
   return {
     version:FS_PRICE_VERSION, barcode:code, country:'GR', scope:scope.nearby?'nearby':'greece', checkedAt:new Date(now).toISOString(),
@@ -3099,7 +3102,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       (sample.productName ? {name:sample.productName, brand:'', quantity:sample.productQuantity||'', nutriScore:null, image:'', source:'open_food_facts_via_open_prices'} : null),
     productName: meta ? [meta.name, meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? meta.brand : '', meta.quantity].filter(Boolean).join(' · ') : (sample.productName || official.estimateName || ''),
     pack, packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
-    offers, elsewhere:others, estimate, related, data:official.estimateMeta || null, providers,
+    offers, elsewhere:others, estimate, related, candidates, confirmed:official.confirmed || null, data:official.estimateMeta || null, providers,
     providerSummary:{active:active.length, unavailable:down, disabled:Object.values(providers).length-active.length},
     summary:{bestOfferId:best?.id||null, lowestCurrentPrice:best?.price??null, currentOffers:eligible.length,
       retailers:new Set(eligible.map(o=>o.retailer)).size, stores:new Set(eligible.map(o=>o.storeId)).size, perChain:Object.values(perChain).sort((a,b)=>a.price-b.price),
@@ -3213,7 +3216,10 @@ async function fsV80Read(request, env, bundledPath, remoteName, validate, stamp,
 }
 const fsEstShardId = code => String(Number(String(code).padStart(14, '0').slice(-6)) % FS_EST_SHARDS).padStart(2, '0');
 const fsEstShard = (request, env, code) => fsV80Cached(new URL(request.url).origin + '|e-' + fsEstShardId(code), () =>
-  fsV80Read(request, env, FS_EST_ROOT + 'e-' + fsEstShardId(code) + '.json', 'e-' + fsEstShardId(code) + '.json', d => d && d.v === 80 && d.items && typeof d.items === 'object', d => Date.parse(d.built)));
+  fsV80Read(request, env, FS_EST_ROOT + 'e-' + fsEstShardId(code) + '.json', 'e-' + fsEstShardId(code) + '.json', d => d && d.v === 80 && d.items && typeof d.items === 'object', d => Date.parse(d.built),
+    // 82: a newer remote shard from a build without candidates must not hide the bundled candidates
+    (remote, own) => fsEstHasK(remote) || !fsEstHasK(own)));
+const fsEstHasK = d => Object.values(d.items).some(x => Array.isArray(x?.k) && x.k.length);
 const fsEstManifest = (request, env) => fsV80Cached(new URL(request.url).origin + '|e-manifest', () =>
   fsV80Read(request, env, FS_EST_ROOT + 'manifest.json', 'manifest.json', d => d && d.version === 80 && d.estimator, d => Date.parse(d.built)));
 /** Estimate record from a shard -> the payload object (checked again by the client). */
@@ -3230,9 +3236,37 @@ function fsEstObject(e, manifest) {
 }
 async function fsEstimateFor(request, env, code) {
   const [shard, manifest] = await Promise.all([fsEstShard(request, env, code), fsEstManifest(request, env).catch(() => null)]);
-  const e = shard.items[fsPriceKey(code)]; if (!e?.e) return null;
-  const estimate = fsEstObject(e.e, manifest); if (!estimate) return null;
-  return {estimate, name:fsPriceText(e.n || '', 120), meta:{builtAt:manifest?.built || shard.built || null, origin:shard.origin || 'bundled'}};
+  const e = shard.items[fsPriceKey(code)]; if (!e?.e && !e?.k) return null;
+  const estimate = e.e ? fsEstObject(e.e, manifest) : null, candidates = fsObsCandidates(e.k);
+  if (!estimate && !candidates.length) return null;
+  return {estimate, candidates, name:fsPriceText(e.n || '', 120), meta:{builtAt:manifest?.built || shard.built || null, origin:shard.origin || 'bundled'}};
+}
+/* 82: "Is this your product?" The observatory (posokanei.gov.gr) prices ~10,000 products in every chain but publishes no barcodes.
+ * For a barcode with no recorded price, the daily build lists up to 4 same-brand observatory products that no barcode is linked to
+ * (`k` in the estimate shard). They are CANDIDATES only: their prices are never shown as this barcode's price. When the shopper,
+ * holding the pack, confirms one (?pk=<observatory id>), that product's own dated chain prices are returned, labelled
+ * match:'user-confirmed', and the observatory's pack size is checked against the label (a different size is shown, never ranked). */
+const FS_OBS_ROOT = '/assets/gr-obs-v82/';
+const FS_OBS_SHARDS = 64;
+const fsObsId = v => /^[0-9a-f]{32}$/.test(String(v || '')) ? String(v) : '';
+const fsObsShardId = id => String(parseInt(id.slice(0, 6), 16) % FS_OBS_SHARDS).padStart(2, '0');
+const fsObsShard = (request, env, id) => fsV80Cached(new URL(request.url).origin + '|o-' + fsObsShardId(id), () =>
+  fsV80Read(request, env, FS_OBS_ROOT + 'o-' + fsObsShardId(id) + '.json', 'o-' + fsObsShardId(id) + '.json', d => d && d.v === 82 && d.items && typeof d.items === 'object', d => Date.parse(d.built)));
+function fsObsCandidates(k) {
+  if (!Array.isArray(k)) return [];
+  return k.slice(0, 4).map(x => Array.isArray(x) && fsObsId(x[0]) ? {id:x[0], name:fsPriceText(x[1], 90), chains:Math.max(0, Math.min(20, Number(x[2]) || 0)), date:fsPriceISO(x[3]), similarity:Math.max(0, Math.min(100, Number(x[4]) || 0)),
+    pack:Array.isArray(x[5]) && ['kg', 'l', 'pcs'].includes(x[5][0]) && Number(x[5][1]) > 0 ? {unit:x[5][0], amount:Number(x[5][1])} : null} : null).filter(x => x && x.name);
+}
+async function fsObsConfirmed(request, env, code, id, now=Date.now()) {
+  const shard = await fsObsShard(request, env, id); const p = shard.items[id];
+  if (!p || !Array.isArray(p.p)) return {id, name:'', items:[], pack:null, found:false};
+  const def = FS_GR_SOURCES.posokanei, items = [];
+  for (const [chainId, price, date, sale] of p.p.slice(0, 20)) {
+    const o = fsGrOffer(def, code, chainId, Number(price), fsPriceISO(date), sale === 1, now);
+    if (o) items.push({...o, match:'user-confirmed', evidenceURL:def.url, fetchedAt:fsPriceStamp(shard.built), origin:shard.origin || 'bundled'});
+  }
+  const pack = Array.isArray(p.q) && (p.q[0] === 'kg' || p.q[0] === 'l') && p.q[1] > 0.005 && p.q[1] <= 50 ? {amount:Math.round(p.q[1]*10000)/10000, unit:p.q[0], source:'posokanei'} : null;
+  return {id, name:fsPriceText(p.n || '', 120), items, pack, found:true};
 }
 /** The four source seeds (observatory, e-katanalotis, Bazaar, Lidl) are SHARDED (see tools/lib/shard-seeds.mjs): the manifest is ~2 KB, a
  *  lookup reads one ~9 KB shard per source. That is ~1 ms of parsing instead of ~18 ms for the monolithic files, which is more than the
@@ -3333,6 +3367,8 @@ async function fsPricesRoute(request,env,ctx) {
   const cache = typeof caches!=='undefined' ? caches.default : null;
   const cacheURL=new URL(url.origin+'/prices/cache/v'+FS_PRICE_VERSION+'/'+fsPriceKey(code));
   if(scope.nearby){cacheURL.searchParams.set('lat',String(scope.lat));cacheURL.searchParams.set('lon',String(scope.lon));cacheURL.searchParams.set('r',String(scope.radius));}
+  const pkId=fsObsId(url.searchParams.get('pk'));   // 82: an observatory product the shopper confirmed for this barcode
+  if(pkId)cacheURL.searchParams.set('pk',pkId);
   const cacheKey=new Request(cacheURL.toString());
   // 78: ?fresh=1 (sent on a rescan or "Try again") skips the edge copy and asks every source again.
   const forceFresh=url.searchParams.get('fresh')==='1';
@@ -3344,6 +3380,12 @@ async function fsPricesRoute(request,env,ctx) {
     fsPriceLicensedOffers(env, code, scope),
     fsGrSeedOffers(request, env, code).catch(()=>({items:[],providers:{},product:null,pack:null})),
   ]);
+  // 82: a confirmation is used only while this barcode has no observatory link of its own (a reviewed or exact link always wins).
+  if(pkId&&!official.providers?.posokanei?.linked){
+    const c=await fsObsConfirmed(request, env, code, pkId).catch(()=>null);
+    if(c){official.items.push(...c.items);if(c.items.length)official.linkMatch='user-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;}
+    official.confirmed={id:pkId,name:c?.name||'',offers:c?.items.length||0,status:!c?'unavailable':!c.found?'not_found':c.items.length?'ok':'no_prices'};
+  }
   const payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official});
   // 78: an answer with any provider down is never cached (the next scan asks again). Complete answers are kept 10 minutes.
   const ttl = payload.providerSummary.unavailable === 0 && payload.status !== 'temporarily_unavailable' ? 600 : 0;

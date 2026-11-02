@@ -157,3 +157,26 @@ html:lang(el) .comparison-brand{letter-spacing:.035em!important;overflow-wrap:an
    (white on the A card): unreadable. Dark ink on the light panel on every grade colour, icon included. */
 .report .hero:not(.hero--none) .hero__caveat,.report .hero .hero__caveat{background:#f3f7f1!important;color:#1f3a2c!important;border:1px solid #b7cbb8;opacity:1!important}
 .report .hero .hero__caveat span,.report .hero .hero__caveat svg{color:#1f3a2c!important;opacity:1!important}
+/* ---- 82: layout polish, phone and desktop ---- */
+/* top bar: the share button may shrink, never spill out of the bar */
+.report__bar>.btn{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;justify-content:center;white-space:nowrap}
+/* "All prices" pill: wraps inside the price card instead of running past its edge */
+.fp75__foot .fp75__all--cta{flex:1 1 auto;max-width:100%;min-width:0;white-space:normal;text-align:center;justify-content:center;line-height:1.25}
+/* points: "6 against" and "7 in favour" on their own lines, no stray separator */
+.snip__split>span{display:block;white-space:nowrap}
+/* drinks scale: A is water only, said in words */
+.snip__scale s.is-water{white-space:normal;font-size:.6rem;line-height:1.1;font-style:italic}
+.snip__scale-note{grid-column:1/-1;margin:2px 4px 0;font:600 .72rem/1.4 var(--font-ui);text-align:start;color:var(--ink2,inherit)}
+.report .hero:not(.hero--none) .snip__scale-note{color:var(--gci)}
+/* better-choice card: primary action full width, the two others side by side, all the same height */
+.swap__foot .btn--xs{margin-left:0}
+.swap__foot>.swap__facts{flex:1 1 100%}
+.swap__foot>.btn{flex:1 1 calc(50% - 5px);justify-content:center;text-align:center}
+.swap__foot>.btn--primary{flex-basis:100%}
+/* "Choosing between foods?": the button goes under the text on phones */
+@media (max-width:520px){.wscta{flex-wrap:wrap}.wscta__txt{flex:1 1 calc(100% - 60px)}.wscta>.btn{flex:1 1 100%;justify-content:center}}
+/* floating "better choice found" pill: compact, never wider than the screen */
+.altpill{max-width:min(calc(100vw - 32px),420px)}
+.altpill__text b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* phones: the grade card already names the better choice, so the floating pill never covers the page */
+@media (max-width:720px){.altpill{display:none!important}}

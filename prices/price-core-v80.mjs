@@ -85,13 +85,15 @@ export function checkOffer(o, pack, now = Date.now()) {
   const out = {
     ...o, id, price:Math.round(price * 100) / 100, currency:'EUR', basis, date, ageDays:age, freshness, countryCode, sourceKind:kind,
     storeName:store, retailer:text(o.retailer, 100) || store, source, city:text(o.city, 60),
-    match:['reviewed', 'auto-exact', 'barcode'].includes(o.match) ? o.match : null,
+    match:['reviewed', 'auto-exact', 'barcode', 'user-confirmed'].includes(o.match) ? o.match : null,
     sourceURL:httpsURL(o.sourceURL), proofURL:httpsURL(o.proofURL) || null, evidenceURL:httpsURL(o.evidenceURL) || null,
     // 78: personal notes never rank; community (Open Prices) prices rank only with a proof; a suspect observatory link never ranks.
     rankingEligible:o.rankingEligible !== false && kind !== 'personal' && !id.startsWith('note:') && countryCode === 'GR' && freshness === 'current' && basis === 'item' && !conditional
       && (kind !== 'community' || Boolean(o.proofType)) && !o.packMismatch,
   };
-  return {...out, ...unitPriceOf(out, pack)};
+  // 82: a price for another pack size gets its unit price from the pack actually observed, never from this barcode's label
+  const seen = o.packMismatch && o.observedPack && ['kg', 'l'].includes(o.observedPack.unit) && num(o.observedPack.amount) > 0 ? {unit:o.observedPack.unit, amount:num(o.observedPack.amount)} : null;
+  return {...out, ...unitPriceOf(out, seen || pack)};
 }
 const order = (a, b) => Number(b.rankingEligible) - Number(a.rankingEligible) || (a.rankingEligible ? a.price - b.price : 0) || b.date.localeCompare(a.date) || a.price - b.price;
 
@@ -111,7 +113,13 @@ export function checkPayload(p, now = Date.now()) {
   const estimate = null;
   const related = (Array.isArray(p.related) ? p.related : []).slice(0, 20).map(x => ({name:text(x?.name, 90), price:num(x?.price), source:text(x?.source, 30), date:isoDate(x?.date), similarity:Math.min(100, Math.max(0, Math.round(num(x?.similarity) || 0)))}))
     .filter(x => x.name && x.price > 0 && x.price < 5000 && x.date && x.similarity >= 55).slice(0, 3);
-  return summarize({barcode, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, related, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
+  // 82: same-brand observatory products the shopper may confirm as this one, and the confirmation the answer was built with.
+  const packOf = q => q && ['kg', 'l', 'pcs'].includes(q.unit) && num(q.amount) > 0 ? {unit:q.unit, amount:num(q.amount)} : null;
+  const candidates = (Array.isArray(p.candidates) ? p.candidates : []).slice(0, 4).map(x => ({id:/^[0-9a-f]{32}$/.test(String(x?.id || '')) ? String(x.id) : '', name:text(x?.name, 90), chains:Math.max(0, Math.round(num(x?.chains) || 0)), date:isoDate(x?.date), similarity:Math.min(100, Math.max(0, Math.round(num(x?.similarity) || 0))), pack:packOf(x?.pack)}))
+    .filter(x => x.id && x.name);
+  const c = p.confirmed && typeof p.confirmed === 'object' && /^[0-9a-f]{32}$/.test(String(p.confirmed.id || '')) ? p.confirmed : null;
+  const confirmed = c ? {id:String(c.id), name:text(c.name, 120), offers:Math.max(0, Math.round(num(c.offers) || 0)), status:['ok', 'no_prices', 'not_found', 'unavailable'].includes(c.status) ? c.status : 'unavailable'} : null;
+  return summarize({barcode, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, related, candidates, confirmed, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
     status:offers.length || elsewhere.length ? 'observations_available' : estimate ? 'estimate_only' : status === 'observations_available' || status === 'estimate_only' ? 'no_data' : status,
     checkedAt:text(p.checkedAt, 40), transport:text(p.transport, 40)});
 }
