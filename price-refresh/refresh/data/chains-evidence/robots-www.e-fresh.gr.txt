@@ -1,0 +1,46 @@
+User-agent: Googlebot-Image
+Disallow:
+
+User-agent: Amazonbot
+Disallow: /
+
+# Crawlers Setup
+User-agent: *
+
+# Directories
+Disallow: /robot/
+
+#Seo URLs not to track
+Disallow: /*/timeslot
+Disallow: /*/account
+Disallow: /*/account/edit/*
+Disallow: /*/account/lists
+Disallow: /*/account/oi-pontoi-mou
+Disallow: /*/account/coupons
+Disallow: /*/account/orders
+Disallow: /*/account/favorites/advice
+Disallow: /*/account/favorites/recipe
+Disallow: /*/account/wishlist
+Disallow: /*/account/mealplanner/plans
+Disallow: /api/
+Disallow: /category?
+Disallow: /*/category/2?
+
+Disallow: /*?*food_brand=
+Disallow: /*?*prosfora_=
+Disallow: /*?*biologiko_=
+Disallow: /*?*katallilo_gia_=
+
+Disallow: /product
+Disallow: /*id=
+
+# Paths (clean URLs)
+Disallow: /index.php/
+
+# Files
+
+# Paths (no clean URLs)
+Disallow: /*.php$
+Disallow: /*?SID=
+
+Sitemap: https://www.e-fresh.gr/storage/feeds/sitemap.xml

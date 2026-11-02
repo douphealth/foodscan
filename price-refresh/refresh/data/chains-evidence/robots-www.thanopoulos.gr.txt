@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Disallow: /users/*
+Disallow: /cart
+Disallow: /checkout
+
+# Host
+Host: https://www.thanopoulos.gr/
+
+# Sitemaps
+Sitemap: https://www.thanopoulos.gr/sitemap.xml

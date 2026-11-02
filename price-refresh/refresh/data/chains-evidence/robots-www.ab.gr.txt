@@ -1,0 +1,24 @@
+# Allow bots
+User-agent: *
+
+Allow: */search/promotions
+Disallow: /login
+Disallow: /errorPage
+Disallow: /my-account
+Disallow: /timeslot
+Disallow: /payment-method
+Disallow: */search/*
+Disallow: */search?*
+Disallow: */customerhub/quick-shop/*
+Disallow: */registration/*
+Disallow: */create-account*
+Disallow: */checkout*
+Disallow: /en/
+
+# Sitemap files
+
+Sitemap: https://www.ab.gr/sitemap/delhaizesitemapindex.xml
+Sitemap: https://www.ab.gr/sitemapgr/delhaizesitemapindex.xml
+
+Sitemap: https://www.ab.gr/site/en/content/sitemap.xml
+Sitemap: https://www.ab.gr/site/el/content/sitemap.xml
