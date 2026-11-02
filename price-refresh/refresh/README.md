@@ -18,6 +18,8 @@ unreachable published copy is ignored, so the worst case is the bundled data wit
 | step | rule |
 |---|---|
 | observatory | newest snapshot of the last 6 days (github.com/spyrosavl/posokanei, ministry data); rejected under 5,000 products; links are kept from the previous seed, a product renamed since review is skipped |
+| new barcode links (81) | `src/pricelink.mjs`: a Bazaar/Lidl barcode is linked to an observatory product only when the observatory reports the SAME chain's regular price equal to the cent (within 3 days), same brand, same pack size and unit count, same numbers and variant words, no conflicting product-line words, and the pair is unique both ways. Measured on 2 Nov 2026: agrees with all 400 reviewed/exact links it overlaps (the 5 differences are duplicate observatory records of the same product), +206 links (1,177 -> 1,383). Each run's additions and refusals: `links-auto-price.json` on `prices-data` |
+| outlier quarantine (81) | a chain price below 0.6 x the median of at least two other chains for the same product (Market In 0,99 while eight chains say 1,80) is left out of the seed so it can never be shown as the lowest price; listed in `quarantine.json` on `prices-data` (25 rows on 2 Nov 2026) |
 | Bazaar, Lidl | robots.txt must equal the reviewed copy in `refresh/data/`, else the crawl is skipped; one request at a time, 1.2-1.5 s apart; a failed or too-small crawl keeps the previous observations |
 | Open Food Facts | official CSV export, re-downloaded when the saved extract is older than 7 days (names, brands, pack sizes, categories) |
 | estimates | `tools/build-price-data.mjs`: leave-one-out calibration per confidence class, range checked on held-out data |
@@ -30,4 +32,4 @@ Needs Node 22 and Python 3.12 (crawl). On Windows set `PYTHONUTF8=1`.
 into the repository, then Actions > Refresh prices > Run workflow once. The default `GITHUB_TOKEN` with write access to contents is enough (the workflow requests it).
 Check: `node tools/verify-deploy.mjs https://food-scan.gearuptofit.com 80.0.0` and `/api/prices/health` (`estimator.origin` becomes `remote` when published data is newer).
 
-Barcode links of observatory products (`data/ean-posokanei-map-*.json` in earlier toolkits) are reviewed or exact name-and-size matches only; this job never creates a link.
+Barcode links of observatory products are reviewed, exact name-and-size, or (81) price-anchored matches. Tests: `node --test price-refresh/refresh/test/pricelink.test.mjs`.

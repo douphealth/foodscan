@@ -44,8 +44,11 @@ for (const r of pk.stats.renamed) console.log('  skipped (renamed since review):
 
 fs.mkdirSync(seedDir, { recursive: true });
 const pkSeed = { schema: 1, source: { ...PK, archive, snapshot: pk.meta.date, fetched_at: pk.meta.fetched_at, api: pk.meta.source },
-  link_file: { file: path.basename(linkFile), built: linkDoc.built, links: linkDoc.links.length, hand: linkDoc.links.filter(l => (l.method || 'hand') === 'hand').length, auto_exact: linkDoc.links.filter(l => l.method === 'auto-exact').length }, generated: nowISO, products: pk.products };
+  link_file: { file: path.basename(linkFile), built: linkDoc.built, links: linkDoc.links.length, hand: linkDoc.links.filter(l => (l.method || 'hand') === 'hand').length, auto_exact: linkDoc.links.filter(l => l.method === 'auto-exact').length, auto_price: linkDoc.links.filter(l => l.method === 'auto-price').length }, generated: nowISO, products: pk.products };
 fs.writeFileSync(path.join(seedDir, 'posokanei-latest.json'), JSON.stringify(pkSeed));
+// 81: chain prices left out as outliers (see quarantineOutliers), for review
+if (opt('quarantine')) fs.writeFileSync(opt('quarantine'), JSON.stringify({ snapshot: pk.meta.date, rule: 'price < 0.6 x median of >= 2 other chains', rows: pk.stats.quarantined || [] }, null, 1));
+console.log(`quarantined ${(pk.stats.quarantined || []).length} outlier chain prices`);
 
 let ek = null;
 if (!flag('no-ek')) {

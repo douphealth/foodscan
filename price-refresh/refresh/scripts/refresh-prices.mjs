@@ -3,9 +3,11 @@
  *
  *   node refresh/scripts/refresh-prices.mjs --work work --out out --prev <dir with the previous seeds/ and manifest.json> [--skip-crawl] [--skip-off]
  *
- *   1. observatory (posokanei): newest daily snapshot (github.com/spyrosavl/posokanei). The barcode links are NOT re-derived: the
- *      previous seed's links (barcode <-> observatory product id, reviewed or exact auto-match) are kept, and only their chain prices
- *      are re-read by product id. A product renamed since the link was reviewed is skipped (src/posokanei.mjs).
+ *   1. observatory (posokanei): newest daily snapshot (github.com/spyrosavl/posokanei). The previous seed's links (barcode <->
+ *      observatory product id: reviewed, exact or price-anchored) are kept, and their chain prices are re-read by product id. A product
+ *      renamed since it was linked is skipped (src/posokanei.mjs). 81: NEW links are added only by the price-anchored rule
+ *      (src/pricelink.mjs: same chain, same price to the cent, same brand and size, unique both ways), after the shop crawl below,
+ *      and a chain price far below every other chain is quarantined (src/posokanei.mjs quarantineOutliers).
  *   2. Bazaar and Lidl web shops: polite crawl, one request at a time. The shop's robots.txt must equal the reviewed copy in
  *      refresh/data/ (else the crawl is skipped until a person reads it). A failed or too-small crawl keeps the previous observations
  *      with their ORIGINAL dates; they are never re-dated.
@@ -21,6 +23,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { shardSeeds, unshard } from '../../tools/lib/shard-seeds.mjs';
+import { priceLinks } from '../src/pricelink.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.resolve(here, '..', '..');
 const arg = (n, d = null) => { const i = process.argv.indexOf('--' + n); return i > -1 ? process.argv[i + 1] : d; }, flag = n => process.argv.includes('--' + n);
@@ -47,10 +50,7 @@ for (let d = 0; d < 6 && !pkDate; d++) {
 if (!pkDate) throw new Error('no posokanei snapshot in the last 6 days');
 const snap = readJSON(pkFile); if (!Array.isArray(snap.products) || snap.products.length < 5000) throw new Error('posokanei snapshot rejected: ' + (snap.products?.length || 0) + ' products');
 const oldPk = base('posokanei-latest.json');
-const linkDoc = { schema: 2, built: today, links: Object.entries(oldPk.products).map(([ean, p]) => ({ ean: ean.replace(/^0+(?=\d{8})/, ''), pk_id: p.id, pk_name: p.n, method: p.m === 'a' ? 'auto-exact' : 'hand' })) };
-const linkFile = path.join(work, 'links.json'); fs.writeFileSync(linkFile, JSON.stringify(linkDoc));
-run('node', [path.join(repo, 'refresh/scripts/import.mjs'), '--file', pkFile, '--links', linkFile, '--no-ek', '--seed-dir', seeds, '--now', today]);
-fs.copyFileSync(path.join(seeds, 'posokanei-latest.json'), path.join(work, 'pk-seed-new.json'));
+const linkDoc = { schema: 2, built: today, links: Object.entries(oldPk.products).map(([ean, p]) => ({ ean: ean.replace(/^0+(?=\d{8})/, ''), pk_id: p.id, pk_name: p.n, method: p.lm || (p.m === 'a' ? 'auto-exact' : 'hand') })) };
 // e-katanalotis: frozen since 16 Jun 2026, history only: carried forward unchanged
 fs.writeFileSync(path.join(seeds, 'ekatanalotis-latest.json'), JSON.stringify(base('ekatanalotis-latest.json')));
 
@@ -83,6 +83,21 @@ if (!flag('skip-crawl')) {
 }
 fs.writeFileSync(path.join(seeds, 'bazaar-eshop-latest.json'), JSON.stringify(bz)); fs.writeFileSync(path.join(seeds, 'lidl-eshop-latest.json'), JSON.stringify(li));
 
+/* 2b. 81: new price-anchored links (shop barcode + price == observatory price of the same chain), then the observatory seed */
+const linkFile = path.join(work, 'links.json'), quarantineFile = path.join(work, 'quarantine.json'), autoLinkFile = path.join(work, 'links-auto-price.json');
+{
+  const strip = e => String(e).replace(/^0+(?=\d{8,})/, '');
+  const reviewDoc = readJSON(path.join(repo, 'refresh/data/ean-posokanei-map-v2.json'));
+  const rejected = new Set([...(reviewDoc.rejected_in_review || []).map(r => strip(r.ean)), ...(reviewDoc.hand_links_gone || []).map(strip)]);
+  const linked = { eans: new Set(linkDoc.links.map(l => strip(l.ean))), ids: new Set(linkDoc.links.map(l => l.pk_id)), rejected };
+  const { links, refused, stats } = priceLinks({ products: snap.products, snapshotDate: snap.date, shops: { bazaar: bz, lidl: li }, linked });
+  linkDoc.links.push(...links);
+  fs.writeFileSync(autoLinkFile, JSON.stringify({ built: today, snapshot: snap.date, added: links.length, stats, links, refused }, null, 1));
+  log('price-anchored links: +' + links.length, JSON.stringify(stats));
+}
+fs.writeFileSync(linkFile, JSON.stringify(linkDoc));
+run('node', [path.join(repo, 'refresh/scripts/import.mjs'), '--file', pkFile, '--links', linkFile, '--no-ek', '--seed-dir', seeds, '--now', today, '--quarantine', quarantineFile]);
+
 /* 3. Open Food Facts extract (the date is inside the file: a cache restore must not make an old extract look new) */
 const offGz = path.join(work, 'off.csv.gz'), offJson = path.join(work, 'off-extract.json'), maxAge = Number(arg('off-max-age-days', 7)) * 86400000;
 const offAge = () => { try { return Date.now() - Date.parse(readJSON(offJson).exportedAt); } catch { return Infinity; } };
@@ -104,5 +119,6 @@ for (const [c, h] of Object.entries(nm.estimator.holdout)) if (h.coverage80 < 65
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(path.join(out, 'seeds'), { recursive: true });
 for (const f of fs.readdirSync(stage)) if (f !== 'validation.json') fs.copyFileSync(path.join(stage, f), path.join(out, f));
 const shardSummary = shardSeeds(seeds, path.join(out, 'seeds')); // manifest + 100 small shards per source: a lookup parses ~11 KB instead of 1.8 MB
+for (const f of [autoLinkFile, quarantineFile]) if (fs.existsSync(f)) fs.copyFileSync(f, path.join(out, path.basename(f)));   // audit trail, not read by the site
 fs.writeFileSync(path.join(out, 'README.txt'), 'FoodScan price data (generated). Observations are copied from public sources with their dates; estimates are labelled and calibrated (see manifest.json). https://food-scan.gearuptofit.com/how/\n');
 log('written', out, JSON.stringify({ built: nm.built, counts, shards: shardSummary, withEstimate: nm.withEstimate, snapshot: newPk.source.snapshot }));
