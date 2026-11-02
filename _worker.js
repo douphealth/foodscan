@@ -1698,8 +1698,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "80.0.0";
-var BUILD = "8000-price-intelligence";
+var VERSION = "81.0.0";
+var BUILD = "8100-honest-prices";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -3085,8 +3085,13 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   // All providers down: the result is NOT available (never "no data"). Some down and nothing found: incomplete.
   // 80: an estimate is offered only when no recorded price of this exact barcode can lead the card (a current, older, not-ranked or out-of-stock one)
   const leadable = offers.some(o => ['current', 'older', 'notRanked', 'outOfStock'].includes(o.tier));
-  const estimate = !leadable ? (official.estimate || null) : null;
-  const status = offers.length || others.length ? 'observations_available' : estimate ? 'estimate_only' : !active.length || down === active.length ? 'temporarily_unavailable' : down ? 'incomplete' : 'no_data';
+  // 81: no price is ever estimated. A range from "similar products" read as this product's price and was often far off
+  // (EUR 5.40-22.33/kg). When this barcode has no recorded price, up to 3 CLOSE products (same-brand class A/B matches, >= 55 %
+  // similar) are listed as `related`: each with its OWN recorded price, name, source and date, and never as this product's price.
+  const near = !leadable ? (official.estimate || null) : null;
+  const related = near && ['A', 'B'].includes(near.cls) ? (near.examples || []).filter(x => x && x.name && x.price > 0 && x.similarity >= 55).slice(0, 3) : [];
+  const estimate = null;
+  const status = offers.length || others.length ? 'observations_available' : !active.length || down === active.length ? 'temporarily_unavailable' : down ? 'incomplete' : 'no_data';
   return {
     version:FS_PRICE_VERSION, barcode:code, country:'GR', scope:scope.nearby?'nearby':'greece', checkedAt:new Date(now).toISOString(),
     status, transport:'pages_worker',
@@ -3094,16 +3099,16 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       (sample.productName ? {name:sample.productName, brand:'', quantity:sample.productQuantity||'', nutriScore:null, image:'', source:'open_food_facts_via_open_prices'} : null),
     productName: meta ? [meta.name, meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? meta.brand : '', meta.quantity].filter(Boolean).join(' · ') : (sample.productName || official.estimateName || ''),
     pack, packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
-    offers, elsewhere:others, estimate, data:official.estimateMeta || null, providers,
+    offers, elsewhere:others, estimate, related, data:official.estimateMeta || null, providers,
     providerSummary:{active:active.length, unavailable:down, disabled:Object.values(providers).length-active.length},
     summary:{bestOfferId:best?.id||null, lowestCurrentPrice:best?.price??null, currentOffers:eligible.length,
       retailers:new Set(eligible.map(o=>o.retailer)).size, stores:new Set(eligible.map(o=>o.storeId)).size, perChain:Object.values(perChain).sort((a,b)=>a.price-b.price),
       latestGreekOfferId:latest?.id||null, latestGreekDate:latest?.date||null,
       tiers:Object.fromEntries(['current','otherSize','packUnconfirmed','older','outOfStock','notRanked'].map(t => [t, offers.filter(o => o.tier === t).length]))},
     limitations:[
-      `Only real, dated prices are shown, each with its own source and licence: the Ministry of Development price observatory (posokanei.gov.gr, national chain prices), e-katanalotis (history only), Open Prices (community receipts and shelf photos, ODbL), the chains' own web shops (${FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status !== 'disabled').map(id => new URL(FS_GR_SOURCES[id].url).hostname.replace(/^www\./, '')).join(', ')}) and licensed retailer feeds when configured. A recorded price is never estimated. When a barcode has no recorded price, an estimate field from comparable products with a recorded price may be returned instead: it is labelled, carries a range calibrated on the measured error of the method, and is never an offer (never ranked, never named the cheapest).`,
+      `Only real, dated prices are shown, each with its own source and licence: the Ministry of Development price observatory (posokanei.gov.gr, national chain prices), e-katanalotis (history only), Open Prices (community receipts and shelf photos, ODbL), the chains' own web shops (${FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status !== 'disabled').map(id => new URL(FS_GR_SOURCES[id].url).hostname.replace(/^www\./, '')).join(', ')}) and licensed retailer feeds when configured. No price is ever estimated (81). When a barcode has no recorded price, "related" may list up to 3 close products (same brand, similar name and size) with THEIR OWN recorded price, source and date; they are never presented as this product's price.`,
       'Only observations from the last 7 days, with no expired promotion and a dated proof, can be "the cheapest". Older prices are still shown, as the last recorded price, with their age. Future-dated observations are rejected.',
-      'The observatory publishes no barcodes. Its prices appear only for barcodes linked to its products by a reviewed link or by an automatic exact match; each price says which. If its pack size disagrees with the label, its prices never rank.',
+      'The observatory publishes no barcodes. Its prices appear only for barcodes linked to its products by a reviewed link, an automatic exact match, or (81) a price-anchored match (a chain web shop and the observatory report the same chain\'s regular price to the cent, same brand and size, one product only); each price says which. If its pack size disagrees with the label, its prices never rank.',
       'Lidl prices can vary by region; lidl.gr shows its default (national) price. Web-shop prices are the shop\'s online price; shelf prices in stores may differ.',
       'A web-shop price is checked against the label size. If the shop sells this barcode as another size it is shown as "same product, other size" with its own unit price, and never ranks. Prices older than 7 days are shown as "older price" with their date and age.',
       'A store with no observation shows "Not available". Shelf prices change and offers expire: check the price in store or at checkout.',
