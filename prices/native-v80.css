@@ -232,3 +232,8 @@ article.gradecard.snip>*{min-width:0}
 
 .fp80-standalone{margin:0 0 14px}
 .fp80-prod{margin:0;font-size:.95rem;font-weight:700;line-height:1.35;color:#fff;overflow-wrap:anywhere}
+
+/* 81: closest products with their own recorded prices (shown only when this barcode has none; never this product's price) */
+.fp81-rel{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.18)}
+.fp81-rel__head{margin:0 0 2px;font-size:.7rem;font-weight:700;letter-spacing:.02em;color:rgba(255,255,255,.72)}
+.fp81-rel__list li b{color:rgba(255,255,255,.92)}

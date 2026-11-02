@@ -13,7 +13,7 @@ import { esc, euro, unitText, whenText, dateText, unitDelta, pageLang, t } from 
 const icon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
 const chev = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 const T = {
-  en:{eyebrow:'Supermarket price', facts:'Compare label facts', hideFacts:'Hide label facts', moreOpts:n => `Show ${n} more`, show:'Show', hide:'Hide', navPrices:'Prices', update:'A new version of FoodScan is ready.', reload:'Refresh', cheapest:'Cheapest current price', condTitle:k => `Current ${k.toLowerCase()}`, offer:'offer', checking:'Checking supermarket prices…', na:'Not available', allStores:'All stores', seeAll:n => n > 1 ? `See all ${n} prices` : 'See all prices', addShort:'Add a price',
+  en:{eyebrow:'Supermarket price', facts:'Compare label facts', hideFacts:'Hide label facts', moreOpts:n => `Show ${n} more`, show:'Show', hide:'Hide', navPrices:'Prices', update:'A new version of FoodScan is ready.', reload:'Refresh', cheapest:'Cheapest current price', condTitle:k => `Current ${k.toLowerCase()}`, offer:'offer', checking:'Checking supermarket prices…', na:'Not available', allStores:'All stores', seeAll:n => n > 1 ? `See all ${n} prices` : 'See all prices', seeAllOld:(c, o) => `All prices · ${c} current, ${o} older`, noneRel:'No supermarket price is on record for this exact barcode yet. FoodScan does not guess prices.', relHead:'Recorded prices of the closest products · not this product', addShort:'Add a price',
     noData:'No supermarket price recorded for this barcode yet.', addOwn:'Add a price you saw', lastSeen:'Last seen', notCurrent:'Not a current price',
     elsewhere:c => `Only seen outside Greece (${c})`, down:'Prices could not be checked right now. The grade above is unaffected.', retry:'Try again',
     of:(n, m) => n > 1 ? `Lowest of ${n} prices${m > 1 ? ` · ${m} chains` : ''}` : 'Only current price on record', upTo:x => `others up to +${x}`,
@@ -25,8 +25,8 @@ const T = {
     estBasis:n => `Based on ${n} similar products with recorded Greek prices`, estBasisType:n => `Based on ${n} products of the same type with recorded Greek prices`, estPer:(u, b) => `about ${u}${b}`, perPack:'for this pack', how:'How is this estimated?',
     howBody:'The name, brand and pack size are compared with products that have a recorded Greek price (Ministry of Development price observatory and chain web shops). The range comes from the measured error of this method on products whose price is known.',
     valid:(m, n) => `On ${n} products with known prices the typical error was ${m}%.`, kinds:{close:'Very similar products', similar:'Similar products', broad:'Broadly similar products', rough:'Rough estimate: few close matches', typical:'Rough estimate: typical for this kind of product'}, sim:'match',
-    none:'No verified price for this barcode', noneSub:'No supermarket price is on record for it yet, and no comparable priced products were found. That does not mean it is not sold.', elseLine:(c, p, s, d) => `Seen in ${c}: ${p} · ${s} · ${d}`},
-  el:{eyebrow:'Τιμή σούπερ μάρκετ', facts:'Σύγκριση στοιχείων ετικέτας', hideFacts:'Απόκρυψη στοιχείων', moreOpts:n => `Εμφάνιση ${n} ακόμη`, show:'Εμφάνιση', hide:'Απόκρυψη', navPrices:'Τιμές', update:'Νέα έκδοση FoodScan διαθέσιμη.', reload:'Ανανέωση', cheapest:'Φθηνότερη τρέχουσα τιμή', condTitle:k => `Τρέχουσα ${k.toLowerCase()}`, offer:'προσφορά', checking:'Έλεγχος τιμών σούπερ μάρκετ…', na:'Δεν υπάρχει διαθέσιμη τιμή', allStores:'Όλα τα καταστήματα', seeAll:n => n > 1 ? `Δείτε όλες τις τιμές (${n})` : 'Δείτε όλες τις τιμές', addShort:'Προσθήκη τιμής',
+    none:'No verified price for this barcode', noneSub:'No supermarket price is on record for it yet. FoodScan does not guess prices. That does not mean it is not sold.', elseLine:(c, p, s, d) => `Seen in ${c}: ${p} · ${s} · ${d}`},
+  el:{eyebrow:'Τιμή σούπερ μάρκετ', facts:'Σύγκριση στοιχείων ετικέτας', hideFacts:'Απόκρυψη στοιχείων', moreOpts:n => `Εμφάνιση ${n} ακόμη`, show:'Εμφάνιση', hide:'Απόκρυψη', navPrices:'Τιμές', update:'Νέα έκδοση FoodScan διαθέσιμη.', reload:'Ανανέωση', cheapest:'Φθηνότερη τρέχουσα τιμή', condTitle:k => `Τρέχουσα ${k.toLowerCase()}`, offer:'προσφορά', checking:'Έλεγχος τιμών σούπερ μάρκετ…', na:'Δεν υπάρχει διαθέσιμη τιμή', allStores:'Όλα τα καταστήματα', seeAll:n => n > 1 ? `Δείτε όλες τις τιμές (${n})` : 'Δείτε όλες τις τιμές', seeAllOld:(c, o) => `Όλες οι τιμές · ${c} τρέχουσες, ${o} παλαιότερες`, noneRel:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό ακριβώς το barcode. Το FoodScan δεν μαντεύει τιμές.', relHead:'Καταγεγραμμένες τιμές των πιο κοντινών προϊόντων · όχι αυτού του προϊόντος', addShort:'Προσθήκη τιμής',
     noData:'Δεν έχει καταγραφεί ακόμη τιμή για αυτό το barcode.', addOwn:'Προσθέστε μια τιμή που είδατε', lastSeen:'Τελευταία καταγραφή', notCurrent:'Όχι τρέχουσα τιμή',
     elsewhere:c => `Καταγραφή μόνο εκτός Ελλάδας (${c})`, down:'Οι τιμές δεν ελέγχθηκαν τώρα. Η βαθμολογία δεν επηρεάζεται.', retry:'Δοκιμάστε ξανά',
     of:(n, m) => n > 1 ? `Η χαμηλότερη από ${n} τιμές${m > 1 ? ` · ${m} αλυσίδες` : ''}` : 'Η μόνη τρέχουσα τιμή', upTo:x => `οι άλλες έως +${x}`,
@@ -38,7 +38,7 @@ const T = {
     estBasis:n => `Βάσει ${n} παρόμοιων προϊόντων με καταγεγραμμένη τιμή στην Ελλάδα`, estBasisType:n => `Βάσει ${n} προϊόντων του ίδιου είδους με καταγεγραμμένη τιμή στην Ελλάδα`, estPer:(u, b) => `περίπου ${u}${b}`, perPack:'για αυτή τη συσκευασία', how:'Πώς γίνεται η εκτίμηση;',
     howBody:'Συγκρίνουμε το όνομα, τη μάρκα και τη συσκευασία με προϊόντα που έχουν καταγεγραμμένη ελληνική τιμή (Παρατηρητήριο Τιμών του Υπουργείου Ανάπτυξης και e-shop αλυσίδων). Το εύρος προκύπτει από το μετρημένο σφάλμα της μεθόδου σε προϊόντα με γνωστή τιμή.',
     valid:(m, n) => `Σε ${n} προϊόντα με γνωστή τιμή το τυπικό σφάλμα ήταν ${m}%.`, kinds:{close:'Πολύ παρόμοια προϊόντα', similar:'Παρόμοια προϊόντα', broad:'Σχετικά παρόμοια προϊόντα', rough:'Πρόχειρη εκτίμηση: λίγα κοντινά προϊόντα', typical:'Πρόχειρη εκτίμηση: τυπική τιμή για αυτό το είδος προϊόντος'}, sim:'ομοιότητα',
-    none:'Δεν βρέθηκε επαληθευμένη τιμή', noneSub:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό το barcode και δεν βρέθηκαν συγκρίσιμα προϊόντα με τιμή. Δεν σημαίνει ότι το προϊόν δεν πωλείται.', elseLine:(c, p, s, d) => `Καταγραφή σε ${c}: ${p} · ${s} · ${d}`},
+    none:'Δεν βρέθηκε επαληθευμένη τιμή', noneSub:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό το barcode. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται.', elseLine:(c, p, s, d) => `Καταγραφή σε ${c}: ${p} · ${s} · ${d}`},
 };
 const lang = () => pageLang();
 const tx = (k, ...a) => { const v = (T[lang()] || T.en)[k]; return typeof v === 'function' ? v(...a) : v; };
@@ -102,6 +102,15 @@ function estimateStrip(code, r, head, link) {
     <details class="fp80-why"><summary>${esc(tx('how'))}${chev}</summary><p>${esc(tx('howBody'))}</p>${ex ? `<ul class="fp80-ex">${ex}</ul>` : ''}${v}</details>
     ${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
 }
+/** 81: no recorded price for this barcode. Close products (same brand, similar name and size) are listed with THEIR OWN recorded
+ *  price, source and date, under a heading that says they are not this product. No range, no "about", no estimate. */
+function relatedStrip(r, head, link) {
+  const L = lang();
+  const items = r.related.map(x => `<li><span>${esc(x.name)}</span><b>${esc(euro(x.price, L))}</b><small>${esc(x.source)} · ${esc(dateText(x.date, L))}</small></li>`).join('');
+  return `${head('')}<div class="fp75__none"><div><b>${esc(tx('none'))}</b><span>${esc(tx('noneRel'))}</span></div></div>
+    <div class="fp81-rel"><p class="fp81-rel__head">${esc(tx('relHead'))}</p><ul class="fp80-ex fp81-rel__list">${items}</ul></div>
+    ${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
+}
 function stripHTML(code, r) {
   const L = lang();
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>`;
@@ -118,7 +127,7 @@ function stripHTML(code, r) {
       <div class="fp75__main"><div class="fp75__price"><strong>${esc(euro(b.price, L))}</strong>${b.unitPrice != null ? `<em>${esc(unitText(b, L))}</em>` : ''}</div>
         <div class="fp75__store"><b>${where(b)}</b><span>${esc(fmtShort(b.date, L))} · ${esc(whenText(b, L))}${b.discounted && !b.conditional ? ' · ' + esc(tx('offer')) : ''}</span><span class="fp75__src">${esc(scope || b.source)}</span></div></div>
       ${chainRow(r, b)}
-      <footer class="fp75__foot"><span>${sub}</span>${link(tx('seeAll', total), true)}</footer>`;
+      <footer class="fp75__foot"><span>${sub}</span>${link(total > r.currentCount ? tx('seeAllOld', r.currentCount, total - r.currentCount) : tx('seeAll', total), true)}</footer>`;
   }
   // 80: no current price. Lead with the last recorded price (shown with its age), else a labelled estimate, else an explicit "no verified price".
   const last = r.latest;
@@ -126,7 +135,7 @@ function stripHTML(code, r) {
       <div class="fp75__main"><div class="fp75__price"><small class="fp80-lead">${esc(tx('last'))}</small><strong>${esc(euro(last.price, L))}</strong>${last.unitPrice != null ? `<em>${esc(unitText(last, L))}</em>` : ''}</div>
         <div class="fp75__store"><b>${where(last)}</b><span>${esc(fmtShort(last.date, L))} · ${esc(whenText(last, L))}</span><span class="fp75__src">${esc(last.storeScope === 'national' ? tx('national') : last.storeScope === 'online' ? tx('online') : last.source)}</span></div></div>
       <p class="fp80-stale">${esc(tx('stale', whenText(last, L)))}</p>${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
-  if (r.estimate) return estimateStrip(code, r, head, link);
+  if (r.related?.length) return relatedStrip(r, head, link);
   if (r.elsewhere?.length) return `${head('')}<div class="fp75__none"><div><b>${esc(tx('none'))}</b><span>${esc(tx('noneSub'))}</span></div></div>${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
   return `${head('')}<div class="fp75__none"><div><b>${esc(tx('none'))}</b><span>${esc(tx('noneSub'))}</span></div>${link(tx('addShort'))}</div>`;
 }
@@ -355,7 +364,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-80.0.0';
+export const BUILD = 'foodscan-81.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

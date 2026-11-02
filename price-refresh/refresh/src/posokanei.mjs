@@ -33,7 +33,7 @@ export const key14 = c => String(c).padStart(14, '0');
 /** The links: Map<pk_id, link>. Schema 1 = reviewed by hand; schema 2 adds link.method ('hand' | 'auto-exact'). */
 export function loadLinks(doc) {
   if (!doc || ![1, 2].includes(doc.schema) || !Array.isArray(doc.links)) throw new Error('link_file_invalid');
-  if (doc.schema === 2 && doc.links.some(l => !['hand', 'auto-exact', 'auto-worker'].includes(l.method))) throw new Error('link_file_invalid');
+  if (doc.schema === 2 && doc.links.some(l => !['hand', 'auto-exact', 'auto-worker', 'auto-price'].includes(l.method))) throw new Error('link_file_invalid');
   const byId = new Map(), seen = new Set();
   for (const l of doc.links) {
     if (!/^\d{8,14}$/.test(l.ean) || !l.pk_id || seen.has(l.ean) || byId.has(l.pk_id)) throw new Error('link_file_not_one_to_one');
@@ -146,6 +146,24 @@ export const slimProduct = p => ({ id: p.id, name: p.name, brand: p.brand, unit:
   private_label: p.private_label, available_countries: p.available_countries,
   retailer_prices: (Array.isArray(p.retailer_prices) ? p.retailer_prices : []).filter(r => r?.country === 'GR').map(r => ({ country: 'GR', retailer: r.retailer, price: r.price, last_updated: r.last_updated, is_discount: r.is_discount, discount_percentage: r.discount_percentage })) });
 
+/** 81: one chain far below every other chain for the same product is almost always a data error at that chain (a different pack,
+ *  a per-unit "1+1" price, a typo): Market In 0,99 EUR while eight chains say 1,80. Shown as "the lowest price" it makes the whole
+ *  card wrong. A price below OUTLIER_RATIO x the median of at least two OTHER chains (same snapshot) is left out of the seed and
+ *  logged in stats.quarantined (published as quarantine.json). Prices above the median are never dropped: a chain may be dearer. */
+export const OUTLIER_RATIO = 0.6;
+export function quarantineOutliers(rows) {
+  if (rows.length < 3) return { keep: rows, dropped: [] };
+  const keep = [], dropped = [];
+  for (const r of rows) {
+    const others = rows.filter(x => x !== r && x.retailer_id !== r.retailer_id).map(x => x.price).sort((a, b) => a - b);
+    if (others.length < 2) { keep.push(r); continue; }
+    const m = others.length % 2 ? others[(others.length - 1) / 2] : (others[others.length / 2 - 1] + others[others.length / 2]) / 2;
+    if (r.price < m * OUTLIER_RATIO) dropped.push({ chain: r.retailer_id, price: r.price, median_other_chains: Math.round(m * 100) / 100, discount: !!r.discount_type, date: r.observed_at });
+    else keep.push(r);
+  }
+  return { keep, dropped };
+}
+
 /** Linked products -> records. products: iterable of observatory products (only linked ones are used). */
 export function ingestProducts(products, linkDoc, meta, { archive = '', now = Date.now(), maxAgeDays = 30, minProducts = 1000 } = {}) {
   const links = loadLinks(linkDoc), records = [], out_products = {}, stats = { linked: links.size, found: 0, renamed: [], chains: {}, skipped: {} };
@@ -155,8 +173,11 @@ export function ingestProducts(products, linkDoc, meta, { archive = '', now = Da
     for (const s of skipped) stats.skipped[s] = (stats.skipped[s] || 0) + 1;
     if (skipped.includes('renamed_since_review')) { stats.renamed.push({ ean: link.ean, was: link.pk_name, now: p.name }); continue; }
     const pack = packOf(p);
-    out_products[key14(link.ean)] = { n: p.name, id: p.id, m: link.method === 'hand' || !link.method ? 'h' : 'a', u: pack?.unit || null, q: pack?.amount ?? null, p: out.map(r => [r.retailer_id, r.price, r.observed_at, r.discount_type ? 1 : 0]) };
-    for (const r of out) { records.push(r); stats.chains[r.retailer_id] = (stats.chains[r.retailer_id] || 0) + 1; }
+    const { keep, dropped } = quarantineOutliers(out);
+    for (const d of dropped) (stats.quarantined ||= []).push({ ean: link.ean, name: p.name, ...d });
+    out_products[key14(link.ean)] = { n: p.name, id: p.id, m: link.method === 'hand' || !link.method ? 'h' : 'a', ...(link.method && !['hand', 'auto-exact'].includes(link.method) ? { lm: link.method } : {}),
+      u: pack?.unit || null, q: pack?.amount ?? null, p: keep.map(r => [r.retailer_id, r.price, r.observed_at, r.discount_type ? 1 : 0]) };
+    for (const r of keep) { records.push(r); stats.chains[r.retailer_id] = (stats.chains[r.retailer_id] || 0) + 1; }
   }
   stats.scanned = meta.scanned || 0;
   if (!meta.date || stats.scanned < minProducts) throw new Error('snapshot_incomplete');

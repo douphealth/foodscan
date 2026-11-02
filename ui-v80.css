@@ -152,3 +152,8 @@ html:lang(el) .gutf-spotlight__kicker,
 html:lang(el) .vs2__vs,
 html:lang(el) .report .hero:not(.hero--none) .hero__name .eyebrow,
 html:lang(el) .comparison-brand{letter-spacing:.035em!important;overflow-wrap:anywhere}
+
+/* 81: the grade note sits on a light panel, but `.report .hero:not(.hero--none) .hero__caveat` gave it the card's ink colour
+   (white on the A card): unreadable. Dark ink on the light panel on every grade colour, icon included. */
+.report .hero:not(.hero--none) .hero__caveat,.report .hero .hero__caveat{background:#f3f7f1!important;color:#1f3a2c!important;border:1px solid #b7cbb8;opacity:1!important}
+.report .hero .hero__caveat span,.report .hero .hero__caveat svg{color:#1f3a2c!important;opacity:1!important}

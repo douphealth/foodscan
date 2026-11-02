@@ -52,6 +52,9 @@ jobs:
           key: off-extract-${{ github.run_id }}
           restore-keys: off-extract-
 
+      - name: Linker and quarantine tests
+        run: node --test refresh/test/pricelink.test.mjs
+
       - name: Refresh
         run: node refresh/scripts/refresh-prices.mjs --work work --out out --prev prev
 
