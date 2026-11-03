@@ -7,13 +7,13 @@
  * 78: results expire after 10 minutes; a new scan of a barcode always asks the sources again; a partial answer (a source
  * down, nothing in the others) says so instead of "no price"; Higher-grade choices and Compare claim a saving only when
  * both prices are per kg or both per litre. */
-import { getPrices, peekPrices, forgetPrices, TTL } from './price-client-v80.mjs';
+import { getPrices, peekPrices, forgetPrices, setConfirmed, TTL } from './price-client-v80.mjs';
 import { esc, euro, unitText, whenText, dateText, unitDelta, pageLang, t } from './price-core-v80.mjs';
 
 const icon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
 const chev = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 const T = {
-  en:{eyebrow:'Supermarket price', facts:'Compare label facts', hideFacts:'Hide label facts', moreOpts:n => `Show ${n} more`, show:'Show', hide:'Hide', navPrices:'Prices', update:'A new version of FoodScan is ready.', reload:'Refresh', cheapest:'Cheapest current price', condTitle:k => `Current ${k.toLowerCase()}`, offer:'offer', checking:'Checking supermarket prices…', na:'Not available', allStores:'All stores', seeAll:n => n > 1 ? `See all ${n} prices` : 'See all prices', seeAllOld:(c, o) => `All prices · ${c} current, ${o} older`, noneRel:'No supermarket price is on record for this exact barcode yet. FoodScan does not guess prices.', relHead:'Recorded prices of the closest products · not this product', addShort:'Add a price',
+  en:{eyebrow:'Supermarket price', facts:'Compare label facts', hideFacts:'Hide label facts', moreOpts:n => `Show ${n} more`, show:'Show', hide:'Hide', navPrices:'Prices', update:'A new version of FoodScan is ready.', reload:'Refresh', cheapest:'Cheapest current price', condTitle:k => `Current ${k.toLowerCase()}`, offer:'offer', checking:'Checking supermarket prices…', na:'Not available', allStores:'All stores', seeAll:n => n > 1 ? `See all ${n} prices` : 'See all prices', seeAllOld:(c, o) => `All prices · ${c} current, ${o} older`, noneRel:'No supermarket price is on record for this exact barcode yet. FoodScan does not guess prices.', relHead:'Recorded prices of the closest products · not this product', candHead:'Is it one of these? Same brand, priced in every chain by the national price observatory', candHeadNow:'Current prices: is it one of these? Same brand, from the national price observatory', candSub:'Pick one only if the name and the pack size match the product in your hand. You will then see its own dated chain prices. You can undo it.', candBtn:'This is it', candChains:n => `prices in ${n} ${n === 1 ? 'chain' : 'chains'}`, candOtherSize:'different pack size', confLine:'Prices of the product you confirmed', confChange:'Change', otherPackPill:'Other pack size', otherPackLead:p => `Lowest price for ${p}`, otherPackNote:(a, b) => `The product you confirmed is listed as ${a}; this barcode's label says ${b}. Compare by the price per kg or litre.`, otherPackCount:n => `${n} ${n === 1 ? 'chain' : 'chains'} · not ranked as this barcode's price`, confNone:'The product you confirmed has no recorded price right now.', userConf:'confirmed by you', addShort:'Add a price',
     noData:'No supermarket price recorded for this barcode yet.', addOwn:'Add a price you saw', lastSeen:'Last seen', notCurrent:'Not a current price',
     elsewhere:c => `Only seen outside Greece (${c})`, down:'Prices could not be checked right now. The grade above is unaffected.', retry:'Try again',
     of:(n, m) => n > 1 ? `Lowest of ${n} prices${m > 1 ? ` · ${m} chains` : ''}` : 'Only current price on record', upTo:x => `others up to +${x}`,
@@ -26,7 +26,7 @@ const T = {
     howBody:'The name, brand and pack size are compared with products that have a recorded Greek price (Ministry of Development price observatory and chain web shops). The range comes from the measured error of this method on products whose price is known.',
     valid:(m, n) => `On ${n} products with known prices the typical error was ${m}%.`, kinds:{close:'Very similar products', similar:'Similar products', broad:'Broadly similar products', rough:'Rough estimate: few close matches', typical:'Rough estimate: typical for this kind of product'}, sim:'match',
     none:'No verified price for this barcode', noneSub:'No supermarket price is on record for it yet. FoodScan does not guess prices. That does not mean it is not sold.', elseLine:(c, p, s, d) => `Seen in ${c}: ${p} · ${s} · ${d}`},
-  el:{eyebrow:'Τιμή σούπερ μάρκετ', facts:'Σύγκριση στοιχείων ετικέτας', hideFacts:'Απόκρυψη στοιχείων', moreOpts:n => `Εμφάνιση ${n} ακόμη`, show:'Εμφάνιση', hide:'Απόκρυψη', navPrices:'Τιμές', update:'Νέα έκδοση FoodScan διαθέσιμη.', reload:'Ανανέωση', cheapest:'Φθηνότερη τρέχουσα τιμή', condTitle:k => `Τρέχουσα ${k.toLowerCase()}`, offer:'προσφορά', checking:'Έλεγχος τιμών σούπερ μάρκετ…', na:'Δεν υπάρχει διαθέσιμη τιμή', allStores:'Όλα τα καταστήματα', seeAll:n => n > 1 ? `Δείτε όλες τις τιμές (${n})` : 'Δείτε όλες τις τιμές', seeAllOld:(c, o) => `Όλες οι τιμές · ${c} τρέχουσες, ${o} παλαιότερες`, noneRel:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό ακριβώς το barcode. Το FoodScan δεν μαντεύει τιμές.', relHead:'Καταγεγραμμένες τιμές των πιο κοντινών προϊόντων · όχι αυτού του προϊόντος', addShort:'Προσθήκη τιμής',
+  el:{eyebrow:'Τιμή σούπερ μάρκετ', facts:'Σύγκριση στοιχείων ετικέτας', hideFacts:'Απόκρυψη στοιχείων', moreOpts:n => `Εμφάνιση ${n} ακόμη`, show:'Εμφάνιση', hide:'Απόκρυψη', navPrices:'Τιμές', update:'Νέα έκδοση FoodScan διαθέσιμη.', reload:'Ανανέωση', cheapest:'Φθηνότερη τρέχουσα τιμή', condTitle:k => `Τρέχουσα ${k.toLowerCase()}`, offer:'προσφορά', checking:'Έλεγχος τιμών σούπερ μάρκετ…', na:'Δεν υπάρχει διαθέσιμη τιμή', allStores:'Όλα τα καταστήματα', seeAll:n => n > 1 ? `Δείτε όλες τις τιμές (${n})` : 'Δείτε όλες τις τιμές', seeAllOld:(c, o) => `Όλες οι τιμές · ${c} τρέχουσες, ${o} παλαιότερες`, noneRel:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό ακριβώς το barcode. Το FoodScan δεν μαντεύει τιμές.', relHead:'Καταγεγραμμένες τιμές των πιο κοντινών προϊόντων · όχι αυτού του προϊόντος', candHead:'Μήπως είναι κάποιο από αυτά; Ίδια μάρκα, με τιμές σε κάθε αλυσίδα από το Παρατηρητήριο Τιμών', candHeadNow:'Τρέχουσες τιμές: μήπως είναι κάποιο από αυτά; Ίδια μάρκα, από το Παρατηρητήριο Τιμών', candSub:'Επιλέξτε μόνο αν το όνομα και η συσκευασία ταιριάζουν με το προϊόν που κρατάτε. Θα δείτε τις δικές του τιμές ανά αλυσίδα, με ημερομηνία. Μπορείτε να το αναιρέσετε.', candBtn:'Αυτό είναι', candChains:n => `τιμές σε ${n} ${n === 1 ? 'αλυσίδα' : 'αλυσίδες'}`, candOtherSize:'άλλη συσκευασία', confLine:'Τιμές του προϊόντος που επιβεβαιώσατε', confChange:'Αλλαγή', otherPackPill:'Άλλη συσκευασία', otherPackLead:p => `Χαμηλότερη τιμή για ${p}`, otherPackNote:(a, b) => `Το προϊόν που επιβεβαιώσατε είναι καταχωρημένο ως ${a}· η ετικέτα αυτού του barcode γράφει ${b}. Συγκρίνετε με την τιμή ανά κιλό ή λίτρο.`, otherPackCount:n => `${n} ${n === 1 ? 'αλυσίδα' : 'αλυσίδες'} · δεν κατατάσσεται ως τιμή αυτού του barcode`, confNone:'Το προϊόν που επιβεβαιώσατε δεν έχει καταγεγραμμένη τιμή αυτή τη στιγμή.', userConf:'επιβεβαιώθηκε από εσάς', addShort:'Προσθήκη τιμής',
     noData:'Δεν έχει καταγραφεί ακόμη τιμή για αυτό το barcode.', addOwn:'Προσθέστε μια τιμή που είδατε', lastSeen:'Τελευταία καταγραφή', notCurrent:'Όχι τρέχουσα τιμή',
     elsewhere:c => `Καταγραφή μόνο εκτός Ελλάδας (${c})`, down:'Οι τιμές δεν ελέγχθηκαν τώρα. Η βαθμολογία δεν επηρεάζεται.', retry:'Δοκιμάστε ξανά',
     of:(n, m) => n > 1 ? `Η χαμηλότερη από ${n} τιμές${m > 1 ? ` · ${m} αλυσίδες` : ''}` : 'Η μόνη τρέχουσα τιμή', upTo:x => `οι άλλες έως +${x}`,
@@ -60,7 +60,7 @@ const want = (code, {fresh:force = false} = {}) => { if (!code) return null;
   asked.add(code);
   getPrices(code, {fresh:force}).then(r => { keep(code, r); asked.delete(code); schedule(); }).catch(() => asked.delete(code)); return force ? null : have || null; };
 const fresh = o => tx(o.freshness === 'current' ? 'fresh' : o.freshness);
-const proof = o => o.id?.startsWith('pk:') ? tx('observatory') + (o.match === 'auto-exact' ? ' · ' + tx('auto') : '') : /^(?:bz|li):/.test(o.id || '') ? tx('web') : o.id?.startsWith('ek:') ? tx('basket') : o.sourceKind === 'licensed' ? tx('feed') : o.proofType === 'RECEIPT' || o.proofType === 'PRICE_TAG' ? tx('shopper') + ' · ' + tx(o.proofType === 'RECEIPT' ? 'receipt' : 'photo') : '';
+const proof = o => o.id?.startsWith('pk:') ? tx('observatory') + (o.match === 'auto-exact' ? ' · ' + tx('auto') : o.match === 'user-confirmed' ? ' · ' + tx('userConf') : '') : /^(?:bz|li):/.test(o.id || '') ? tx('web') : o.id?.startsWith('ek:') ? tx('basket') : o.sourceKind === 'licensed' ? tx('feed') : o.proofType === 'RECEIPT' || o.proofType === 'PRICE_TAG' ? tx('shopper') + ' · ' + tx(o.proofType === 'RECEIPT' ? 'receipt' : 'photo') : '';
 const condLabel = o => o.conditional === 'LOYALTY_PROGRAM' ? tx('card') : o.conditional === 'QUANTITY' ? tx('multi') : tx('cond');
 const where = o => esc(o.retailer) + (o.city ? ` · ${esc(o.city)}` : '');
 /** One badge per chain: its cheapest current price (any source), cheapest first. Real offers only; a chain with no current
@@ -111,6 +111,24 @@ function relatedStrip(r, head, link) {
     <div class="fp81-rel"><p class="fp81-rel__head">${esc(tx('relHead'))}</p><ul class="fp80-ex fp81-rel__list">${items}</ul></div>
     ${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
 }
+/** 82: same-brand observatory products the shopper can confirm as this one. Their prices are NOT shown here: only after "This is it"
+ *  does the card show that product's own dated chain prices, under a line saying whose choice it was (with "Change"). */
+const packLabel = (p, L) => { if (!p) return ''; if (p.unit === 'pcs') return `${p.amount} ${L === 'el' ? 'τεμ.' : 'pcs'}`;
+  const small = p.amount < 1, v = small ? Math.round(p.amount * 1000) : Math.round(p.amount * 100) / 100;
+  return `${String(v).replace('.', L === 'el' ? ',' : '.')}\u00a0${p.unit === 'kg' ? (small ? 'g' : 'kg') : (small ? 'ml' : 'L')}`; };
+const otherPack = (a, b) => Boolean(a && b && (a.unit !== b.unit || Math.abs(a.amount - b.amount) / a.amount > 0.05));
+function candList(code, r) {
+  const L = lang();
+  const items = r.candidates.map(x => `<li class="fp82-cand"><span class="fp82-cand__txt"><b>${esc(x.name)}</b><small>${esc(tx('candChains', x.chains))}${x.date ? ' · ' + esc(dateText(x.date, L)) : ''}${otherPack(r.pack, x.pack) ? ` · <em class="fp82-other">${esc(tx('candOtherSize'))}${x.pack ? ' (' + esc(packLabel(x.pack, L)) + ')' : ''}</em>` : ''}</small></span>
+    <button type="button" class="fp82-cand__btn" data-fs-confirm="${esc(code)}" data-id="${esc(x.id)}" data-name="${esc(x.name)}">${esc(tx('candBtn'))}</button></li>`).join('');
+  return `<div class="fp82-cands"><ul class="fp82-cand__list">${items}</ul><p class="fp82-cands__note">${esc(tx('candSub'))}</p></div>`;
+}
+function candStrip(code, r, head, link) {
+  const L = lang();
+  return `${head('')}<div class="fp75__none"><div><b>${esc(tx('none'))}</b><span>${esc(tx('candHead'))}</span></div></div>
+    ${candList(code, r)}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
+}
+const confLine = (code, r) => r?.confirmed ? `<p class="fp82-conf"><span>${esc(r.confirmed.offers ? tx('confLine') : tx('confNone'))}${r.confirmed.name ? `: <b>${esc(r.confirmed.name)}</b>` : ''}</span><button type="button" class="fp82-conf__undo" data-fs-unconfirm="${esc(code)}">${esc(tx('confChange'))}</button></p>` : '';
 function stripHTML(code, r) {
   const L = lang();
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>`;
@@ -126,15 +144,25 @@ function stripHTML(code, r) {
     return `${head(`<span class="fp75__pill">${esc(fresh(b))}</span>`)}
       <div class="fp75__main"><div class="fp75__price"><strong>${esc(euro(b.price, L))}</strong>${b.unitPrice != null ? `<em>${esc(unitText(b, L))}</em>` : ''}</div>
         <div class="fp75__store"><b>${where(b)}</b><span>${esc(fmtShort(b.date, L))} · ${esc(whenText(b, L))}${b.discounted && !b.conditional ? ' · ' + esc(tx('offer')) : ''}</span><span class="fp75__src">${esc(scope || b.source)}</span></div></div>
-      ${chainRow(r, b)}
+      ${chainRow(r, b)}${confLine(code, r)}
       <footer class="fp75__foot"><span>${sub}</span>${link(total > r.currentCount ? tx('seeAllOld', r.currentCount, total - r.currentCount) : tx('seeAll', total), true)}</footer>`;
   }
+  // 82: the confirmed product is sold in another pack size: its lowest price leads, named by ITS pack, never ranked as this barcode's
+  const os = r.confirmed ? r.offers.filter(o => o.packMismatch && o.freshness === 'current').sort((a, b) => a.price - b.price) : [];
+  if (os.length) { const o = os[0];
+    return `${head(`<span class="fp75__pill fp75__pill--stale">${esc(tx('otherPackPill'))}</span>`)}
+      <div class="fp75__main"><div class="fp75__price"><small class="fp80-lead">${esc(tx('otherPackLead', packLabel(o.observedPack, L)))}</small><strong>${esc(euro(o.price, L))}</strong>${o.unitPrice != null ? `<em>${esc(unitText(o, L))}</em>` : ''}</div>
+        <div class="fp75__store"><b>${where(o)}</b><span>${esc(fmtShort(o.date, L))} · ${esc(whenText(o, L))}</span><span class="fp75__src">${esc(tx('national'))}</span></div></div>
+      <p class="fp80-stale">${esc(tx('otherPackNote', packLabel(o.observedPack, L), packLabel(r.pack, L)))}</p>${confLine(code, r)}
+      <footer class="fp75__foot"><span>${esc(tx('otherPackCount', new Set(os.map(x => x.retailerId)).size))}</span>${link(tx('allStores'), true)}</footer>`; }
   // 80: no current price. Lead with the last recorded price (shown with its age), else a labelled estimate, else an explicit "no verified price".
   const last = r.latest;
   if (last) return `${head(`<span class="fp75__pill fp75__pill--stale">${esc(tx('agePill', whenText(last, L)))}</span>`)}
       <div class="fp75__main"><div class="fp75__price"><small class="fp80-lead">${esc(tx('last'))}</small><strong>${esc(euro(last.price, L))}</strong>${last.unitPrice != null ? `<em>${esc(unitText(last, L))}</em>` : ''}</div>
         <div class="fp75__store"><b>${where(last)}</b><span>${esc(fmtShort(last.date, L))} · ${esc(whenText(last, L))}</span><span class="fp75__src">${esc(last.storeScope === 'national' ? tx('national') : last.storeScope === 'online' ? tx('online') : last.source)}</span></div></div>
-      <p class="fp80-stale">${esc(tx('stale', whenText(last, L)))}</p>${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
+      <p class="fp80-stale">${esc(tx('stale', whenText(last, L)))}</p>${confLine(code, r)}${r.candidates?.length ? `<p class="fp81-rel__head fp82-cands__head">${esc(tx('candHeadNow'))}</p>${candList(code, r)}` : ''}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
+  if (r.confirmed) return `${head('')}${confLine(code, r)}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
+  if (r.candidates?.length) return candStrip(code, r, head, link);
   if (r.related?.length) return relatedStrip(r, head, link);
   if (r.elsewhere?.length) return `${head('')}<div class="fp75__none"><div><b>${esc(tx('none'))}</b><span>${esc(tx('noneSub'))}</span></div></div>${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
   return `${head('')}<div class="fp75__none"><div><b>${esc(tx('none'))}</b><span>${esc(tx('noneSub'))}</span></div>${link(tx('addShort'))}</div>`;
@@ -153,7 +181,7 @@ function paintStandalone(code, view) {
   const page = view.querySelector('#instant-calc')?.closest('.page'); if (!page) return;
   let box = page.querySelector(':scope > .fp75.fp80-standalone');
   if (box && box.dataset.code !== code) { box.remove(); box = null; }
-  const r = results.get(code) || null, state = lang() + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0)) : 'wait');
   if (!box) { box = document.createElement('section'); box.className = 'fp75 fp80-standalone'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); page.prepend(box); }
   if (box.dataset.state === state) return;
   box.dataset.state = state; box.setAttribute('aria-label', tx('eyebrow')); box.setAttribute('aria-busy', r ? 'false' : 'true');
@@ -175,7 +203,7 @@ function paintProduct() {
   const all = [...view.querySelectorAll('.fp75')];
   let box = all.find(n => n.parentElement === at.parent && n.dataset.code === code) || null;
   all.forEach(n => { if (n !== box) n.remove(); });
-  const r = results.get(code) || null, state = lang() + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0)) : 'wait');
   if (!box) { box = document.createElement('section'); box.className = 'fp75'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); }
   const placed = at.after ? at.after.nextElementSibling === box : (at.before ? at.before.previousElementSibling === box : at.parent.lastElementChild === box);
   if (!placed) { if (at.after) at.after.after(box); else at.parent.insertBefore(box, at.before); }
@@ -348,6 +376,10 @@ function onRoute() {
   want(productCode(), {fresh:fromScan && Boolean(productCode())}); compareCodes()?.forEach(c => want(c)); schedule();
 }
 document.addEventListener('click', e => {
+  const c = e.target.closest?.('[data-fs-confirm]');
+  if (c) { setConfirmed(c.dataset.fsConfirm, {id:c.dataset.id, name:c.dataset.name}); want(c.dataset.fsConfirm, {fresh:true}); schedule(); return; }
+  const u = e.target.closest?.('[data-fs-unconfirm]');
+  if (u) { setConfirmed(u.dataset.fsUnconfirm, null); want(u.dataset.fsUnconfirm, {fresh:true}); schedule(); return; }
   const b = e.target.closest?.('[data-fp71-retry]'); if (!b) return;
   want(b.dataset.fp71Retry, {fresh:true}); schedule();
 });
@@ -364,7 +396,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-81.0.0';
+export const BUILD = 'foodscan-82.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

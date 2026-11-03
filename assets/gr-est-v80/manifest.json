@@ -1,8 +1,13 @@
 {
  "version": 80,
- "built": "2026-11-02T12:54:49.234Z",
+ "built": "2026-11-02T17:21:13.611Z",
  "shards": 64,
- "barcodes": 19210,
+ "observatoryById": {
+  "shards": 64,
+  "products": 10327
+ },
+ "withCandidates": 1675,
+ "barcodes": 19275,
  "withObservations": 8456,
  "withEstimate": 11673,
  "estimatesByClass": {
@@ -16,7 +21,7 @@
   "posokanei": {
    "snapshot": "2026-11-01",
    "fetchedAt": "2026-11-01T16:38:40.387692+00:00",
-   "products": 1177,
+   "products": 1383,
    "reference": 10327,
    "date": "2026-11-01"
   },
@@ -27,7 +32,7 @@
   },
   "lidl": {
    "snapshot": "2026-11-02",
-   "fetchedAt": "2026-11-02T12:38:42.673Z",
+   "fetchedAt": "2026-11-02T13:37:49.015Z",
    "products": 521
   },
   "ekatanalotis": {
@@ -40,45 +45,45 @@
   "referenceItems": 13058,
   "classes": {
    "A": {
-    "n": 948,
+    "n": 953,
     "usable": true,
-    "lo": -0.266,
-    "hi": 0.355,
-    "medianAbsPctError": 11.6,
+    "lo": -0.279,
+    "hi": 0.359,
+    "medianAbsPctError": 11.7,
     "within25pct": 74,
     "within50pct": 91
    },
    "B": {
-    "n": 1851,
+    "n": 1856,
     "usable": true,
     "lo": -0.307,
-    "hi": 0.41,
-    "medianAbsPctError": 12.2,
-    "within25pct": 70,
-    "within50pct": 88
+    "hi": 0.417,
+    "medianAbsPctError": 12.3,
+    "within25pct": 69,
+    "within50pct": 87
    },
    "C": {
-    "n": 815,
+    "n": 832,
     "usable": true,
-    "lo": -0.481,
-    "hi": 0.57,
-    "medianAbsPctError": 18,
+    "lo": -0.48,
+    "hi": 0.571,
+    "medianAbsPctError": 18.1,
     "within25pct": 60,
     "within50pct": 81
    },
    "D": {
-    "n": 416,
+    "n": 424,
     "usable": true,
-    "lo": -0.45,
-    "hi": 0.921,
-    "medianAbsPctError": 24.3,
-    "within25pct": 51,
+    "lo": -0.428,
+    "hi": 0.906,
+    "medianAbsPctError": 24.6,
+    "within25pct": 50,
     "within50pct": 69
    },
    "E": {
     "n": 1489,
     "usable": true,
-    "lo": -0.691,
+    "lo": -0.693,
     "hi": 0.729,
     "medianAbsPctError": 28.9,
     "within25pct": 45,
@@ -94,24 +99,24 @@
   ],
   "holdout": {
    "A": {
-    "fit": 454,
-    "test": 494,
-    "coverage80": 81
-   },
-   "B": {
-    "fit": 935,
-    "test": 916,
-    "coverage80": 77
-   },
-   "C": {
-    "fit": 407,
-    "test": 408,
+    "fit": 485,
+    "test": 468,
     "coverage80": 80
    },
+   "B": {
+    "fit": 953,
+    "test": 903,
+    "coverage80": 84
+   },
+   "C": {
+    "fit": 401,
+    "test": 431,
+    "coverage80": 85
+   },
    "D": {
-    "fit": 219,
-    "test": 197,
-    "coverage80": 79
+    "fit": 194,
+    "test": 230,
+    "coverage80": 86
    },
    "E": {
     "fit": 745,
@@ -119,6 +124,6 @@
     "coverage80": 82
    }
   },
-  "truthEvaluated": 4030
+  "truthEvaluated": 4065
  }
 }

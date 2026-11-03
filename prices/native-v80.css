@@ -237,3 +237,21 @@ article.gradecard.snip>*{min-width:0}
 .fp81-rel{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.18)}
 .fp81-rel__head{margin:0 0 2px;font-size:.7rem;font-weight:700;letter-spacing:.02em;color:rgba(255,255,255,.72)}
 .fp81-rel__list li b{color:rgba(255,255,255,.92)}
+
+/* ---- 82: "Is it one of these?" same-brand observatory candidates, and the confirmed-product line ---- */
+.fp82-cands{margin-top:10px;display:grid;gap:6px}
+.fp82-cand__list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fp82-cand{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;background:color-mix(in srgb,currentColor 7%,transparent);border:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.fp82-cand__txt{flex:1;min-width:0;display:grid;gap:2px}
+.fp82-cand__txt b{font-size:.84rem;line-height:1.3;font-weight:700;overflow-wrap:anywhere}
+.fp82-cand__txt small{font-size:.72rem;opacity:.75;line-height:1.3}
+.fp82-other{font-style:normal;font-weight:750;color:#f2b84b}
+.fp82-cand__btn{flex:none;min-height:36px;padding:7px 13px;border-radius:999px;border:0;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;background:#8ef0b6;color:#0d1f16;white-space:nowrap}
+.fp82-cand__btn:hover{filter:brightness(1.05)}
+.fp82-cand__btn:focus-visible,.fp82-conf__undo:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.fp82-conf{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin:8px 0 0;padding:8px 10px;border-radius:12px;font-size:.76rem;line-height:1.35;background:color-mix(in srgb,#8ef0b6 16%,transparent)}
+.fp82-conf>span{min-width:0;flex:1 1 180px}
+.fp82-conf__undo{flex:none;border:1px solid color-mix(in srgb,currentColor 35%,transparent);background:none;color:inherit;font:inherit;font-weight:750;border-radius:999px;padding:5px 12px;min-height:32px;cursor:pointer}
+@media (max-width:380px){.fp82-cand{flex-wrap:wrap}.fp82-cand__btn{flex:1 1 100%}}
+.fp82-cands__note{margin:2px 2px 0;font-size:.72rem;line-height:1.4;opacity:.72}
+.fp82-cands__head{margin:12px 0 0}
