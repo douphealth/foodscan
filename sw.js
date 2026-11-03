@@ -6,6 +6,8 @@
  * bar while the shopper is scanning or typing. A file that fails to precache no longer blocks the update: it is fetched
  * from the network when first needed. (78: superseded price-file generations were removed; a page left open on an old release reloads into 78 on its next visit.)
  *
+ * (82, 3 Nov: price-row layout fix in prices/native-v80.css; this comment changes the file so phones with this worker installed re-fetch the shell)
+ *
  * Pages are fetched with a per-minute query added (?_fs=…). A CDN rule that caches HTML for hours (the live zone had one,
  * serving week-old pages) cannot then hold a controlled phone on an old release: the page comes from the origin. */
 const CACHE = 'foodscan-82.0.0';

@@ -255,3 +255,9 @@ article.gradecard.snip>*{min-width:0}
 @media (max-width:380px){.fp82-cand{flex-wrap:wrap}.fp82-cand__btn{flex:1 1 100%}}
 .fp82-cands__note{margin:2px 2px 0;font-size:.72rem;line-height:1.4;opacity:.72}
 .fp82-cands__head{margin:12px 0 0}
+/* 82 layout fix: a long lead label (Greek "Τελευταία καταγεγραμμένη τιμή", "other pack size") used to take the whole first
+ * column and leave the store name 11-40 px wide on phones, so it broke letter by letter. The price column is now capped, and
+ * on phones a row with a lead stacks the store under the price. The heading row wraps instead of squeezing its title. */
+.fp75__main{grid-template-columns:fit-content(62%) minmax(0,1fr)}
+.fp75__head{flex-wrap:wrap;row-gap:6px}
+@media (max-width:520px){.fp75__main:has(.fp80-lead){grid-template-columns:minmax(0,1fr)}.fp75__main:has(.fp80-lead) .fp75__store{padding-left:0;border-left:0;padding-top:7px;border-top:1px solid color-mix(in srgb,var(--ink,#0C1B14) 10%,transparent)}}
