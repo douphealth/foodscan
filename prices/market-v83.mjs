@@ -1,10 +1,10 @@
 /* FoodScan market 83: which country's prices does this shopper want, and how is a price in any currency written.
- * Order of signals (the first that answers wins; the server resolves the rest from the visitor's network country):
- *   1. the shopper's own choice on the price card ("Change"), kept on this device;
- *   2. the country chosen for food choices in the app profile (the "Market" in Food comparisons);
- *   3. the edge's <meta name="fs-country"> (network country), else the device time zone (market-hint-v71.js);
- *   4. the region of the browser language (en-GB -> GB).
- * Nothing leaves the device here: the market is only sent as ?market=XX with a price request. */
+ * Only EXPLICIT signals are used here, so every page of the app asks for the same country:
+ *   1. the shopper's own choice on the price card or the Prices page ("Change"), kept on this device;
+ *   2. the country chosen for food choices in the app profile (the "Market" in Food comparisons).
+ * Otherwise nothing is sent and FoodScan's server decides from the visitor's network country (Cloudflare), which is the same answer on the product card
+ * and on the Prices page. 83.2: the browser language and the device time zone are NOT used any more: an English-language phone in Athens was shown Greek
+ * prices on the card and "United States" on the Prices page. The market is only ever sent as ?market=XX with a price request. */
 export const MARKET_KEY = 'foodscan:market:v83';
 const TABLE = 'AD:andorra,AE:united-arab-emirates,AF:afghanistan,AG:antigua-and-barbuda,AI:anguilla,AL:albania,AM:armenia,AO:angola,AQ:antarctic,AR:argentina,AS:american-samoa,AT:austria,AU:australia,AW:aruba,AX:aland-islands,AZ:azerbaijan,BA:bosnia-and-herzegovina,BB:barbados,BD:bangladesh,BE:belgium,BF:burkina-faso,BG:bulgaria,BH:bahrain,BI:burundi,BJ:benin,BL:saint-barthelemy,BM:bermuda,BN:brunei,BO:bolivia,BQ:caribbean-netherlands,BR:brazil,BS:the-bahamas,BT:bhutan,BV:bouvet-island,BW:botswana,BY:belarus,BZ:belize,CA:canada,CC:cocos-keeling-islands,CD:democratic-republic-of-the-congo,CF:central-african-republic,CG:republic-of-the-congo,CH:switzerland,CI:cote-d-ivoire,CK:cook-islands,CL:chile,CM:cameroon,CN:china,CO:colombia,CR:costa-rica,CU:cuba,CV:cape-verde,CW:curacao,CX:christmas-island,CY:cyprus,CZ:czech-republic,DE:germany,DJ:djibouti,DK:denmark,DM:dominica,DO:dominican-republic,DZ:algeria,EC:ecuador,EE:estonia,EG:egypt,EH:western-sahara,ER:eritrea,ES:spain,ET:ethiopia,FI:finland,FJ:fiji,FK:falkland-islands,FM:federated-states-of-micronesia,FO:faroe-islands,FR:france,GA:gabon,GB:united-kingdom,GD:grenada,GE:georgia,GF:french-guiana,GG:guernsey,GH:ghana,GI:gibraltar,GL:greenland,GM:gambia,GN:guinea,GP:guadeloupe,GQ:equatorial-guinea,GR:greece,GT:guatemala,GU:guam,GW:guinea-bissau,GY:guyana,HK:hong-kong,HM:heard-island-and-mcdonald-islands,HN:honduras,HR:croatia,HT:haiti,HU:hungary,ID:indonesia,IE:ireland,IL:israel,IM:isle-of-man,IN:india,IO:british-indian-ocean-territory,IQ:iraq,IR:iran,IS:iceland,IT:italy,JE:jersey,JM:jamaica,JO:jordan,JP:japan,KE:kenya,KG:kyrgyzstan,KH:cambodia,KI:kiribati,KM:comoros,KN:saint-kitts-and-nevis,KP:north-korea,KR:south-korea,KW:kuwait,KY:cayman-islands,KZ:kazakhstan,LA:laos,LB:lebanon,LC:saint-lucia,LI:liechtenstein,LK:sri-lanka,LR:liberia,LS:lesotho,LT:lithuania,LU:luxembourg,LV:latvia,LY:libya,MA:morocco,MC:monaco,MD:moldova,ME:montenegro,MF:saint-martin,MG:madagascar,MH:marshall-islands,MK:north-macedonia,ML:mali,MM:myanmar,MN:mongolia,MO:macau,MP:northern-mariana-islands,MQ:martinique,MR:mauritania,MS:montserrat,MT:malta,MU:mauritius,MV:maldives,MW:malawi,MX:mexico,MY:malaysia,MZ:mozambique,NA:namibia,NC:new-caledonia,NE:niger,NF:norfolk-island,NG:nigeria,NI:nicaragua,NL:netherlands,NO:norway,NP:nepal,NR:nauru,NU:niue,NZ:new-zealand,OM:oman,PA:panama,PE:peru,PF:french-polynesia,PG:papua-new-guinea,PH:philippines,PK:pakistan,PL:poland,PM:saint-pierre-and-miquelon,PN:pitcairn,PR:puerto-rico,PS:state-of-palestine,PT:portugal,PW:palau,PY:paraguay,QA:qatar,RE:reunion,RO:romania,RS:serbia,RU:russia,RW:rwanda,SA:saudi-arabia,SB:solomon-islands,SC:seychelles,SD:sudan,SE:sweden,SG:singapore,SH:saint-helena,SI:slovenia,SJ:svalbard-and-jan-mayen,SK:slovakia,SL:sierra-leone,SM:san-marino,SN:senegal,SO:somalia,SR:suriname,SS:south-sudan,ST:sao-tome-and-principe,SV:el-salvador,SX:sint-maarten,SY:syria,SZ:swaziland,TC:turks-and-caicos-islands,TD:chad,TF:french-southern-and-antarctic-lands,TG:togo,TH:thailand,TJ:tajikistan,TK:tokelau,TL:timor-leste,TM:turkmenistan,TN:tunisia,TO:tonga,TR:turkey,TT:trinidad-and-tobago,TV:tuvalu,TW:taiwan,TZ:tanzania,UA:ukraine,UG:uganda,UM:united-states-minor-outlying-islands,US:united-states,UY:uruguay,UZ:uzbekistan,VA:vatican-city,VC:saint-vincent-and-the-grenadines,VE:venezuela,VG:british-virgin-islands,VI:virgin-islands-of-the-united-states,VN:vietnam,VU:vanuatu,WF:wallis-and-futuna,WS:samoa,XK:kosovo,YE:yemen,YT:mayotte,YU:yugoslavia,ZA:south-africa,ZM:zambia,ZW:zimbabwe';
 const SLUG = Object.fromEntries(TABLE.split(',').map(p => p.split(':')));
@@ -21,8 +21,6 @@ export function detectMarket() {
     const slug = JSON.parse(store?.getItem('fs13:profile') || '{}')?.country;
     if (slug && slug !== 'any' && ISO_BY_SLUG[slug]) return {code:ISO_BY_SLUG[slug], source:'profile'};
   } catch {}
-  try { const m = validMarket(globalThis.document?.querySelector?.('meta[name="fs-country"]')?.content); if (m) return {code:m, source:'network'}; } catch {}
-  try { for (const l of globalThis.navigator?.languages || [globalThis.navigator?.language]) { const m = validMarket(String(l || '').split(/[-_]/)[1]); if (m) return {code:m, source:'language'}; } } catch {}
   return {code:'', source:'server'};
 }
 export function setMarket(code) {
@@ -71,3 +69,13 @@ export function money(n, lang = 'en', currency = 'EUR', market = '') {
   if (!f) { try { f = new Intl.NumberFormat(loc, {style:'currency', currency:cur, currencyDisplay:own ? 'narrowSymbol' : 'symbol'}); } catch { f = new Intl.NumberFormat('en-IE', {style:'currency', currency:'EUR'}); } formatters.set(key, f); }
   return f.format(n);
 }
+
+/* The barcode as shoppers and Google know it: no leading zeros that are only padding (a 13-digit 0-prefixed EAN is a 12-digit UPC-A; 8-digit EAN-8 stays 8). */
+export function searchCode(code) {
+  const digits = String(code || '').replace(/\D/g, ''), t = digits.replace(/^0+/, '');
+  if (!t) return digits;
+  return t.length <= 8 ? t.padStart(8, '0') : t.length <= 12 ? t.padStart(12, '0') : t.padStart(t.length === 14 ? 14 : 13, '0');
+}
+/** "Check live prices online": a plain web search for the barcode. Added parameters (tbm=shop, gl=, udm=) made Google rank other products first; the bare
+ *  barcode returns the right product and its shops. */
+export const liveSearchURL = code => 'https://www.google.com/search?q=' + encodeURIComponent(searchCode(code));
