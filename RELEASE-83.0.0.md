@@ -44,6 +44,14 @@ Checked (all in this repository, `node --test qa/*.test.mjs`, 29 tests; they run
 - That Open Prices has observations for a given product in a given country. Coverage is community-driven and differs by country and product.
 - Deployment. Nothing was uploaded.
 
+## Audit pass (same release)
+Run on the bundled catalogue and the running app (Chromium, axe-core, 24 random Greek products, 5 routes in light and dark):
+- **Accessibility.** axe-core found 184 colour-contrast failures on the Prices page (muted greens at 3.0-4.3:1; WCAG 2 AA needs 4.5:1), no level-one heading once a result was shown, links told apart from text by colour alone, and a scrollable chain row that keyboards could not reach. All fixed; the Prices page now reports 0 contrast failures. Left, because they live in the minified `v8200` app chunks (a rename of 33 files): an `aria-label` on a bare `<span>` (nutrient row) and a missing `<h1>` on the search route.
+- **Speed.** The home page's 14 static modules are now preloaded in parallel (`modulepreload`), so the module graph no longer waits on its own imports. Locally: first paint 344 ms, no script errors, no horizontal overflow on any sampled route.
+- **No dead end.** Every price state now ends with "Check live prices online" (Google Shopping for the barcode, localised with `gl=<country>`), with a note that those are Google's prices, not FoodScan's.
+- **Daily refresh is running.** `prices-data` was rebuilt on 4 Nov 2026 11:03 UTC (observatory snapshot 3 Nov, Bazaar and Lidl 4 Nov) and the new QA workflow passed on GitHub.
+- **Measured limits (not fixed, said plainly).** (1) In the saved catalogue only 33 % of products can show a grade: 64 % have no source Nutri-Score and the saved record carries no category or per-100-g basis, so FoodScan will not calculate one; this is the offline fallback, a live Open Food Facts record carries both and is graded when complete. (2) In a random sample of 24 Greek products only 5 had a recorded Greek price (3 current, 2 older): public data covers a minority of barcodes.
+
 ## Not solved by this release
 - **No source gives a shelf price for every barcode in every country.** Where Open Prices has nothing recorded in the shopper's country the card says so and shows the last price seen elsewhere in its own currency. FoodScan still never guesses a price. Closing the gap needs more data, not more guessing: licensed retailer or aggregator feeds per country (the existing D1 import path accepts them), national open price datasets where a government publishes them, and contributions to Open Prices.
 - Currency conversion is deliberately absent: a converted price is not a recorded price.

@@ -45,10 +45,10 @@ const T = {
 };
 Object.assign(T.en, {inCountry:(c, cur) => `Prices in ${c}${cur ? ' · ' + cur : ''}`, change:'Change', pickLabel:'Country for prices', pickAuto:'Automatic (where you are)', pickClose:'Done',
   typical:'Typical price', typBasis:(n, m) => `${n} prices${m > 1 ? ` at ${m} chains` : ''} · last 90 days`, noneIn:c => `No price for this barcode is on record in ${c} yet. FoodScan does not guess prices. That does not mean it is not sold.`,
-  elseIn:c => `Only seen outside ${c}`, outsideTag:'other country', online:'Online price'});
+  elseIn:c => `Only seen outside ${c}`, outsideTag:'other country', online:'Online price', liveShop:'Check live prices online', liveShopNote:'Opens Google Shopping for this barcode. Those prices are Google\'s, not FoodScan\'s.'});
 Object.assign(T.el, {inCountry:(c, cur) => `Τιμές σε ${c}${cur ? ' · ' + cur : ''}`, change:'Αλλαγή', pickLabel:'Χώρα για τις τιμές', pickAuto:'Αυτόματα (όπου βρίσκεστε)', pickClose:'Τέλος',
   typical:'Τυπική τιμή', typBasis:(n, m) => `${n} τιμές${m > 1 ? ` σε ${m} αλυσίδες` : ''} · τελευταίες 90 ημέρες`, noneIn:c => `Δεν υπάρχει ακόμη καταγεγραμμένη τιμή για αυτό το barcode σε ${c}. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται.`,
-  elseIn:c => `Καταγραφή μόνο εκτός ${c}`, outsideTag:'άλλη χώρα', online:'Τιμή e-shop'});
+  elseIn:c => `Καταγραφή μόνο εκτός ${c}`, outsideTag:'άλλη χώρα', online:'Τιμή e-shop', liveShop:'Δείτε ζωντανές τιμές online', liveShopNote:'Ανοίγει το Google Shopping για αυτό το barcode. Οι τιμές είναι του Google, όχι του FoodScan.'});
 const lang = () => pageLang();
 const tx = (k, ...a) => { const v = (T[lang()] || T.en)[k]; return typeof v === 'function' ? v(...a) : v; };
 const mHome = () => marketContext().home;
@@ -86,7 +86,7 @@ function chainBadges(r) {
   const list = [...per.values()].sort((a, b) => a.price - b.price);
   if (list.length < 2) return '';
   const shown = list.slice(0, 8), more = list.length - shown.length;
-  return `<div class="fp72-chains" role="list" aria-label="${esc(tx('chains'))}">` + shown.map((o, i) => `<span role="listitem" class="fp72-chip${i === 0 ? ' is-best' : ''}" title="${esc(o.source)} · ${esc(dateText(o.date, L))}"><b>${esc(o.retailer)}</b>${esc($(o, L))}${o.discounted ? '<i>%</i>' : ''}</span>`).join('') + (more > 0 ? `<span class="fp72-chip fp72-chip--more">${esc(tx('moreChains', more))}</span>` : '') + '</div>';
+  return `<div class="fp72-chains" tabindex="0" role="list" aria-label="${esc(tx('chains'))}">` + shown.map((o, i) => `<span role="listitem" class="fp72-chip${i === 0 ? ' is-best' : ''}" title="${esc(o.source)} · ${esc(dateText(o.date, L))}"><b>${esc(o.retailer)}</b>${esc($(o, L))}${o.discounted ? '<i>%</i>' : ''}</span>`).join('') + (more > 0 ? `<span class="fp72-chip fp72-chip--more">${esc(tx('moreChains', more))}</span>` : '') + '</div>';
 }
 
 /* ---------- product view: a compact price strip INSIDE the grade card ----------
@@ -100,7 +100,7 @@ function chainRow(r, best) {
   const list = [...per.values()].sort((a, b) => a.price - b.price);
   if (list.length < 2) return '';
   const shown = list.slice(0, 6), more = list.length - shown.length;
-  return `<div class="fp75__chains" role="list" aria-label="${esc(tx('chains'))}">` + shown.map(o => `<span role="listitem" class="fp75__chip${o.retailerId === best.retailerId ? ' is-best' : ''}" title="${esc(o.source)} · ${esc(dateText(o.date, L))}"><b>${esc(o.retailer)}</b> ${esc($(o, L))}${o.discounted ? '<i>%</i>' : ''}</span>`).join('') + (more > 0 ? `<span role="listitem" class="fp75__chip fp75__chip--more">${esc(tx('moreChains', more))}</span>` : '') + '</div>';
+  return `<div class="fp75__chains" tabindex="0" role="list" aria-label="${esc(tx('chains'))}">` + shown.map(o => `<span role="listitem" class="fp75__chip${o.retailerId === best.retailerId ? ' is-best' : ''}" title="${esc(o.source)} · ${esc(dateText(o.date, L))}"><b>${esc(o.retailer)}</b> ${esc($(o, L))}${o.discounted ? '<i>%</i>' : ''}</span>`).join('') + (more > 0 ? `<span role="listitem" class="fp75__chip fp75__chip--more">${esc(tx('moreChains', more))}</span>` : '') + '</div>';
 }
 const rangeText = (e, L) => e.pack ? `${euro(e.pack[0], L)} – ${euro(e.pack[2], L)}` : `${euro(e.unitLow, L)} – ${euro(e.unitHigh, L)}${t(L, e.unit)}`;
 const elseLine = (r, L) => { const e = r.elsewhere?.[0]; return e ? `<p class="fp80-else">${esc(tx('elseLine', placeName(e.countryCode, L), $(e, L), e.retailer, dateText(e.date, L)))}</p>` : ''; };
@@ -158,7 +158,12 @@ function marketLine(r, L) {
 const typicalLine = (r, L) => { const y = r?.typical; if (!y) return '';
   return `<p class="fp83-typ"><span><b>${esc(tx('typical'))}</b> ${esc(money(y.price, L, y.currency, r.home))}</span><small>${esc(money(y.low, L, y.currency, r.home))} – ${esc(money(y.high, L, y.currency, r.home))} · ${esc(tx('typBasis', y.n, y.retailers))}</small></p>`; };
 const noneSub = r => r?.home && r.home !== 'GR' ? tx('noneIn', marketName(r.home, lang())) : tx('noneSub');
-function stripHTML(code, r) {
+/** 83: a price is never a dead end. Whatever is recorded, the shopper can open live prices for THIS barcode in their country (Google Shopping, which
+ *  matches by GTIN). It is a search link, not a FoodScan price: the note says whose prices they are. */
+const liveURL = (code, market) => `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(code)}${/^[A-Z]{2}$/.test(market || '') ? '&gl=' + market.toLowerCase() : ''}`;
+const liveLink = (code, r) => `<p class="fp83-live"><a href="${esc(liveURL(code, r?.home))}" target="_blank" rel="noopener noreferrer">${esc(tx('liveShop'))} ↗</a><small>${esc(tx('liveShopNote'))}</small></p>`;
+function stripHTML(code, r) { const html = stripHTML0(code, r); return r && r.status !== 'temporarily_unavailable' ? html + liveLink(code, r) : html; }
+function stripHTML0(code, r) {
   const L = lang();
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>${r ? marketLine(r, L) : ''}`;
   const link = (label, cta) => `<a class="fp75__all${cta ? ' fp75__all--cta' : ''}" href="${pricesURL(code)}">${esc(label)}${chev}</a>`;

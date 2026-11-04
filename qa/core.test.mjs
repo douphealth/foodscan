@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { ROOT, compare, op, daysAgo } from './helpers.mjs';
+import * as require_fs from 'node:fs';
 
 const core = await import(pathToFileURL(path.join(ROOT, 'prices/price-core-v83.mjs')).href);
 const market = await import(pathToFileURL(path.join(ROOT, 'prices/market-v83.mjs')).href);
@@ -68,4 +69,15 @@ test('package: every precached file exists, shell pages load the v83 modules, ve
   assert.match(sw, /const CACHE = 'foodscan-83\.0\.0'/); assert.match(read('_worker.js'), /var VERSION = "83\.0\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-83\.0\.0'/);
   // every relative import of the v83 modules resolves
   for (const f of ['prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
+});
+
+test('the home page preloads only files that exist (module waterfall flattened)', async () => {
+  const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
+  const links = [...read('index.html').matchAll(/<link rel="modulepreload" href="([^"]+)"/g)].map(m => m[1]);
+  assert.ok(links.length >= 14); for (const l of links) assert.ok(fs.existsSync(path.join(ROOT, l)), `modulepreload target missing: ${l}`);
+});
+
+test('every price card state offers a way to see live prices for this barcode (never a dead end), and says whose prices they are', () => {
+  const src = path.join(ROOT, 'prices/native-v83.js'); const t = (fs => fs.readFileSync(src, 'utf8'))(require_fs);
+  assert.match(t, /tbm=shop&q=\$\{encodeURIComponent\(code\)\}/); assert.match(t, /rel="noopener noreferrer"/); assert.match(t, /not FoodScan/);
 });

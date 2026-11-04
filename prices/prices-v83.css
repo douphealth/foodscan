@@ -1,5 +1,4 @@
 /* FoodScan 72 Prices page additions (on top of prices-v65.css + native-v75.css). */
-body.fp-has-code .fp-hero{display:none}
 .fp71--page{width:100%;margin:6px 0 16px;padding:18px 18px 16px;border-radius:24px}
 .fp71--page .fp71__price strong{font-size:2.7rem}
 .fp-was{font-size:.74em;opacity:.62;font-weight:500;margin-right:6px}
@@ -60,3 +59,10 @@ body.fp-has-code .fp-hero{display:none}
 .fp-region__actions{flex-wrap:wrap}
 .fp83-ptyp{display:grid;gap:2px;margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--fp-soft,#f3f7f0);border:1px solid var(--fp-line,rgba(13,31,22,.14));color:var(--fp-ink,#0d1f16)}
 .fp83-ptyp span{font-size:1rem}.fp83-ptyp b{font-weight:750;margin-right:6px}.fp83-ptyp small{font-size:.78rem;color:var(--fp-muted,#4a574f);line-height:1.4}
+
+/* ===== 83 accessibility (axe-core audit: 184 contrast failures on this page, WCAG 2 AA needs 4.5:1) ===== */
+.fp-logo__suffix,.fp-stat small,.fp-offer__city,.fp-offer__meta>span,.fp-offer__meta span span,.fp-offer__price>div,.fp-section-head>div>p,.fp-muted,[data-i18n="searchHelp"],[data-i18n="scopeHelp"],p[data-i18n="footer"],span[data-i18n="myBasket"],.fp-network__store small,.fp-sources__item small{color:#4f6357}
+.fp-frame p a,.fp-muted a,.fp-foot a,.fp-searchbox a{text-decoration:underline;text-underline-offset:2px}
+/* the headline stays for screen readers when a result is on screen (it used to be display:none: no h1 on the page) */
+body.fp-has-code .fp-hero{display:block;position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0}
+.fp-region p,.fp-region>div>p,p[data-i18n="scopeHelp"]{color:#4f6357!important}
