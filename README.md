@@ -1,9 +1,12 @@
 # FoodScan
 
-Scan a food barcode, read the source-reported nutrition grade, and see the supermarket price in Greece.
+Scan a food barcode, read the source-reported nutrition grade, and see the recorded supermarket price in your own country and currency (Greece also has official sources).
 Live: https://food-scan.gearuptofit.com/
 
-**This branch (`main`) is FoodScan 80.0.0, ready for Cloudflare Pages: the repository root IS the site** (`index.html`, `_worker.js`, `_routes.json`, `_headers` at the root; no build step). It is the exact content of `FoodScan-80.0.0-Claude-Complete-Prices-Cloudflare-Pages.zip`, plus the price-refresh job below.
+**This branch (`main`) is FoodScan 83.0.0 (see [`RELEASE-83.0.0.md`](RELEASE-83.0.0.md); the paragraphs below describe the Greek price sources of 80), ready for Cloudflare Pages: the repository root IS the site** (`index.html`, `_worker.js`, `_routes.json`, `_headers` at the root; no build step). It is the exact content of `FoodScan-80.0.0-Claude-Complete-Prices-Cloudflare-Pages.zip`, plus the price-refresh job below.
+
+## Worldwide prices (83.0.0)
+Every price request carries the shopper's market (country). Only observations made in that country and in its currency can be ranked; other countries are listed apart in their own currency; nothing is converted, estimated or guessed. Sources: Open Prices everywhere, plus the Greek official and web-shop sources for Greece. Checks: `node --test qa/*.test.mjs`.
 
 ## Prices (what 80.0.0 does)
 Every product gets an honest answer, in this order: the lowest **current** recorded price (7 days or less); else the **last recorded price with its age**; else a **labelled estimate** (a range, "Not a recorded price", the products it rests on, how it was measured); else **"No verified price"** with the reason. An estimate is never ranked, never "cheapest", never wins a comparison.

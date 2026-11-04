@@ -1,0 +1,68 @@
+/* FoodScan 72 Prices page additions (on top of prices-v65.css + native-v75.css). */
+.fp71--page{width:100%;margin:6px 0 16px;padding:18px 18px 16px;border-radius:24px}
+.fp71--page .fp71__price strong{font-size:2.7rem}
+.fp-was{font-size:.74em;opacity:.62;font-weight:500;margin-right:6px}
+.fp-offer__delta{margin-top:3px;font-size:.72rem;font-weight:700;color:#8A5200}
+.fp-offer--good .fp-offer__delta{color:#17693F}
+.fp-network__store.is-found{border-color:#9ED5B3;background:linear-gradient(180deg,#F2FBF5,#fff)}
+.fp-network__note{display:block;margin-top:4px;font-style:italic;color:#6B5A2E}
+.fp-network__store small.fp-network__src{color:#2f6b4a;font-weight:600}
+/* v73: Add a price from a photo, and quiet provenance lines. */
+.fp-match,.fp-shopper{font-size:.7rem;color:#7d8d82;font-weight:600}.fp-shopper{color:#5f6f86}
+.fa__head{display:flex;justify-content:space-between;align-items:start;gap:12px}.fa__head h3{margin:0 0 6px}
+.fa__x{border:0;background:#f1f4ef;border-radius:9px;width:34px;height:34px;font-size:1.2rem;color:#4d6455}
+.fa__muted{font-size:.78rem;color:#718375;line-height:1.55;margin:6px 0 10px}.fa__product{font-size:.84rem;margin:0 0 12px}.fa__product code{font-size:.78rem;color:#56705f}
+.fa__photo{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px dashed #b9cfbe;border-radius:14px;background:#f8fbf6;font-weight:750;font-size:.85rem;color:#245b3d}
+.fa__photo input{font-size:.78rem;max-width:100%}
+.fa__preview{margin:12px 0 0;border-radius:12px;overflow:hidden;border:1px solid #e1e8df;background:#f3f5f1;text-align:center}.fa__preview img{display:block;max-width:100%;max-height:220px;margin:auto;object-fit:contain}
+.fa__status{font-size:.8rem;color:#2f6448;font-weight:650;margin:10px 0 6px;min-height:1em}
+.fa__chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.74rem;color:#6f8275;margin-bottom:8px}.fa__chips small{flex-basis:100%;color:#8a978d}
+.fa__chip{border:1px solid #c8dbcd;background:#fff;border-radius:999px;padding:5px 10px;font-weight:750;color:#1d5a3a;font-variant-numeric:tabular-nums}
+.fa__form,.fa__login{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;margin-top:6px}
+.fa__form label,.fa__login label,.fa__loc{display:grid;gap:6px;color:#556b5a;font-size:.75rem;font-weight:700}
+.fa__form input:not([type=checkbox]),.fa__form select,.fa__login input,.fa__loc select{height:44px;width:100%;border:1px solid #d3dfd4;padding:0 12px;border-radius:10px;background:#fff;min-width:0;color:#183b27}
+.fa__form .fa__check{grid-column:1/-1;display:flex;gap:9px;align-items:start;font-size:.8rem;color:#33503f;background:#f4f8f2;padding:11px 12px;border-radius:11px;line-height:1.45}
+.fa__check input{width:18px;height:18px;margin:1px 0 0;flex:none;accent-color:#137349}
+.fa__err{grid-column:1/-1;margin:0;font-size:.76rem;color:#a2412f;font-weight:700;min-height:0}.fa__err:empty{display:none}
+.fa__row{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.78rem;margin:4px 0}
+.fa__share{margin-top:16px;border-top:1px solid #edf0e9;padding-top:12px}.fa__share summary{font-size:.86rem}
+.fa__ok{font-size:.8rem;color:#2c6a47;margin:8px 0}.fa__link{border:0;background:none;color:#146d45;font-weight:750;padding:0;text-decoration:underline}
+.fa__loc{margin:8px 0}.fa__opmsg{font-size:.8rem;color:#2f6448;margin:8px 0 0;min-height:1em}
+@media(max-width:520px){.fa__form,.fa__login{grid-template-columns:1fr}}
+
+/* 78: sources checked (truthful per-source health) */
+.fp-sources summary{cursor:pointer}
+.fp-sources__list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.fp-sources__item{display:grid;grid-template-columns:10px minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:baseline;font-size:.86rem;line-height:1.35}
+.fp-sources__item b{font-weight:650;overflow-wrap:anywhere}
+.fp-sources__item span:not(.fp-sources__dot),.fp-sources__item small{grid-column:2;color:#52625a;overflow-wrap:anywhere}
+.fp-sources__item small{font-size:.74rem;color:#6b7a72}
+.fp-sources__dot{width:8px;height:8px;border-radius:50%;background:#b9c4bd;grid-row:1;align-self:center}
+.fp-sources__item.is-ok_with_data .fp-sources__dot{background:#1f8a55}
+.fp-sources__item.is-ok_empty .fp-sources__dot{background:#9fb0a6}
+.fp-sources__item.is-unavailable .fp-sources__dot{background:#c2410c}
+.fp-sources__item.is-disabled .fp-sources__dot{background:transparent;border:1px solid #b9c4bd}
+/* 78: your notes, apart from the basket totals */
+.fp-basketnotes{margin-top:22px;padding:16px 18px;border:1px dashed #c9d3cc;border-radius:16px;background:#fbfcf9}
+.fp-basketnotes h3{margin:0 0 4px;font-size:1rem}
+.fp-basketnotes ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+.fp-basketnotes li{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.fp-basketnotes li>span:first-child{display:grid;min-width:0}
+.fp-basketnotes li b{font-weight:600;overflow-wrap:anywhere}
+.fp-basketnotes li small{color:#52625a;font-size:.78rem}
+.fp-basketnotes__price{font-variant-numeric:tabular-nums;color:#52625a;white-space:nowrap}
+.fp-basketstore h3+small{display:block;margin:-2px 0 6px}.fp-basketstore .fp-tag{white-space:nowrap}@media (max-width:480px){.fp-basketstore header{flex-direction:column;align-items:flex-start;gap:8px}.fp-basketstore header>div:last-child{text-align:left!important}}
+
+/* ===== 83: worldwide. Country picker in the price-area row, typical price block. ===== */
+.fp-market-select{font:inherit;font-size:.85rem;font-weight:650;min-height:40px;max-width:100%;padding:8px 12px;border-radius:999px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 4%,transparent);color:inherit;cursor:pointer}
+.fp-market-select:focus-visible{outline:2px solid var(--fp-green,#0f6b3d);outline-offset:2px}
+.fp-region__actions{flex-wrap:wrap}
+.fp83-ptyp{display:grid;gap:2px;margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--fp-soft,#f3f7f0);border:1px solid var(--fp-line,rgba(13,31,22,.14));color:var(--fp-ink,#0d1f16)}
+.fp83-ptyp span{font-size:1rem}.fp83-ptyp b{font-weight:750;margin-right:6px}.fp83-ptyp small{font-size:.78rem;color:var(--fp-muted,#4a574f);line-height:1.4}
+
+/* ===== 83 accessibility (axe-core audit: 184 contrast failures on this page, WCAG 2 AA needs 4.5:1) ===== */
+.fp-logo__suffix,.fp-stat small,.fp-offer__city,.fp-offer__meta>span,.fp-offer__meta span span,.fp-offer__price>div,.fp-section-head>div>p,.fp-muted,[data-i18n="searchHelp"],[data-i18n="scopeHelp"],p[data-i18n="footer"],span[data-i18n="myBasket"],.fp-network__store small,.fp-sources__item small{color:#4f6357}
+.fp-frame p a,.fp-muted a,.fp-foot a,.fp-searchbox a{text-decoration:underline;text-underline-offset:2px}
+/* the headline stays for screen readers when a result is on screen (it used to be display:none: no h1 on the page) */
+body.fp-has-code .fp-hero{display:block;position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0}
+.fp-region p,.fp-region>div>p,p[data-i18n="scopeHelp"]{color:#4f6357!important}

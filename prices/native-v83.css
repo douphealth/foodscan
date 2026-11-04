@@ -1,0 +1,287 @@
+/* FoodScan 72 native prices: matches the grade card (dark glass panels, Fraunces numerals, mono eyebrows). */
+.fp71{position:relative;display:grid;gap:10px;margin:14px 0 4px;padding:14px 15px 13px;border-radius:20px;color:#F6F1E4;
+  background:linear-gradient(160deg,rgba(9,24,16,.94),rgba(13,31,22,.86));border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 1px rgba(255,255,255,.07) inset,0 18px 36px -24px rgba(6,19,13,.8);animation:fp71in .45s var(--ease,cubic-bezier(.2,.8,.2,1)) both;width:min(100%,430px)}
+@keyframes fp71in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fp71__head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fp71__eyebrow{display:inline-flex;align-items:center;gap:7px;font:600 .68rem/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.14em;text-transform:uppercase;color:rgba(246,241,228,.74)}
+.fp71__eyebrow svg{width:16px;height:16px;color:var(--mint,#5EDBA0)}
+.fp71__pill{font:700 .66rem/1 var(--font-ui,system-ui);padding:5px 9px;border-radius:999px;letter-spacing:.02em}
+.fp71__pill--current{background:rgba(94,219,160,.16);color:var(--mint-2,#9BF5C8);border:1px solid rgba(94,219,160,.35)}
+.fp71__pill--stale{background:rgba(233,185,73,.16);color:#F3D58A;border:1px solid rgba(233,185,73,.4)}
+.fp71__pill--wait{background:rgba(255,255,255,.08);color:rgba(246,241,228,.7)}
+.fp71__main{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.fp71__price{display:grid;gap:2px}
+.fp71__price small{font-size:.72rem;font-weight:600;color:rgba(246,241,228,.72)}
+.fp71__price strong{font:700 2.35rem/1 var(--font-display,Georgia,serif);font-variation-settings:var(--soft,"SOFT" 60);letter-spacing:-.01em;color:#fff}
+.fp71__price em{font-style:normal;font:600 .78rem/1.2 var(--font-mono,ui-monospace,monospace);color:var(--mint-2,#9BF5C8)}
+.fp71__store{display:grid;gap:3px;text-align:right;min-width:0}
+.fp71__store b{font-size:.92rem;color:#fff;overflow-wrap:anywhere}
+.fp71__store span{font-size:.7rem;color:rgba(246,241,228,.7)}
+.fp71__sub{margin:0;font-size:.74rem;line-height:1.45;color:rgba(246,241,228,.74)}
+.fp71__na{margin:0;font:700 1.35rem/1.1 var(--font-display,Georgia,serif);color:#fff}
+.fp71__last{margin:0;font-size:.78rem;line-height:1.5;color:rgba(246,241,228,.82)}
+.fp71__last i{color:#F3D58A;font-style:normal;font-weight:700}
+.fp71__wait{display:flex;align-items:center;gap:9px;margin:2px 0;font-size:.8rem;color:rgba(246,241,228,.8)}
+.fp71__spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:var(--mint,#5EDBA0);animation:fp71spin .8s linear infinite}
+@keyframes fp71spin{to{transform:rotate(360deg)}}
+.fp71__row{display:flex;gap:8px;flex-wrap:wrap}
+.fp71__all,.fp71__retry{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:40px;padding:0 14px;border-radius:12px;font:700 .82rem/1 var(--font-ui,system-ui);
+  text-decoration:none!important;color:#F6F1E4!important;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);cursor:pointer}
+.fp71__all--cta{background:var(--mint,#5EDBA0);color:var(--mint-ink,#04281C)!important;border-color:transparent}
+.fp71__all:hover,.fp71__retry:hover{filter:brightness(1.08)}
+.fp71__all:focus-visible,.fp71__retry:focus-visible{outline:2px solid var(--mint-2,#9BF5C8);outline-offset:2px}
+/* chips in Higher-grade choices and Compare */
+.fp71-slot{display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px}
+.fp71c{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:.76rem;line-height:1.25;background:#E8F5EC;color:#0D3B25;border:1px solid #C3E2CD}
+.fp71c svg{width:13px;height:13px;color:#13744B}
+.fp71c b{font-weight:800}
+.fp71c small{font-size:.68rem;color:#36584A}
+.fp71c small+small:before{content:"· "}
+.fp71c--na,.fp71c--wait{background:#F1EDE2;color:#52625A;border-color:#E0D8C2}
+.fp71c__d{font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:999px}
+.fp71c__d--down{background:#DFF0E2;color:#17693F}
+.fp71c__d--up{background:#FBEBC8;color:#8A5200}
+.fp71c__d--nc{background:#EEF1EF;color:#52625A;font-weight:600}
+.prow__text .fp71-slot{margin-top:4px}
+.fp71-slot--vs{margin-top:6px;justify-content:center}
+.fp71-row th{white-space:nowrap}
+.fp71-row th .fp71-nc{display:block;white-space:normal;font-size:.64rem;font-weight:500;color:var(--ink3,#52625A);max-width:12ch;line-height:1.25;margin-top:2px}
+.fp71-cell a{display:grid;gap:1px;justify-items:center;text-decoration:none;color:inherit}
+.fp71-cell b{font-size:.95rem}
+.fp71-cell small{font-size:.66rem;color:var(--ink3,#52625A)}
+.fp71-cell--na a{font-size:.74rem;color:var(--ink3,#52625A)}
+/* navigation (kept from 65) */
+.dock.fp-dock-expanded{grid-template-columns:1fr 1fr 72px 1fr 1fr 1fr}.fp-dock-prices svg{height:22px;width:22px}
+@media(max-width:700px){.dock.fp-dock-expanded>a{font-size:.65rem}.dock.fp-dock-expanded .dock__scan span{width:59px;height:59px}}
+@media(max-width:350px){.dock.fp-dock-expanded{grid-template-columns:1fr 1fr 63px 1fr 1fr 1fr}.dock.fp-dock-expanded>a{font-size:.58rem}.fp71__price strong{font-size:2rem}}
+@media(prefers-reduced-motion:reduce){.fp71,.fp71__spin{animation:none}}
+/* 72: per-chain badges (cheapest current price per chain, real offers only) */
+.fp72-chains{display:flex;flex-wrap:wrap;gap:6px}
+.fp72-chip{display:inline-flex;align-items:baseline;gap:5px;padding:5px 9px;border-radius:999px;font:600 .74rem/1.15 var(--font-ui,system-ui);color:#F6F1E4;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+.fp72-chip b{font-weight:600;color:rgba(246,241,228,.78)}
+.fp72-chip i{font-style:normal;font-weight:800;color:#F3D58A}
+.fp72-chip.is-best{background:rgba(94,219,160,.16);border-color:rgba(94,219,160,.45);color:#fff}
+.fp72-chip.is-best b{color:var(--mint-2,#9BF5C8)}
+.fp72-chip--more{color:rgba(246,241,228,.7)}
+
+/* ===================== 75: price strip inside the grade card ===================== */
+.fp75{position:relative;display:grid;gap:9px;padding:11px 13px 10px;border-radius:15px;background:color-mix(in srgb,var(--surface,#fff) 94%,transparent);color:var(--ink,#0C1B14);border:1px solid color-mix(in srgb,var(--ink,#0C1B14) 7%,transparent);font-family:var(--font-ui,inherit);min-width:0;text-align:left;animation:fp75In .28s ease-out both}
+@keyframes fp75In{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.fp75__head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.fp75__eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.68rem;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2,#3d4a43);min-width:0}
+.fp75__eyebrow svg{width:14px;height:14px;flex:none;opacity:.8}
+.fp75__pill{flex:none;font-size:.66rem;font-weight:750;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,#1f9d55 14%,transparent);color:#157a42;white-space:nowrap}
+.fp75__pill--stale{background:color-mix(in srgb,#b7791f 16%,transparent);color:#8a5a12}
+.fp75__main{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 14px}
+.fp75__price{display:grid;gap:1px;min-width:0}
+.fp75__price strong{font:750 1.7rem/1 var(--font-display,inherit);font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+.fp75__price em{font-style:normal;font-size:.74rem;font-weight:650;color:var(--ink2,#3d4a43);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fp75__store{display:grid;gap:1px;min-width:0;padding-left:12px;border-left:1px solid color-mix(in srgb,var(--ink,#0C1B14) 10%,transparent)}
+.fp75__store b{font-size:.92rem;font-weight:750;line-height:1.25;overflow-wrap:anywhere}
+.fp75__store span{font-size:.74rem;line-height:1.3;color:var(--ink2,#3d4a43)}
+.fp75__store .fp75__src{color:var(--ink3,#6b766f);font-size:.7rem}
+.fp75__chains{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:1px 2px;mask-image:linear-gradient(90deg,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.fp75__chains::-webkit-scrollbar{display:none}
+.fp75__chip{flex:none;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-size:.7rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;background:color-mix(in srgb,var(--ink,#0C1B14) 5%,transparent);color:var(--ink2,#3d4a43)}
+.fp75__chip b{font-weight:750;color:var(--ink,#0C1B14)}
+.fp75__chip i{font-style:normal;font-weight:800;color:#c2410c}
+.fp75__chip.is-best{background:color-mix(in srgb,#1f9d55 15%,transparent);color:#145c35}
+.fp75__chip--more{color:var(--ink3,#6b766f)}
+.fp75__foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;padding-top:8px;border-top:1px solid color-mix(in srgb,var(--ink,#0C1B14) 8%,transparent)}
+.fp75__foot>span{font-size:.72rem;color:var(--ink3,#6b766f);line-height:1.3;min-width:0;flex:1 1 140px}
+.fp75__all{display:inline-flex;align-items:center;gap:3px;flex:none;font:inherit;font-size:.78rem;font-weight:750;color:var(--brand,#0f6b3d);text-decoration:none;background:none;border:0;padding:6px 0;min-height:32px;cursor:pointer;white-space:nowrap}
+.fp75__all svg{width:14px;height:14px}
+.fp75__all--cta{padding:7px 12px;border-radius:999px;background:var(--ink,#0C1B14);color:var(--surface,#fff)}
+.fp75__all:focus-visible{outline:2px solid var(--brand,#0f6b3d);outline-offset:2px;border-radius:999px}
+.fp75__none{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.fp75__none>div{display:grid;gap:2px;min-width:0}
+.fp75__none b{font-size:.92rem;font-weight:750;line-height:1.25}
+.fp75__none span{font-size:.74rem;color:var(--ink2,#3d4a43);line-height:1.35}
+.fp75__skel{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center}
+.fp75__skel span{display:grid;gap:6px}
+.fp75__sk{display:block;height:11px;border-radius:6px;background:linear-gradient(90deg,color-mix(in srgb,var(--ink,#0C1B14) 7%,transparent) 0%,color-mix(in srgb,var(--ink,#0C1B14) 13%,transparent) 50%,color-mix(in srgb,var(--ink,#0C1B14) 7%,transparent) 100%);background-size:200% 100%;animation:fp75sk 1.2s ease-in-out infinite}
+.fp75__sk--price{height:28px;border-radius:8px}
+.fp75__sk--short{width:60%}
+@keyframes fp75sk{from{background-position:100% 0}to{background-position:-100% 0}}
+.fp75__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.fp75,.fp75__sk{animation:none}}
+@media (max-width:370px){.fp75{padding:10px 11px}.fp75__price strong{font-size:1.5rem}.fp75__main{gap:4px 10px}.fp75__store{padding-left:10px}}
+/* hero without a grade card (fallback mount) */
+article.hero>.fp75{width:min(100%,430px);margin-block:4px}
+
+/* update bar */
+.fp75-update{position:fixed;z-index:80;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;max-width:calc(100vw - 24px);padding:8px 8px 8px 16px;border-radius:999px;background:var(--ink,#0C1B14);color:var(--surface,#fff);font-size:.84rem;font-weight:600;box-shadow:0 18px 40px -16px #0006}
+.fp75-update button{font:inherit;font-weight:750;border:0;border-radius:999px;padding:7px 14px;background:var(--surface,#fff);color:var(--ink,#0C1B14);cursor:pointer}
+
+/* ===================== 75: Greek/phone layout polish ===================== */
+/* stat tiles: labels wrap instead of being cut (Greek labels are longer) */
+.hero__stats .stat span{white-space:normal;text-align:center;line-height:1.15;justify-content:center;overflow-wrap:normal;hyphens:manual}
+.hero__stats .stat{align-content:start}
+@media (max-width:400px){.hero__stats{gap:5px}.hero__stats .stat{padding:9px 3px}.hero__stats .stat b{font-size:1.02rem}.hero__stats .stat span{font-size:.68rem}}
+/* tables and chips: never split a word in the middle */
+table th,table td{word-break:normal;overflow-wrap:normal;hyphens:manual}
+/* decorative glows never widen the page */
+
+html,body{overflow-x:clip}
+/* grade card: children never force the card wider than the hero (long Greek badges overflowed at 390 px) */
+article.gradecard.snip{grid-template-columns:minmax(0,1fr)}
+article.gradecard.snip>*{min-width:0}
+.snip__head{flex-wrap:wrap;row-gap:6px}
+.snip__state{max-width:100%;white-space:normal;line-height:1.2}
+/* same dark glass as the points panel above it, so price reads as part of the grade card on every grade colour */
+.fp75{background:linear-gradient(160deg,rgba(8,25,17,.92),rgba(5,15,10,.89));border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 16px 32px -16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.1);color:#fff}
+.fp75__eyebrow{color:rgba(255,255,255,.7)}
+.fp75__pill{background:rgba(110,231,160,.16);color:#8ef0b6}
+.fp75__pill--stale{background:rgba(251,191,36,.16);color:#fcd34d}
+.fp75__price em,.fp75__store span,.fp75__none span{color:rgba(255,255,255,.72)}
+.fp75__store .fp75__src,.fp75__foot>span,.fp75__chip--more{color:rgba(255,255,255,.58)}
+.fp75__store{border-left-color:rgba(255,255,255,.14)}
+.fp75__chip{background:rgba(255,255,255,.08);color:rgba(255,255,255,.75)}
+.fp75__chip b{color:#fff}
+.fp75__chip i{color:#fdba74}
+.fp75__chip.is-best{background:rgba(110,231,160,.18);color:#c8f7da}
+.fp75__foot{border-top-color:rgba(255,255,255,.12)}
+.fp75__all{color:#8ef0b6}
+.fp75__all--cta{background:#fff;color:#0d1f16}
+.fp75__all:focus-visible{outline-color:#8ef0b6}
+.fp75__sk{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.18),rgba(255,255,255,.08));background-size:200% 100%}
+.fp75__none{flex-wrap:wrap}.fp75__none>div{flex:1 1 170px}
+/* folded secondary sections */
+.fp75-fold>header.card__head{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fp75-fold__btn{flex:none;display:grid;place-items:center;width:34px;height:34px;margin:-6px -6px -6px auto;border:0;border-radius:999px;background:color-mix(in srgb,var(--ink,#0C1B14) 6%,transparent);color:var(--ink2,#3d4a43);cursor:pointer;transition:transform .2s ease}
+.fp75-fold:not(.is-folded) .fp75-fold__btn{transform:rotate(180deg)}
+.fp75-fold.is-folded>:not(header){display:none!important}
+.fp75-fold.is-folded{padding-block:14px}
+/* comparison options: facts table on demand, three at a time */
+.nutrition-option.fp75-tight:not(.is-open)>table,.nutrition-option.fp75-tight:not(.is-open)>.comparison-safety{display:none}
+.fp75-facts{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border:1px solid var(--line,#e4e2da);border-radius:12px;background:transparent;color:var(--ink2,#3d4a43);font:inherit;font-size:.84rem;font-weight:650;cursor:pointer;text-align:left}
+.fp75-facts svg{flex:none;transition:transform .2s ease}
+.nutrition-option.is-open .fp75-facts svg{transform:rotate(180deg)}
+.nutrition-option.fp75-later{display:none}
+.fp75-more{width:100%;padding:12px 14px;border-radius:14px;border:1px dashed var(--line2,#cfcbbf);background:transparent;color:var(--ink,#0C1B14);font:inherit;font-weight:700;font-size:.9rem;cursor:pointer}
+/* folded headers: keep only the title and the toggle on one calm row */
+.fp75-fold.is-folded>header.card__head>:not(h2):not(.fp75-fold__btn){display:none}
+.fp75-fold>header.card__head h2{min-width:0}
+/* the challenge card sits after the report: keep it clear of the fixed dock, and drop the report's own dock gap */
+#view>.view:has(+.fsc-growth-cta) .report{padding-bottom:24px}
+#view>.fsc-growth-cta{margin-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important}
+/* long Greek button labels wrap inside their card instead of running past it */
+.state__actions,.row-actions{min-width:0;max-width:100%}
+.state__actions .btn,.row-actions .btn{max-width:100%;min-width:0;white-space:normal;text-align:center;line-height:1.25;height:auto;min-height:44px}
+.state__actions .btn>span,.row-actions .btn>span{min-width:0;overflow-wrap:anywhere}
+/* guide cards: full titles on small phones (wrap, never cut) */
+.gutf-rcard__kicker,.gutf-rcard__body b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.gutf-rcard__kicker{line-height:1.35}
+/* compare heads: the price line takes its own full row, so it never widens the image column and squeezes the name */
+.vs2__head>.fp71-slot,.vs2__head>.fp71-slot--vs{grid-column:1/-1;justify-self:start;min-width:0;max-width:100%}
+.vs2__name{min-width:0}
+/* prices page: on phones the product title gets the full width, actions sit underneath in one wrapping row */
+@media (max-width:560px){.fp-results>.fp-section-head{flex-direction:column;align-items:stretch;gap:12px}.fp-results>.fp-section-head>*{min-width:0;max-width:100%}.fp-results>.fp-section-head>:last-child{display:flex;flex-wrap:wrap;gap:8px}}
+
+/* 78: product top bar at 320-380 px: keep the icon buttons round and readable; "Share verdict" becomes icon-only (its text stays as the accessible name) */
+.report__bar>.icon-btn{flex:none}
+@media (max-width:380px){
+  .report__bar{gap:6px}
+  .report__bar>.icon-btn{width:40px;height:40px;margin-right:0}
+  .report__bar [data-act="r:share-verdict"]{font-size:0;gap:0;width:40px;min-height:40px;height:40px;padding:0;border-radius:50%;justify-content:center}
+}
+
+/* 78: the four nutrient tiles need ~92 px each for Greek labels ("Ενέργεια", "Κορ. λιπαρά") and kcal; below 400 px they go 2 × 2 instead of clipping */
+@media (max-width:400px){
+  .hero__stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .hero__stats .stat{padding:10px 8px}
+}
+
+/* 80: last-recorded, estimate and no-price states. An estimate is dashed and badged: it never looks like a recorded price. */
+.fp80-pill-est{flex:none;font-size:.66rem;font-weight:750;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;border:1px dashed rgba(255,255,255,.55);white-space:nowrap}
+.fp75.fp80-is-est{border-style:dashed;border-color:rgba(255,255,255,.26)}
+.fp75.fp80-is-none{background:linear-gradient(160deg,rgba(24,34,29,.94),rgba(31,42,37,.86))}
+.fp75 .fp80-estmain{grid-template-columns:minmax(0,1fr)}
+.fp75 .fp80-est strong{white-space:normal;font-size:clamp(1.35rem,6.2vw,1.9rem);letter-spacing:-.02em;overflow-wrap:anywhere}
+.fp75 .fp80-est em{white-space:normal;color:#F3D58A}
+.fp75 .fp80-estmain .fp75__store{border-left:0;padding-left:0;text-align:left}
+.fp80-lead{font-size:.72rem;font-weight:650;color:rgba(255,255,255,.72)}
+.fp80-kind,.fp80-stale,.fp80-else,.fp80-valid{margin:0;font-size:.74rem;line-height:1.5;color:rgba(255,255,255,.74)}
+.fp80-valid{font-weight:600;margin-top:6px!important}
+.fp80-why{border-top:1px dashed rgba(255,255,255,.16);padding-top:6px}
+.fp80-why summary{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;min-height:36px;font-size:.78rem;font-weight:650;color:rgba(255,255,255,.9)}
+.fp80-why summary::-webkit-details-marker{display:none}
+.fp80-why summary svg{flex:none;transition:transform .2s}
+.fp80-why[open] summary svg{transform:rotate(90deg)}
+.fp80-why p{margin:4px 0 6px;font-size:.74rem;line-height:1.5;color:rgba(255,255,255,.78)}
+.fp80-ex{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:7px}
+.fp80-ex li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:.74rem;line-height:1.35;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.07)}
+.fp80-ex li span{overflow-wrap:anywhere}
+.fp80-ex li b{color:#fff;font-weight:700;white-space:nowrap}
+.fp80-ex li small{grid-column:1/-1;color:rgba(255,255,255,.64);font-size:.66rem}
+.fp71c--est{background:#F7F1DC;color:#5A4710;border:1px dashed #D2C27F}
+.fp71c--est svg{color:#8A6D12}.fp71c--est small{color:#7A6420}
+.fp71c--old{background:#F1EDE2;color:#4A5A52;border-color:#E0D8C2}
+.fp71-cell--est a,.fp71-cell--old a{color:var(--ink3,#52625A)}
+.fp71-cell--est b{font-size:.84rem}
+.fp-network__none{margin:10px 0 0;font-size:.8rem;line-height:1.55;color:var(--ink3,#52625A)}
+.fp-network__last{font-weight:700;font-size:1.05rem}
+.fp71.fp80-is-est{border-style:dashed}
+.fp71 .fp80-est strong{font-size:1.75rem;letter-spacing:0;overflow-wrap:anywhere;white-space:normal}
+.fp71 .fp80-est em{color:#F3D58A}
+.fp71.fp80-is-est .fp71__main,.fp71.fp80-is-none .fp71__main{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.fp71.fp80-is-est .fp71__store{text-align:left}
+.fp71 .fp80-why{border-top:1px dashed rgba(255,255,255,.16);padding-top:6px}
+@media(max-width:380px){.fp80-est strong{font-size:1.45rem}}
+
+.fp80-standalone{margin:0 0 14px}
+.fp80-prod{margin:0;font-size:.95rem;font-weight:700;line-height:1.35;color:#fff;overflow-wrap:anywhere}
+
+/* 81: closest products with their own recorded prices (shown only when this barcode has none; never this product's price) */
+.fp81-rel{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.18)}
+.fp81-rel__head{margin:0 0 2px;font-size:.7rem;font-weight:700;letter-spacing:.02em;color:rgba(255,255,255,.72)}
+.fp81-rel__list li b{color:rgba(255,255,255,.92)}
+
+/* ---- 82: "Is it one of these?" same-brand observatory candidates, and the confirmed-product line ---- */
+.fp82-cands{margin-top:10px;display:grid;gap:6px}
+.fp82-cand__list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fp82-cand{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;background:color-mix(in srgb,currentColor 7%,transparent);border:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.fp82-cand__txt{flex:1;min-width:0;display:grid;gap:2px}
+.fp82-cand__txt b{font-size:.84rem;line-height:1.3;font-weight:700;overflow-wrap:anywhere}
+.fp82-cand__txt small{font-size:.72rem;opacity:.75;line-height:1.3}
+.fp82-other{font-style:normal;font-weight:750;color:#f2b84b}
+.fp82-cand__btn{flex:none;min-height:36px;padding:7px 13px;border-radius:999px;border:0;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer;background:#8ef0b6;color:#0d1f16;white-space:nowrap}
+.fp82-cand__btn:hover{filter:brightness(1.05)}
+.fp82-cand__btn:focus-visible,.fp82-conf__undo:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.fp82-conf{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin:8px 0 0;padding:8px 10px;border-radius:12px;font-size:.76rem;line-height:1.35;background:color-mix(in srgb,#8ef0b6 16%,transparent)}
+.fp82-conf>span{min-width:0;flex:1 1 180px}
+.fp82-conf__undo{flex:none;border:1px solid color-mix(in srgb,currentColor 35%,transparent);background:none;color:inherit;font:inherit;font-weight:750;border-radius:999px;padding:5px 12px;min-height:32px;cursor:pointer}
+@media (max-width:380px){.fp82-cand{flex-wrap:wrap}.fp82-cand__btn{flex:1 1 100%}}
+.fp82-cands__note{margin:2px 2px 0;font-size:.72rem;line-height:1.4;opacity:.72}
+.fp82-cands__head{margin:12px 0 0}
+/* 82 layout fix: a long lead label (Greek "Τελευταία καταγεγραμμένη τιμή", "other pack size") used to take the whole first
+ * column and leave the store name 11-40 px wide on phones, so it broke letter by letter. The price column is now capped, and
+ * on phones a row with a lead stacks the store under the price. The heading row wraps instead of squeezing its title. */
+.fp75__main{grid-template-columns:fit-content(62%) minmax(0,1fr)}
+.fp75__head{flex-wrap:wrap;row-gap:6px}
+@media (max-width:520px){.fp75__main:has(.fp80-lead){grid-template-columns:minmax(0,1fr)}.fp75__main:has(.fp80-lead) .fp75__store{padding-left:0;border-left:0;padding-top:7px;border-top:1px solid color-mix(in srgb,var(--ink,#0C1B14) 10%,transparent)}}
+
+/* ===== 83: worldwide prices. Market line, country picker, typical price. Same dark glass card as the rest of .fp75. ===== */
+.fp83-market{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-3px 0 0;min-width:0}
+.fp83-market__name{font-size:.78rem;font-weight:650;line-height:1.3;color:rgba(255,255,255,.82);min-width:0;overflow-wrap:anywhere}
+.fp83-change{flex:none;font:inherit;font-size:.74rem;font-weight:750;color:#8ef0b6;background:rgba(142,240,182,.1);border:1px solid rgba(142,240,182,.28);border-radius:999px;padding:5px 12px;min-height:30px;cursor:pointer;transition:background .15s,border-color .15s}
+.fp83-change:hover{background:rgba(142,240,182,.18);border-color:rgba(142,240,182,.5)}
+.fp83-change:focus-visible{outline:2px solid #8ef0b6;outline-offset:2px}
+.fp83-pick{display:grid;gap:6px;margin:-2px 0 0;padding:10px;border-radius:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16)}
+.fp83-pick label{font-size:.68rem;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.fp83-pick__row{display:flex;gap:8px;align-items:center;min-width:0}
+.fp83-pick select{flex:1 1 auto;min-width:0;font:inherit;font-size:.9rem;color:#fff;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.26);border-radius:10px;padding:9px 10px;min-height:44px;color-scheme:dark}
+.fp83-pick select:focus-visible{outline:2px solid #8ef0b6;outline-offset:1px}
+.fp83-pick option{color:#0d1f16;background:#fff}
+.fp83-typ{display:grid;gap:1px;margin:0;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+.fp83-typ span{font-size:.84rem;color:rgba(255,255,255,.9)}
+.fp83-typ b{font-weight:750;margin-right:4px}
+.fp83-typ small{font-size:.72rem;line-height:1.35;color:rgba(255,255,255,.62)}
+@media (max-width:380px){.fp83-market{flex-wrap:wrap}}
+@media (prefers-reduced-motion:reduce){.fp83-change{transition:none}}
+
+.fp83-live{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:0;padding-top:2px}
+.fp83-live a{font-size:.8rem;font-weight:750;color:#8ef0b6;text-decoration:underline;text-underline-offset:3px;min-height:24px}
+.fp83-live a:focus-visible{outline:2px solid #8ef0b6;outline-offset:3px;border-radius:4px}
+.fp83-live small{font-size:.7rem;line-height:1.35;color:rgba(255,255,255,.62)}
