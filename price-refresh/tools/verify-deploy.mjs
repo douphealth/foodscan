@@ -17,4 +17,11 @@ for (const [code, label] of [['5201004023360', 'recorded prices'], ['52037350003
   const j = r.json; ok(r.status === 200 && j?.version === want, `price lookup ${code} (${label}): HTTP ${r.status}, release ${j?.version ?? '?'}`);
   if (j && Array.isArray(j.offers)) { const sourced = j.offers.every(o => o.source && o.date && o.price > 0); ok(sourced, `${code}: ${j.offers.length} offers, each with source, date and price`); console.log(`  info  ${code} status=${j.status} lowestCurrent=${j.summary?.lowestCurrentPrice} estimate=${j.estimate ? j.estimate.cls + ' ' + j.estimate.unitLow + '-' + j.estimate.unitHigh : 'none'}`); }
 }
+// 83: worldwide. The same barcode asked for other markets must answer for THAT market and currency (no Greek assumptions leaking through).
+for (const [market, currency] of [['FR', 'EUR'], ['US', 'USD'], ['GB', 'GBP'], ['JP', 'JPY']]) {
+  const r = await get(`/api/prices/compare?barcode=5449000214911&market=${market}`, { method: 'POST' }); const j = r.json;
+  ok(r.status === 200 && j?.country === market && j?.currency === currency, `market ${market}: answers for ${j?.country ?? '?'} in ${j?.currency ?? '?'} (need ${market} in ${currency})`);
+  if (j && Array.isArray(j.offers)) ok(j.offers.every(o => o.countryCode === market && o.currency && o.source && o.date && o.price > 0 && (!o.rankingEligible || o.currency === currency)), `market ${market}: ${j.offers.length} offers, each in its own country and currency, ranked only in ${currency}`);
+  if (j) ok(!Object.keys(j.providers || {}).some(k => ['observatory', 'ekatanalotis', 'bazaar', 'lidl'].includes(k)), `market ${market}: no Greek source is consulted`);
+}
 console.log(bad ? `\n${bad} check(s) failed: this deployment does NOT serve the price system.` : '\nAll checks passed.'); process.exit(bad ? 1 : 0);

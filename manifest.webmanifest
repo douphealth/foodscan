@@ -2,7 +2,7 @@
   "id": "/",
   "name": "FoodScan",
   "short_name": "FoodScan",
-  "description": "Food barcode scanning, nutrition and allergen checks, Greek supermarket price observations, and a private grocery basket.",
+  "description": "Food barcode scanning, nutrition and allergen checks, supermarket price observations in your country and currency, and a private grocery basket.",
   "lang": "en",
   "start_url": "/",
   "scope": "/",

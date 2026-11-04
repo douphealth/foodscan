@@ -58,5 +58,5 @@ body.fp-has-code .fp-hero{display:none}
 .fp-market-select{font:inherit;font-size:.85rem;font-weight:650;min-height:40px;max-width:100%;padding:8px 12px;border-radius:999px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);background:color-mix(in srgb,currentColor 4%,transparent);color:inherit;cursor:pointer}
 .fp-market-select:focus-visible{outline:2px solid var(--fp-green,#0f6b3d);outline-offset:2px}
 .fp-region__actions{flex-wrap:wrap}
-.fp83-typ{display:grid;gap:2px;margin:12px 0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,currentColor 5%,transparent);border:1px solid color-mix(in srgb,currentColor 12%,transparent)}
-.fp83-typ span{font-size:1rem}.fp83-typ b{font-weight:750;margin-right:6px}.fp83-typ small{font-size:.78rem;opacity:.72;line-height:1.4}
+.fp83-ptyp{display:grid;gap:2px;margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--fp-soft,#f3f7f0);border:1px solid var(--fp-line,rgba(13,31,22,.14));color:var(--fp-ink,#0d1f16)}
+.fp83-ptyp span{font-size:1rem}.fp83-ptyp b{font-weight:750;margin-right:6px}.fp83-ptyp small{font-size:.78rem;color:var(--fp-muted,#4a574f);line-height:1.4}

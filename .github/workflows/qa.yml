@@ -1,0 +1,26 @@
+name: QA
+
+# Runs the FoodScan checks on every push and pull request: the real _worker.js against a fake Open Prices (worldwide prices, ranking, currency,
+# outlier guard, dates), the client price core, the hand-computed Nutri-Score cases and the package consistency checks. No network, no secrets.
+on:
+  push:
+    branches: ['**']
+    paths-ignore: ['**.md']
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests
+        run: node --test qa/*.test.mjs
+      - name: Price linker and quarantine tests
+        run: node --test price-refresh/refresh/test/pricelink.test.mjs

@@ -59,3 +59,13 @@ test('the client currency table is identical to the worker\'s (one source of tru
   assert.equal(grab(read('_worker.js'), 'FS_CURRENCY_COUNTRIES'), grab(read('prices/market-v83.mjs'), 'CURRENCY_COUNTRIES'));
   assert.equal(market.marketCurrency('JP'), 'JPY'); assert.equal(market.marketCurrency('fr'), 'EUR'); assert.equal(market.marketCurrency('ZZ'), '');
 });
+
+test('package: every precached file exists, shell pages load the v83 modules, versions agree', async () => {
+  const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
+  const sw = read('sw.js'); const list = new Function('return ' + sw.match(/const PRECACHE = (\[.*?\]);/s)[1])();
+  for (const f of list.filter(x => x.startsWith('/') && !x.endsWith('/'))) assert.ok(fs.existsSync(path.join(ROOT, f.split('?')[0])), `precached file missing: ${f}`);
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="83\.0\.0"/, page); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
+  assert.match(sw, /const CACHE = 'foodscan-83\.0\.0'/); assert.match(read('_worker.js'), /var VERSION = "83\.0\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-83\.0\.0'/);
+  // every relative import of the v83 modules resolves
+  for (const f of ['prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
+});
