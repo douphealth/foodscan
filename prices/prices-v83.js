@@ -114,6 +114,7 @@ function T(key){const m=marketOverride(key);if(m!==null)return m;return state.la
 const euro=n=>money(n,state.lang,marketContext().currency,marketContext().home);
 const moneyOf=(o,key='price')=>money(o[key],state.lang,o.currency||marketContext().currency,marketContext().home);
 const homeOf=data=>(data&&data.home)||detectMarket().code||'GR';
+const marketKnown=()=>Boolean(state.data?.home||detectMarket().code);
 const symbol=()=>{try{return new Intl.NumberFormat('en',{style:'currency',currency:marketContext().currency,currencyDisplay:'narrowSymbol'}).formatToParts(0).find(p=>p.type==='currency')?.value||'';}catch{return '';}};
 const stamp=s=>{try{return new Intl.DateTimeFormat(state.lang==='el'?'el-GR':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:homeOf(state.data)==='GR'?'Europe/Athens':undefined}).format(new Date(s));}catch{return '';}};
 const day=s=>{try{return new Intl.DateTimeFormat(state.lang==='el'?'el-GR':'en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(s+'T00:00:00Z'));}catch{return s;}};
@@ -124,17 +125,24 @@ function setLang(lang){state.lang=lang;document.documentElement.lang=lang;docume
   if(state.data)renderResult();renderNotes();renderBasket();if(state.pricing.size)renderBasketResults();applyMarket();}
 /** 83: the static parts of the page follow the market: headline words, scope pill, title, a country picker, and no Greek-only forms elsewhere. */
 function applyMarket(){
-  const home=homeOf(state.data),greek=home==='GR',name=marketName(home,state.lang);
+  const known=marketKnown(),home=homeOf(state.data),greek=home==='GR',name=marketName(home,state.lang),en=state.lang!=='el';
   const set=(key,txt)=>{const el=document.querySelector(`[data-i18n="${key}"]`);if(el&&txt!=null)el.textContent=txt;};
-  if(!greek){const m=marketText[state.lang==='el'?'el':'en'](name);set('eyebrow',m.eyebrow);set('intro',m.intro);set('scopeHelp',m.scopeHelp);set('footer',m.footer);
-    document.title=state.lang==='el'?`FoodScan Τιμές · ${name}`:`FoodScan Prices · ${name} supermarkets`;}
-  const pill=$('fpLocationLabel');if(pill)pill.textContent=state.near?T('nearScope'):(greek?T('all'):marketText[state.lang==='el'?'el':'en'](name).all);
+  const pill=$('fpLocationLabel');
+  if(!known){ // 83.2: until the first answer says which country this is, the page stays generic instead of flashing Greece (or a guess)
+    set('eyebrow',en?'REAL DATA · REAL DATES':'ΠΡΑΓΜΑΤΙΚΑ ΔΕΔΟΜΕΝΑ · ΗΜΕΡΟΜΗΝΙΕΣ');
+    set('intro',en?'Scan a product and compare dated price observations at supermarkets in your country. No imaginary discounts, no made-up supermarket prices.':'Σαρώστε ένα προϊόν και συγκρίνετε καταγεγραμμένες τιμές σε σούπερ μάρκετ της χώρας σας, με πηγή και ημερομηνία. Χωρίς επινοημένες τιμές.');
+    if(pill)pill.textContent=state.near?T('nearScope'):(en?'Your country':'Η χώρα σας');
+  }else{
+    if(!greek){const m=marketText[en?'en':'el'](name);set('eyebrow',m.eyebrow);set('intro',m.intro);set('scopeHelp',m.scopeHelp);set('footer',m.footer);
+      document.title=en?`FoodScan Prices · ${name} supermarkets`:`FoodScan Τιμές · ${name}`;}
+    if(pill)pill.textContent=state.near?T('nearScope'):(greek?T('all'):marketText[en?'en':'el'](name).all);
+  }
   const sel=$('fpMarket');
   if(sel){const want=detectMarket();sel.setAttribute('aria-label',T('marketLabel'));
     if(sel.dataset.lang!==state.lang){sel.dataset.lang=state.lang;sel.innerHTML=`<option value="">${h(T('marketAuto'))}</option>`+marketsSorted(state.lang).map(m=>`<option value="${m.code}">${h(marketFlag(m.code)+' '+m.name)}</option>`).join('');}
     sel.value=want.source==='choice'?want.code:'';}
-  {const nd=$('fpNoteDetail')?.closest('section');if(nd)nd.hidden=!greek;const pn=$('fpPersonal');if(pn&&!greek)pn.hidden=true;} // Greek chains, euro: the local notes and the photo flow stay Greek-only
-  const sy=symbol();document.querySelectorAll('.fp-art__symbol').forEach(el=>{if(sy&&el.textContent!==sy)el.textContent=sy;});document.querySelectorAll('.fp-art__decor').forEach(el=>{if(sy)el.textContent=`${sy} · ${sy} · ${sy}`;});
+  {const nd=$('fpNoteDetail')?.closest('section');if(nd)nd.hidden=known&&!greek;const pn=$('fpPersonal');if(pn&&known&&!greek)pn.hidden=true;} // Greek chains, euro: the local notes and the photo flow stay Greek-only
+  if(known){const sy=symbol();document.querySelectorAll('.fp-art__symbol').forEach(el=>{if(sy&&el.textContent!==sy)el.textContent=sy;});document.querySelectorAll('.fp-art__decor').forEach(el=>{if(sy)el.textContent=`${sy} · ${sy} · ${sy}`;});}
 }
 function setTab(tab){const basket=tab==='basket';$('fpComparePane').hidden=basket;$('fpBasketPane').hidden=!basket;$('fpTabCompare').classList.toggle('is-active',!basket);$('fpTabBasket').classList.toggle('is-active',basket);$('fpTabCompare').setAttribute('aria-pressed',String(!basket));$('fpTabBasket').setAttribute('aria-pressed',String(basket));if(basket){renderBasket();if(state.pricing.size)renderBasketResults();}window.scrollTo({top:0,behavior:'instant'});}
 async function jsonFetch(url,timeout=10500,options={}){
@@ -246,7 +254,7 @@ function renderResult(){const out=$('fpResult'),data=state.data;if(!data)return;
 }
 // 78: what each source answered for this barcode, truthfully: answered with prices, answered empty, did not answer, not enabled.
 const SOURCE_NAMES={openPrices:'Open Prices',observatory:'posokanei.gov.gr',ekatanalotis:'e-katanalotis',bazaar:'bazaar-online.gr',lidl:'lidl.gr',kritikos:'kritikos-sm.gr',liveDatabase:'FoodScan D1'};
-function sourcesHTML(data){const list=Object.entries(data.providers||{}).filter(([id,p])=>p&&SOURCE_NAMES[id]&&typeof p.status==='string');if(!list.length)return '';
+function sourcesHTML(data){const list=Object.entries(data.providers||{}).filter(([id,p])=>p&&SOURCE_NAMES[id]&&typeof p.status==='string'&&p.status!=='disabled'); // 83.2: a source that is switched off is not a source the shopper needs to read aboutif(!list.length)return '';
   const st=s=>['ok_with_data','ok_empty','unavailable','disabled'].includes(s)?s:'unavailable';
   return `<details class="fp-note-card fp-sources"><summary>${h(T('sourcesTitle'))} (${list.filter(([,p])=>st(p.status)==='ok_with_data').length}/${list.filter(([,p])=>st(p.status)!=='disabled').length})</summary><ul class="fp-sources__list">${list.map(([id,p])=>`<li class="fp-sources__item is-${st(p.status)}"><span class="fp-sources__dot" aria-hidden="true"></span><b>${h(SOURCE_NAMES[id])}</b><span>${h(T('st_'+st(p.status)))}${p.snapshot?' · '+h(day(p.snapshot)):''}</span>${p.license?`<small>${h(p.license)}</small>`:''}</li>`).join('')}</ul></details>`;}
 function offerHTML(o,best,delta=null){const url=String(o.sourceURL||'').startsWith('https://')?o.sourceURL:'';

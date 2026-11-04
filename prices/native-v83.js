@@ -11,7 +11,7 @@
  * both prices are per kg or both per litre. */
 import { getPrices, peekPrices, forgetPrices, setConfirmed, TTL } from './price-client-v83.mjs';
 import { esc, euro, money, unitText, whenText, dateText, unitDelta, pageLang, t, marketContext } from './price-core-v83.mjs';
-import { detectMarket, setMarket, marketName, marketFlag, marketsSorted, validMarket } from './market-v83.mjs';
+import { detectMarket, setMarket, marketName, marketFlag, marketsSorted, validMarket, liveSearchURL } from './market-v83.mjs';
 
 const icon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
 const chev = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
@@ -45,10 +45,10 @@ const T = {
 };
 Object.assign(T.en, {inCountry:(c, cur) => `Prices in ${c}${cur ? ' · ' + cur : ''}`, change:'Change', pickLabel:'Country for prices', pickAuto:'Automatic (where you are)', pickClose:'Done',
   typical:'Typical price', typBasis:(n, m) => `${n} prices${m > 1 ? ` at ${m} chains` : ''} · last 90 days`, noneIn:c => `No price for this barcode is on record in ${c} yet. FoodScan does not guess prices. That does not mean it is not sold.`,
-  elseIn:c => `Only seen outside ${c}`, outsideTag:'other country', online:'Online price', liveShop:'Check live prices online', liveShopNote:'Opens Google Shopping for this barcode. Those prices are Google\'s, not FoodScan\'s.'});
+  elseIn:c => `Only seen outside ${c}`, outsideTag:'other country', online:'Online price', liveShop:'Check live prices online', liveShopNote:'Opens a Google search for this barcode. Those prices are the shops\', not FoodScan\'s.'});
 Object.assign(T.el, {inCountry:(c, cur) => `Τιμές σε ${c}${cur ? ' · ' + cur : ''}`, change:'Αλλαγή', pickLabel:'Χώρα για τις τιμές', pickAuto:'Αυτόματα (όπου βρίσκεστε)', pickClose:'Τέλος',
   typical:'Τυπική τιμή', typBasis:(n, m) => `${n} τιμές${m > 1 ? ` σε ${m} αλυσίδες` : ''} · τελευταίες 90 ημέρες`, noneIn:c => `Δεν υπάρχει ακόμη καταγεγραμμένη τιμή για αυτό το barcode σε ${c}. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται.`,
-  elseIn:c => `Καταγραφή μόνο εκτός ${c}`, outsideTag:'άλλη χώρα', online:'Τιμή e-shop', liveShop:'Δείτε ζωντανές τιμές online', liveShopNote:'Ανοίγει το Google Shopping για αυτό το barcode. Οι τιμές είναι του Google, όχι του FoodScan.'});
+  elseIn:c => `Καταγραφή μόνο εκτός ${c}`, outsideTag:'άλλη χώρα', online:'Τιμή e-shop', liveShop:'Δείτε ζωντανές τιμές online', liveShopNote:'Ανοίγει αναζήτηση Google για αυτό το barcode. Οι τιμές είναι των καταστημάτων, όχι του FoodScan.'});
 const lang = () => pageLang();
 const tx = (k, ...a) => { const v = (T[lang()] || T.en)[k]; return typeof v === 'function' ? v(...a) : v; };
 const mHome = () => marketContext().home;
@@ -160,8 +160,7 @@ const typicalLine = (r, L) => { const y = r?.typical; if (!y) return '';
 const noneSub = r => r?.home && r.home !== 'GR' ? tx('noneIn', marketName(r.home, lang())) : tx('noneSub');
 /** 83: a price is never a dead end. Whatever is recorded, the shopper can open live prices for THIS barcode in their country (Google Shopping, which
  *  matches by GTIN). It is a search link, not a FoodScan price: the note says whose prices they are. */
-const liveURL = (code, market) => `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(code)}${/^[A-Z]{2}$/.test(market || '') ? '&gl=' + market.toLowerCase() : ''}`;
-const liveLink = (code, r) => `<p class="fp83-live"><a href="${esc(liveURL(code, r?.home))}" target="_blank" rel="noopener noreferrer">${esc(tx('liveShop'))} ↗</a><small>${esc(tx('liveShopNote'))}</small></p>`;
+const liveLink = (code, r) => `<p class="fp83-live"><a href="${esc(liveSearchURL(code))}" target="_blank" rel="noopener noreferrer">${esc(tx('liveShop'))} ↗</a><small>${esc(tx('liveShopNote'))}</small></p>`;
 function stripHTML(code, r) { const html = stripHTML0(code, r); return r && r.status !== 'temporarily_unavailable' ? html + liveLink(code, r) : html; }
 function stripHTML0(code, r) {
   const L = lang();
@@ -437,7 +436,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-83.1.0';
+export const BUILD = 'foodscan-83.2.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

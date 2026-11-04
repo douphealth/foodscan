@@ -65,8 +65,8 @@ test('package: every precached file exists, shell pages load the v83 modules, ve
   const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
   const sw = read('sw.js'); const list = new Function('return ' + sw.match(/const PRECACHE = (\[.*?\]);/s)[1])();
   for (const f of list.filter(x => x.startsWith('/') && !x.endsWith('/'))) assert.ok(fs.existsSync(path.join(ROOT, f.split('?')[0])), `precached file missing: ${f}`);
-  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="83\.1\.0"/, page); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
-  assert.match(sw, /const CACHE = 'foodscan-83\.1\.0'/); assert.match(read('_worker.js'), /var VERSION = "83\.1\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-83\.1\.0'/);
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="83\.2\.0"/, page); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
+  assert.match(sw, /const CACHE = 'foodscan-83\.2\.0'/); assert.match(read('_worker.js'), /var VERSION = "83\.2\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-83\.2\.0'/);
   // every relative import of the v83 modules resolves
   for (const f of ['prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
 });
@@ -77,9 +77,27 @@ test('the home page preloads only files that exist (module waterfall flattened)'
   assert.ok(links.length >= 14); for (const l of links) assert.ok(fs.existsSync(path.join(ROOT, l)), `modulepreload target missing: ${l}`);
 });
 
-test('every price card state offers a way to see live prices for this barcode (never a dead end), and says whose prices they are', () => {
-  const src = path.join(ROOT, 'prices/native-v83.js'); const t = (fs => fs.readFileSync(src, 'utf8'))(require_fs);
-  assert.match(t, /tbm=shop&q=\$\{encodeURIComponent\(code\)\}/); assert.match(t, /rel="noopener noreferrer"/); assert.match(t, /not FoodScan/);
+test('"Check live prices online" is the plain barcode search: no shopping-mode, country or other parameters that change which product Google ranks first', async () => {
+  const fs = await import('node:fs'); const t = fs.readFileSync(path.join(ROOT, 'prices/native-v83.js'), 'utf8');
+  assert.match(t, /liveSearchURL\(code\)/); assert.match(t, /rel="noopener noreferrer"/); assert.match(t, /not FoodScan/);
+  for (const f of ['prices/native-v83.js', 'prices/prices-v83.js', 'prices/market-v83.mjs']) assert.ok(!/[?&](?:tbm|udm|gl)=/.test(fs.readFileSync(path.join(ROOT, f), 'utf8').replace(/Added parameters \(tbm=shop, gl=, udm=\)/, '')), `${f} adds a search parameter`);
+  assert.equal(market.liveSearchURL('5201004023360'), 'https://www.google.com/search?q=5201004023360');
+  assert.equal(market.liveSearchURL('3017620422003'), 'https://www.google.com/search?q=3017620422003');
+  assert.equal(market.searchCode('0012345678905'), '012345678905'); // padded UPC-A: the 12 digits printed on the pack
+  assert.equal(market.searchCode('00012345678905'), '012345678905');
+  assert.equal(market.searchCode('01234565'), '01234565'); assert.equal(market.searchCode('12345670'), '12345670'); // EAN-8 stays 8 digits
+});
+
+test('the market is the same on every page: only an explicit choice or the profile country is used; the browser language and time zone never are', async () => {
+  // Node has navigator.language = en-US; the old code turned that into "United States" on the Prices page while the card (server, network country) said Greece.
+  const keep = globalThis.localStorage; const mem = new Map(); globalThis.localStorage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
+  try {
+    const fresh = await import(pathToFileURL(path.join(ROOT, 'prices/market-v83.mjs')).href + '?fresh=' + Math.random());
+    assert.deepEqual(fresh.detectMarket(), { code: '', source: 'server' });
+    mem.set('fs13:profile', JSON.stringify({ country: 'france' })); assert.deepEqual(fresh.detectMarket(), { code: 'FR', source: 'profile' });
+    mem.set('fs13:profile', JSON.stringify({ country: 'any' })); assert.equal(fresh.detectMarket().code, '');
+    fresh.setMarket('jp'); assert.deepEqual(fresh.detectMarket(), { code: 'JP', source: 'choice' }); fresh.setMarket(''); assert.equal(fresh.detectMarket().code, '');
+  } finally { globalThis.localStorage = keep; }
 });
 
 test('v8300 asset generation: every v8200 module has a twin, nothing in v8300 points back at v8200, the shell uses v8300', async () => {
