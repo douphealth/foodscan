@@ -65,8 +65,8 @@ test('package: every precached file exists, shell pages load the v83 modules, ve
   const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
   const sw = read('sw.js'); const list = new Function('return ' + sw.match(/const PRECACHE = (\[.*?\]);/s)[1])();
   for (const f of list.filter(x => x.startsWith('/') && !x.endsWith('/'))) assert.ok(fs.existsSync(path.join(ROOT, f.split('?')[0])), `precached file missing: ${f}`);
-  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="83\.0\.0"/, page); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
-  assert.match(sw, /const CACHE = 'foodscan-83\.0\.0'/); assert.match(read('_worker.js'), /var VERSION = "83\.0\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-83\.0\.0'/);
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="83\.1\.0"/, page); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
+  assert.match(sw, /const CACHE = 'foodscan-83\.1\.0'/); assert.match(read('_worker.js'), /var VERSION = "83\.1\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-83\.1\.0'/);
   // every relative import of the v83 modules resolves
   for (const f of ['prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
 });
@@ -80,4 +80,20 @@ test('the home page preloads only files that exist (module waterfall flattened)'
 test('every price card state offers a way to see live prices for this barcode (never a dead end), and says whose prices they are', () => {
   const src = path.join(ROOT, 'prices/native-v83.js'); const t = (fs => fs.readFileSync(src, 'utf8'))(require_fs);
   assert.match(t, /tbm=shop&q=\$\{encodeURIComponent\(code\)\}/); assert.match(t, /rel="noopener noreferrer"/); assert.match(t, /not FoodScan/);
+});
+
+test('v8300 asset generation: every v8200 module has a twin, nothing in v8300 points back at v8200, the shell uses v8300', async () => {
+  const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
+  const old = fs.readdirSync(path.join(ROOT, 'assets')).filter(f => f.endsWith('-v8200.js'));
+  assert.ok(old.length >= 33);
+  for (const f of old) { const twin = f.replace('-v8200.js', '-v8300.js'); assert.ok(fs.existsSync(path.join(ROOT, 'assets', twin)), `missing ${twin}`); assert.ok(!read('assets/' + twin).includes('-v8200.js'), `${twin} still imports a v8200 file`); }
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'sw.js']) assert.ok(!read(page).includes('-v8200.js'), `${page} still references v8200`);
+  for (const f of fs.readdirSync(path.join(ROOT, 'assets')).filter(f => f.endsWith('-v8300.js'))) for (const m of read('assets/' + f).matchAll(/from\s*["']\.\/([^"']+)["']/g)) assert.ok(fs.existsSync(path.join(ROOT, 'assets', m[1])), `${f} imports a missing file ${m[1]}`);
+});
+
+test('live upgrade of ungraded snapshots: only for records without a source grade, with a time budget, a circuit breaker and the snapshot as fallback', async () => {
+  const { read } = await import('./helpers.mjs'); const t = read('assets/chunk-BIWX2LG4-v8300.js');
+  assert.match(t, /const LIVE_BUDGET = 2600/); assert.match(t, /liveSkipUntil = Date\.now\(\) \+ 120000/); assert.match(t, /\/api\/product\/\$\{code\}\?refresh=1/);
+  assert.match(t, /if\(gradeless\(bundled\)\)\{const live=await liveRecord/); assert.match(t, /return \{product:rememberProduct\(bundled,'catalogue'\),via:'catalogue',cache:'DATED-CATALOGUE'\}/);
+  assert.match(t, /!\(saved\.catalogueSnapshot&&gradeless\(saved\)\)/);
 });

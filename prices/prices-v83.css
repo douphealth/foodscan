@@ -66,3 +66,4 @@
 /* the headline stays for screen readers when a result is on screen (it used to be display:none: no h1 on the page) */
 body.fp-has-code .fp-hero{display:block;position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0}
 .fp-region p,.fp-region>div>p,p[data-i18n="scopeHelp"]{color:#4f6357!important}
+.fp-empty p,.fp-empty>p,.fp-empty h2+p{color:#4f6357!important}
