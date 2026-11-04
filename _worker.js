@@ -1698,8 +1698,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "82.0.0";
-var BUILD = "8200-confirm-prices-layout";
+var VERSION = "83.0.0";
+var BUILD = "8300-worldwide-prices";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -2382,6 +2382,41 @@ const FS_PRICE_CHAINS = [
   ['discount-markt','Discount Markt',/discount\s*markt/i],
 ];
 
+/* ===== FoodScan 83: worldwide prices =====
+ * A price is a real, dated observation made in the SHOPPER'S market (country) and in that market's currency. The market comes from, in
+ * order: ?market=XX (the shopper's own choice, sent by the app), the visitor's network country (Cloudflare), else Greece (where FoodScan's
+ * dedicated official sources are). Observations from other countries are kept apart ("elsewhere", with their own currency) and never ranked;
+ * a price in another currency than the market's is never ranked either. No price is converted, estimated or guessed. */
+const FS_CURRENCY_COUNTRIES = {
+  EUR:'AD AT AX BE BG BL CY DE EE ES FI FR GF GP GR HR IE IT LT LU LV MC ME MF MQ MT NL PM PT RE SI SK SM VA XK YT',
+  USD:'US PR GU VI AS MP EC SV TL PW FM MH PA', GBP:'GB GG JE IM', CHF:'CH LI', CAD:'CA', AUD:'AU CC CX NF KI NR TV', NZD:'NZ CK NU TK',
+  SEK:'SE', NOK:'NO SJ', DKK:'DK GL FO', ISK:'IS', PLN:'PL', CZK:'CZ', HUF:'HU', RON:'RO', RSD:'RS', BAM:'BA', ALL:'AL', MKD:'MK', MDL:'MD',
+  UAH:'UA', BYN:'BY', RUB:'RU', TRY:'TR', GEL:'GE', AMD:'AM', AZN:'AZ', KZT:'KZ', UZS:'UZ', KGS:'KG', TJS:'TJ', TMT:'TM', MNT:'MN',
+  ILS:'IL PS', JOD:'JO', LBP:'LB', SYP:'SY', IQD:'IQ', IRR:'IR', SAR:'SA', AED:'AE', QAR:'QA', KWD:'KW', BHD:'BH', OMR:'OM', YER:'YE',
+  EGP:'EG', LYD:'LY', TND:'TN', DZD:'DZ', MAD:'MA', ZAR:'ZA', NAD:'NA', BWP:'BW', MZN:'MZ', ZMW:'ZM', AOA:'AO', NGN:'NG', GHS:'GH', KES:'KE',
+  TZS:'TZ', UGX:'UG', RWF:'RW', ETB:'ET', XOF:'SN CI BJ BF ML NE TG GW', XAF:'CM GA CG TD CF GQ', MGA:'MG', MUR:'MU',
+  INR:'IN', PKR:'PK', BDT:'BD', LKR:'LK', NPR:'NP', BTN:'BT', MVR:'MV', AFN:'AF', CNY:'CN', HKD:'HK', MOP:'MO', TWD:'TW', JPY:'JP', KRW:'KR',
+  THB:'TH', VND:'VN', IDR:'ID', MYR:'MY', SGD:'SG', PHP:'PH', KHR:'KH', LAK:'LA', MMK:'MM', BND:'BN',
+  MXN:'MX', GTQ:'GT', HNL:'HN', NIO:'NI', CRC:'CR', DOP:'DO', CUP:'CU', JMD:'JM', TTD:'TT', BBD:'BB', BSD:'BS', HTG:'HT',
+  COP:'CO', VES:'VE', PEN:'PE', BOB:'BO', CLP:'CL', ARS:'AR', UYU:'UY', PYG:'PY', BRL:'BR', GYD:'GY', SRD:'SR', FJD:'FJ', PGK:'PG', XPF:'PF NC WF',
+};
+const FS_MARKET_CURRENCY = (() => { const m = {}; for (const [cur, list] of Object.entries(FS_CURRENCY_COUNTRIES)) for (const c of list.split(' ')) (m[c] ||= []).push(cur);
+  m.PA = ['USD', 'PAB']; return m; })();
+const FS_MARKET_DEFAULT = 'GR';
+/** "uk" -> GB, "el" -> GR, "fr" -> FR; anything that is not a two-letter country code -> ''. */
+function fsMarketCode(v) {
+  const c = String(v || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return '';
+  return c === 'UK' ? 'GB' : c === 'EL' ? 'GR' : c === 'XX' || c === 'T1' || c === 'ZZ' ? '' : c;
+}
+/** The shopper's market for one request (see the block comment above). */
+function fsMarketOf(request, url) {
+  return fsMarketCode(url.searchParams.get('market')) || fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry')) || FS_MARKET_DEFAULT;
+}
+const fsMarketCurrencies = market => FS_MARKET_CURRENCY[market] || null;
+/** Currencies whose everyday prices are large numbers (a 1 kg pack can cost 25,000 VND or 8,000 HUF): the sanity ceiling is higher. */
+const FS_HIGH_DENOM = new Set(['JPY','KRW','IDR','VND','CLP','COP','PYG','UGX','TZS','KHR','LAK','MMK','IQD','IRR','LBP','SYP','UZS','MNT','XOF','XAF','RWF','MGA','HUF','ISK','PKR','NGN','KZT','AMD','HTG','CRC','ARS','XPF']);
+const fsPriceCeiling = currency => FS_HIGH_DENOM.has(currency) ? 1e7 : 10000;
 function fsPriceValidBarcode(s) {
   if (!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(s) || /^0+$/.test(s)) return false;
   let total = 0;
@@ -2405,38 +2440,45 @@ function fsPriceISO(s) {
   const ms = Date.parse(clean+'T00:00:00Z');
   return Number.isFinite(ms) && new Date(ms).toISOString().slice(0,10)===clean ? clean : null;
 }
-/** Today's date in Greece (Europe/Athens), YYYY-MM-DD. Observations are dated in local Greek days. */
+/** Today's date in Greece (Europe/Athens), YYYY-MM-DD. Greek observations are dated in local Greek days. */
 function fsPriceToday(now = Date.now()) {
   try { return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Athens',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now)); }
   catch { return new Date(now + 2*3600000).toISOString().slice(0,10); }
 }
-/** Age in whole Greek calendar days. 78: never clamped. A future date gives a NEGATIVE age and every caller rejects it,
- *  so a mis-dated observation can never pass as "today" (v77 clamped future dates to age 0 and capped ages at 14). */
-function fsPriceAge(s, now = Date.now()) {
+/** Age in whole calendar days. 78: a future date is never clamped to "today": it gives a NEGATIVE age and every caller rejects it.
+ *  83: outside Greece the reference day is UTC. A shop up to 14 h ahead of UTC can honestly date a price "tomorrow", so exactly one day
+ *  ahead counts as today (age 0); two or more days ahead is still a mis-dated observation and is rejected. */
+function fsPriceAge(s, now = Date.now(), market = 'GR') {
   const date = fsPriceISO(s); if (!date) return null;
-  return Math.round((Date.parse(fsPriceToday(now)+'T00:00:00Z')-Date.parse(date+'T00:00:00Z'))/86400000);
+  const reference = market === 'GR' ? fsPriceToday(now) : new Date(now).toISOString().slice(0,10);
+  const age = Math.round((Date.parse(reference+'T00:00:00Z')-Date.parse(date+'T00:00:00Z'))/86400000);
+  return market !== 'GR' && age === -1 ? 0 : age;
 }
 function fsPriceSourceURL(value) {
   try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && u.hostname.length>3 && !['localhost','127.0.0.1'].includes(u.hostname) ? u.toString().slice(0,400) : ''; }
   catch { return ''; }
 }
-function fsPriceRetailer(raw) {
+function fsPriceRetailer(raw, market = 'GR') {
   const name = fsPriceText(raw, 100);
-  for (const [id,label,regex] of FS_PRICE_CHAINS) if (regex.test(name)) return {id,label,known:true};
+  if (market === 'GR') for (const [id,label,regex] of FS_PRICE_CHAINS) if (regex.test(name)) return {id,label,known:true};
+  // 83: outside Greece the chain is whatever Open Street Map calls the shop's brand ("Carrefour", "Tesco"); its slug groups the branches.
+  const slug = name.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  if (market !== 'GR' && slug.length >= 2) return {id:slug,label:name,known:true};
   return {id:'other',label:name || 'Supermarket observation',known:false};
 }
 function fsPriceDistanceKm(lat1, lon1, lat2, lon2) {
   const rad = Math.PI/180, a = Math.sin((lat2-lat1)*rad/2)**2 + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin((lon2-lon1)*rad/2)**2;
   return 12742*Math.asin(Math.min(1,Math.sqrt(a)));
 }
-function fsPriceScope(url) {
+function fsPriceScope(url, request) {
+  const market = request ? fsMarketOf(request, url) : (fsMarketCode(url.searchParams.get('market')) || FS_MARKET_DEFAULT);
   const latS=url.searchParams.get('lat'),lonS=url.searchParams.get('lon'),radiusS=url.searchParams.get('radius_km');
   const nearby = latS !== null || lonS !== null || radiusS !== null;
-  if (!nearby) return {nearby:false};
+  if (!nearby) return {nearby:false, market};
   if (![latS,lonS,radiusS].every(x=>x!==null && /^-?\d+(?:\.\d+)?$/.test(x))) return null;
   const lat=Number(latS),lon=Number(lonS),radius=Number(radiusS);
-  if (!(lat>=34&&lat<=42&&lon>=19&&lon<=30&&radius>=1&&radius<=50)) return null;
-  return {nearby:true, lat:Math.round(lat*100)/100,lon:Math.round(lon*100)/100,radius:Math.round(radius)};
+  if (!(lat>=-90&&lat<=90&&lon>=-180&&lon<=180&&radius>=1&&radius<=50)) return null;
+  return {nearby:true, market, lat:Math.round(lat*100)/100,lon:Math.round(lon*100)/100,radius:Math.round(radius)};
 }
 /* FoodScan prices 71: evidence only. Every offer is a real, dated observation from a named source.
  * No estimates, category benchmarks, chain multipliers or scraped name matches. Missing prices stay missing.
@@ -2488,25 +2530,28 @@ function fsPriceNormalizeOpen(item, code, scope, now=Date.now()) {
   if (!item || (item.type && item.type !== 'PRODUCT')) return null;
   const itemCode = item.product_code ?? item.product?.code;
   if (!itemCode || fsPriceKey(itemCode) !== fsPriceKey(code)) return null;
-  if (item.currency !== 'EUR') return null;
+  // 83: any ISO 4217 currency. The offer keeps its own currency; nothing is converted.
+  const currency = /^[A-Z]{3}$/.test(String(item.currency || '')) ? String(item.currency) : null;
+  if (!currency) return null;
   if (item.duplicate_of !== null && item.duplicate_of !== undefined) return null;
   const id = Number(item.id);
   if (!Number.isInteger(id) || id <= 0) return null;
   const price = fsPriceNumber(item.price);
-  if (price === null || !(price > 0 && price < 10000)) return null;
+  if (price === null || !(price > 0 && price < fsPriceCeiling(currency))) return null;
   const dateStr = fsPriceISO(item.date);
-  const age = fsPriceAge(dateStr, now);
+  const home = scope.market || FS_MARKET_DEFAULT;
+  const location = item.location || {};
+  const countryCode = location.type === 'ONLINE' ? '' : fsPriceLocationCountry(location);
+  const inMarket = countryCode === home;
+  const age = fsPriceAge(dateStr, now, countryCode || home);
   if (age === null || age < 0 || age > 1825) return null; // 78: future-dated observations are rejected, not clamped
   const proofType = fsPriceProof(item);
   if (proofType === false) return null;
-  const location = item.location || {};
   const rawName = fsPriceText(location.osm_brand || location.osm_name || item.location_osm_name || '', 100);
   if (!rawName) return null;
-  const countryCode = location.type === 'ONLINE' ? '' : fsPriceLocationCountry(location);
-  const isGreece = countryCode === 'GR';
   const lat = fsPriceNumber(location.osm_lat), lon = fsPriceNumber(location.osm_lon);
-  if (scope.nearby && (!isGreece || lat===null || lon===null || fsPriceDistanceKm(scope.lat,scope.lon,lat,lon)>scope.radius)) return null;
-  const retailer = fsPriceRetailer(rawName);
+  if (scope.nearby && (!inMarket || lat===null || lon===null || fsPriceDistanceKm(scope.lat,scope.lon,lat,lon)>scope.radius)) return null;
+  const retailer = fsPriceRetailer(rawName, inMarket ? home : countryCode || home);
   const basis = item.price_per === 'KILOGRAM' || item.price_per === 'KG' ? 'kg' : item.price_per === 'LITER' || item.price_per === 'L' ? 'l' : 'item';
   const discountType = fsPriceText(item.discount_type, 50).toUpperCase();
   const discounted = item.price_is_discounted === true || Boolean(discountType);
@@ -2514,13 +2559,15 @@ function fsPriceNormalizeOpen(item, code, scope, now=Date.now()) {
   const freshness = fsPriceFreshness(age);
   const conditional = FS_PRICE_RESTRICTED_PROMOS.includes(discountType);
   const file = String(item.proof?.file_path || '');
+  const currencies = fsMarketCurrencies(home);
   return {
     id:'op:'+id, barcode:code, price:Math.round(price*100)/100,
     regularPrice:discounted && regular!==null && regular>price ? Math.round(regular*100)/100 : null,
-    currency:'EUR', basis, date:dateStr, ageDays:age, validUntil:null, freshness,
+    currency, basis, date:dateStr, ageDays:age, validUntil:null, freshness,
     // 78: only observations with a proof (receipt / shelf photo) rank; unproven ones are listed, never "the cheapest".
-    rankingEligible:isGreece && freshness === 'current' && basis === 'item' && !conditional && Boolean(proofType),
-    countryCode:countryCode || 'unknown', market:isGreece ? 'GR' : 'elsewhere',
+    // 83: and only in the shopper's own market and that market's currency (the final currency check for countries without a known currency is in fsPriceBuildPayload).
+    rankingEligible:inMarket && (!currencies || currencies.includes(currency)) && freshness === 'current' && basis === 'item' && !conditional && Boolean(proofType),
+    countryCode:countryCode || 'unknown', market:countryCode || 'unknown',
     retailer:retailer.label, retailerId:retailer.known ? retailer.id : 'other',
     storeName:fsPriceText(location.osm_name || rawName, 120), storeId:(Number(location.id ?? item.location_id) > 0 ? 'op-location:'+Number(location.id ?? item.location_id) : 'op-price:'+id),
     storeScope:location.type==='ONLINE' ? 'online' : 'branch',
@@ -2705,22 +2752,19 @@ async function fsPriceAdminImport(request,env) {
   }catch {return fsPriceJson({error:'database_not_ready'},503);}
 }
 /** Open Prices, newest first. All spellings of the code are asked at once. "unavailable" means the source did not answer:
- *  it is never reported as "no prices". */
+ *  it is never reported as "no prices".
+ *  83: a popular product has thousands of observations from dozens of countries, so the newest 300 may hold none from the shopper's
+ *  own country. The shopper's market is therefore asked for FIRST (a country filter, up to 200 newest), next to the newest 100 of the
+ *  world (for "seen elsewhere"). If the API rejects the filter (4xx) the answer falls back to the plain newest-300 read of 82. Every
+ *  observation is checked again here (country, currency, date, proof), whichever way it was fetched. */
 async function fsPriceOpenOffers(code, scope, env, request) {
   const site = request ? new URL(request.url).origin : 'https://food-scan.gearuptofit.com';
   const contact = typeof contactFor === 'function' ? contactFor(env, site) : 'https://food-scan.gearuptofit.com/how/';
   const codes = [...new Set([String(code).trim(), String(code).replace(/^0+/, ''), String(code).padStart(13, '0')])].filter(c => c.length >= 8 && c.length <= 14);
   const headers = {'Accept':'application/json','User-Agent':`FoodScan/${FS_PRICE_VERSION} (${contact})`};
-  // 79: popular products can have more than 100 observations (most from other countries); newest first, up to 3 pages.
-  const one = async candidate => {
-    const first = await page(candidate, 1);
-    if (first.status !== 'available' || !(first.total > first.items.length)) return first;
-    const more = await Promise.all([2, 3].filter(n => (n - 1) * 100 < first.total).map(n => page(candidate, n)));
-    return {...first, items:[...first.items, ...more.filter(r => r.status === 'available').flatMap(r => r.items)], pages:1 + more.length};
-  };
-  const page = async (candidate, n) => {
+  const page = async (candidate, n, extra = '') => {
     try {
-      const res = await fetch(`${FS_PRICE_UPSTREAM}?product_code=${encodeURIComponent(candidate)}&size=100&page=${n}&order_by=-date`, {headers, redirect:'follow', signal:AbortSignal.timeout(4500)});
+      const res = await fetch(`${FS_PRICE_UPSTREAM}?product_code=${encodeURIComponent(candidate)}&size=100&page=${n}&order_by=-date${extra}`, {headers, redirect:'follow', signal:AbortSignal.timeout(4500)});
       if (res.status === 429) return {status:'rate_limited', items:[], httpStatus:429};
       if (!res.ok) return {status:'unavailable', items:[], httpStatus:res.status};
       const raw = await res.text();
@@ -2730,6 +2774,23 @@ async function fsPriceOpenOffers(code, scope, env, request) {
       return list ? {status:'available', items:list, total:Number(data.total)||list.length} : {status:'unavailable', items:[]};
     } catch { return {status:'unavailable', items:[]}; }
   };
+  const read = async (candidate, extra, maxPages) => {
+    const first = await page(candidate, 1, extra);
+    if (first.status !== 'available' || !(first.total > first.items.length)) return first;
+    const more = await Promise.all(Array.from({length:maxPages - 1}, (_, i) => i + 2).filter(n => (n - 1) * 100 < first.total).map(n => page(candidate, n, extra)));
+    return {...first, items:[...first.items, ...more.filter(r => r.status === 'available').flatMap(r => r.items)], pages:1 + more.length};
+  };
+  const focus = `&location__osm_address_country_code=${encodeURIComponent(scope.market || FS_MARKET_DEFAULT)}`;
+  const one = async candidate => {
+    const [focused, world] = await Promise.all([read(candidate, focus, 2), read(candidate, '', 1)]);
+    if (focused.status === 'unavailable' && focused.httpStatus >= 400 && focused.httpStatus < 500) { // filter not understood: the plain newest-300 read
+      const plain = await read(candidate, '', 3);
+      return {...plain, focusedBy:'none'};
+    }
+    const answered = [focused, world].filter(r => r.status === 'available');
+    if (!answered.length) return focused.status === 'rate_limited' || world.status === 'rate_limited' ? {status:'rate_limited', items:[], httpStatus:429} : (focused.httpStatus ? focused : world);
+    return {status:'available', items:answered.flatMap(r => r.items), total:Math.max(...answered.map(r => r.total || 0)), focusedBy:focused.status === 'available' ? 'country' : 'none'};
+  };
   const results = await Promise.all(codes.map(one));
   const answered = results.filter(r => r.status === 'available');
   if (!answered.length) return {status:'unavailable', reason:results.some(r=>r.status==='rate_limited')?'rate_limited':(results.find(r=>r.httpStatus)?'http_'+results.find(r=>r.httpStatus).httpStatus:'network'), items:[], inspected:0};
@@ -2737,7 +2798,7 @@ async function fsPriceOpenOffers(code, scope, env, request) {
   for (const r of answered) for (const i of r.items) if (!seen.has(i?.id)) { seen.add(i?.id); raw.push(i); }
   const items = raw.map(i => fsPriceNormalizeOpen(i, code, scope)).filter(Boolean);
   // 78: truthful health. 'ok_with_data' only when at least one usable observation survived validation.
-  return {status:items.length?'ok_with_data':'ok_empty', items, inspected:raw.length, total:Math.max(...answered.map(r=>r.total))};
+  return {status:items.length?'ok_with_data':'ok_empty', items, inspected:raw.length, total:Math.max(...answered.map(r => r.total || 0))};
 }
 /** Name, brand and pack size only (for the label and per-kg maths). Never prices. */
 /** The pack/identity fields FoodScan reads from a product record (bundled catalogue or Open Food Facts). */
@@ -3020,8 +3081,41 @@ const FS_PRICE_LICENSES = {
   'bz:':FS_GR_SOURCES.bazaar.license, 'li:':FS_GR_SOURCES.lidl.license, 'kr:':FS_GR_SOURCES.kritikos.license,
 };
 const fsPriceLicenseOf = o => { const pre = String(o.id||'').slice(0,3); return pre === 'lf:' ? (o.sourceLicense || 'Licensed retailer feed') : (FS_PRICE_LICENSES[pre] || o.sourceLicense || ''); };
+/* 83: integrity checks that need the whole set of observations of one barcode in one market. */
+const fsPriceMedian = xs => { const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+/** (1) A price in another currency than the market's never ranks (countries without a known currency use the most common currency of their
+ *  own observations). (2) A community observation far from what at least 3 OTHER stores recorded for the same barcode, currency and pack
+ *  basis (below half or above 2.5x their median) is a probable typing or unit mistake: shown, flagged "suspect", never ranked, never counted.
+ *  A discounted price whose crossed-out regular price is in the normal band is a real promotion and stays. (3) "Typical": the median of
+ *  the non-suspect, unconditional shelf prices of the last 90 days, one per store, when at least 3 stores recorded one. It is a statistic
+ *  of this barcode's own recorded prices, never an estimate from other products. */
+function fsPriceFlagSuspects(items) {
+  const live = items.filter(o => !o.otherCurrency && o.basis === 'item' && o.freshness !== 'historical' && o.freshness !== 'expired');
+  return items.map(o => {
+    if (!o.id.startsWith('op:') || o.otherCurrency || o.basis !== 'item' || o.freshness === 'historical') return o;
+    const peers = live.filter(x => x.storeId !== o.storeId && x.currency === o.currency).map(x => x.price);
+    if (peers.length < 3) return o;
+    const med = fsPriceMedian(peers);
+    const promo = o.discounted && o.regularPrice && o.regularPrice >= med * 0.7 && o.regularPrice <= med * 2.5;
+    return (o.price < med * 0.5 && !promo) || o.price > med * 2.5 ? {...o, rankingEligible:false, suspect:true, peerMedian:Math.round(med * 100) / 100} : o;
+  });
+}
+function fsPriceMarketGuard(local, home) {
+  const known = fsMarketCurrencies(home);
+  let currency = known ? known[0] : null;
+  if (!known) { const n = {}; for (const o of local) if (o.freshness !== 'historical') n[o.currency] = (n[o.currency] || 0) + 1; currency = Object.keys(n).sort((a, b) => n[b] - n[a])[0] || null; }
+  const sameCurrency = o => known ? known.includes(o.currency) : o.currency === currency;
+  const base = local.map(o => sameCurrency(o) ? o : {...o, rankingEligible:false, otherCurrency:true});
+  const guarded = fsPriceFlagSuspects(base);
+  const pool = guarded.filter(o => !o.suspect && !o.otherCurrency && o.basis === 'item' && o.freshness !== 'historical' && o.freshness !== 'expired' && !o.offerConditions && !(o.discountType && FS_PRICE_RESTRICTED_PROMOS.includes(o.discountType)));
+  const typical = pool.length >= 3 ? (() => { const prices = pool.map(o => o.price);
+    return {price:Math.round(fsPriceMedian(prices) * 100) / 100, low:Math.min(...prices), high:Math.max(...prices), n:pool.length, retailers:new Set(pool.map(o => o.retailerId)).size,
+      windowDays:FS_PRICE_OLDER_DAYS, currency, newest:pool.map(o => o.date).sort().at(-1)}; })() : null;
+  return {offers:guarded, currency, typical};
+}
 /** The whole answer, built from evidence only. Exported shape is shared with prices/price-core-v79.mjs. */
 function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items:[],providers:{},pack:null}, now=Date.now()}) {
+  const home = scope.market || FS_MARKET_DEFAULT;
   // D1 observatory rows carry no link method; the seed's link file says how this barcode was tied to the observatory product.
   const off = FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status === 'disabled').map(id => FS_GR_SOURCES[id].prefix);
   const lic = licensed.items.filter(o => !off.some(pre => String(o.id||'').startsWith(pre))) // 79: a disabled source never shows, even from D1
@@ -3059,26 +3153,35 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   };
   // 79: every offer says which tier it is in; only 'current' can be the cheapest.
   const tierOf = o => o.rankingEligible ? 'current' : o.packMismatch ? 'otherSize' : o.packUnconfirmed ? 'packUnconfirmed' : o.available === false ? 'outOfStock'
-    : o.freshness !== 'current' ? 'older' : 'notRanked';
-  const greek = fsPriceDeduplicate(all.filter(o => o.market === 'GR').map(checkLink));
-  const elsewhere = fsPriceDeduplicate(all.filter(o => o.market !== 'GR')).filter(o => o.freshness !== 'historical').sort((a,b)=>b.date.localeCompare(a.date)).slice(0, 12)
+    : o.suspect ? 'suspect' : o.otherCurrency ? 'otherCurrency' : o.freshness !== 'current' ? 'older' : 'notRanked';
+  // 83: "local" = this shopper's market (Greece: the official and shop sources plus Open Prices; elsewhere: Open Prices). Everything else is "elsewhere".
+  const guard = fsPriceMarketGuard(fsPriceDeduplicate(all.filter(o => o.market === home).map(checkLink)), home);
+  const greek = guard.offers.slice().sort(fsPriceOrder);
+  // 83: other countries: a probable typing mistake there is dropped (grouped per country and currency), and the rest is listed newest first
+  const abroad = (() => { const groups = new Map(); for (const o of fsPriceDeduplicate(all.filter(o => o.market !== home))) { const k = o.market + '|' + o.currency; (groups.get(k) || groups.set(k, []).get(k)).push(o); }
+    return [...groups.values()].flatMap(g => fsPriceFlagSuspects(g)).filter(o => !o.suspect); })();
+  const elsewhere = abroad.filter(o => o.freshness !== 'historical').sort((a,b)=>b.date.localeCompare(a.date)).slice(0, 12)
     .map(o => ({...o, rankingEligible:false}));
   const strip = o => { const {productName, productQuantity, productAmount, productAmountUnit, market, shopPack, ...rest} = o; return {...rest, tier:tierOf(o), sourceLicense:fsPriceLicenseOf(o), ...(o.packMismatch && o.observedPack ? fsPriceUnit(o, o.observedPack) : fsPriceUnit(o, pack))}; };
   const offers = greek.slice(0, 60).map(strip), others = elsewhere.map(strip);
   const eligible = offers.filter(o => o.rankingEligible);
   const best = eligible.slice().sort((a,b)=>a.price-b.price || b.date.localeCompare(a.date))[0] || null;
-  const latest = offers.slice().sort((a,b)=>b.date.localeCompare(a.date))[0] || null;
+  const latest = offers.filter(o => !o.suspect && !o.otherCurrency).sort((a,b)=>b.date.localeCompare(a.date))[0] || null;
   // 78: cheapest per chain, keeping every branch: each chain's cheapest current offer plus how many branches/sources it has.
   const perChain = {};
   for (const o of eligible) { if (!o.retailerId || o.retailerId === 'other') continue;
     const c = perChain[o.retailerId] || (perChain[o.retailerId] = {retailerId:o.retailerId, retailer:o.retailer, bestOfferId:o.id, storeId:o.storeId, price:o.price, observations:0, storeIds:[]});
     c.observations++; if (!c.storeIds.includes(o.storeId)) c.storeIds.push(o.storeId); if (o.price < c.price) Object.assign(c, {bestOfferId:o.id, storeId:o.storeId, price:o.price}); }
+  const greekMarket = home === 'GR';
   const providers = {
-    openPrices:fsProvider(open, {inspected:open.inspected||0, greek:open.items.filter(o=>o.market==='GR').length, elsewhere:open.items.filter(o=>o.market!=='GR').length, license:FS_PRICE_LICENSES['op:']}),
+    openPrices:fsProvider(open, {inspected:open.inspected||0, greek:open.items.filter(o=>o.market===home).length, local:open.items.filter(o=>o.market===home).length, elsewhere:open.items.filter(o=>o.market!==home).length, license:FS_PRICE_LICENSES['op:']}),
     liveDatabase:fsProvider(licensed, {count:licensed.items.length}),
-    observatory:fsProvider(official.providers.posokanei, {source:'posokanei.gov.gr', d1:licensed.items.filter(o=>o.id.startsWith('pk:')).length, packMismatch}),
-    ekatanalotis:fsProvider(official.providers.ekatanalotis, {source:'e-katanalotis.gov.gr', historical:true}),
-    ...Object.fromEntries(FS_GR_RETAILER_WEB.map(id=>[id, fsProvider(official.providers[id], {d1:licensed.items.filter(o=>o.id.startsWith(FS_GR_SOURCES[id].prefix)).length})])),
+    // 83: the Greek official and web-shop sources exist only for the Greek market; elsewhere they are not part of the answer at all (no "unavailable" noise).
+    ...(greekMarket ? {
+      observatory:fsProvider(official.providers.posokanei, {source:'posokanei.gov.gr', d1:licensed.items.filter(o=>o.id.startsWith('pk:')).length, packMismatch}),
+      ekatanalotis:fsProvider(official.providers.ekatanalotis, {source:'e-katanalotis.gov.gr', historical:true}),
+      ...Object.fromEntries(FS_GR_RETAILER_WEB.map(id=>[id, fsProvider(official.providers[id], {d1:licensed.items.filter(o=>o.id.startsWith(FS_GR_SOURCES[id].prefix)).length})])),
+    } : {}),
   };
   const active = Object.values(providers).filter(p => p.status !== 'disabled');
   const down = active.filter(p => p.status === 'unavailable').length;
@@ -3096,7 +3199,8 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   const candidates = !offers.some(o => o.tier === 'current') && !official.confirmed ? (official.candidates || []).slice(0, 4) : [];
   const status = offers.length || others.length ? 'observations_available' : !active.length || down === active.length ? 'temporarily_unavailable' : down ? 'incomplete' : 'no_data';
   return {
-    version:FS_PRICE_VERSION, barcode:code, country:'GR', scope:scope.nearby?'nearby':'greece', checkedAt:new Date(now).toISOString(),
+    version:FS_PRICE_VERSION, barcode:code, country:home, currency:guard.currency, scope:scope.nearby?'nearby':(greekMarket?'greece':'market'), checkedAt:new Date(now).toISOString(),
+    market:{code:home, currency:guard.currency, currencies:fsMarketCurrencies(home), source:scope.marketSource || 'default'},
     status, transport:'pages_worker',
     product: meta ? {name:meta.name, brand:meta.brand, quantity:meta.quantity, nutriScore:meta.nutriScore, image:meta.image, source:meta.source} :
       (sample.productName ? {name:sample.productName, brand:'', quantity:sample.productQuantity||'', nutriScore:null, image:'', source:'open_food_facts_via_open_prices'} : null),
@@ -3106,15 +3210,22 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
     providerSummary:{active:active.length, unavailable:down, disabled:Object.values(providers).length-active.length},
     summary:{bestOfferId:best?.id||null, lowestCurrentPrice:best?.price??null, currentOffers:eligible.length,
       retailers:new Set(eligible.map(o=>o.retailer)).size, stores:new Set(eligible.map(o=>o.storeId)).size, perChain:Object.values(perChain).sort((a,b)=>a.price-b.price),
-      latestGreekOfferId:latest?.id||null, latestGreekDate:latest?.date||null,
-      tiers:Object.fromEntries(['current','otherSize','packUnconfirmed','older','outOfStock','notRanked'].map(t => [t, offers.filter(o => o.tier === t).length]))},
-    limitations:[
+      latestGreekOfferId:latest?.id||null, latestGreekDate:latest?.date||null, latestOfferId:latest?.id||null, latestDate:latest?.date||null,
+      typical:guard.typical, suspect:offers.filter(o => o.suspect).length,
+      tiers:Object.fromEntries(['current','otherSize','packUnconfirmed','older','outOfStock','notRanked','suspect','otherCurrency'].map(t => [t, offers.filter(o => o.tier === t).length]))},
+    limitations:greekMarket ? [
       `Only real, dated prices are shown, each with its own source and licence: the Ministry of Development price observatory (posokanei.gov.gr, national chain prices), e-katanalotis (history only), Open Prices (community receipts and shelf photos, ODbL), the chains' own web shops (${FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status !== 'disabled').map(id => new URL(FS_GR_SOURCES[id].url).hostname.replace(/^www\./, '')).join(', ')}) and licensed retailer feeds when configured. No price is ever estimated (81). When a barcode has no recorded price, "related" may list up to 3 close products (same brand, similar name and size) with THEIR OWN recorded price, source and date; they are never presented as this product's price.`,
       'Only observations from the last 7 days, with no expired promotion and a dated proof, can be "the cheapest". Older prices are still shown, as the last recorded price, with their age. Future-dated observations are rejected.',
       'The observatory publishes no barcodes. Its prices appear only for barcodes linked to its products by a reviewed link, an automatic exact match, or (81) a price-anchored match (a chain web shop and the observatory report the same chain\'s regular price to the cent, same brand and size, one product only); each price says which. If its pack size disagrees with the label, its prices never rank.',
       'Lidl prices can vary by region; lidl.gr shows its default (national) price. Web-shop prices are the shop\'s online price; shelf prices in stores may differ.',
       'A web-shop price is checked against the label size. If the shop sells this barcode as another size it is shown as "same product, other size" with its own unit price, and never ranks. Prices older than 7 days are shown as "older price" with their date and age.',
       'A store with no observation shows "Not available". Shelf prices change and offers expire: check the price in store or at checkout.',
+    ] : [
+      'Only real, dated prices are shown, each with its own source, store and date. They come from Open Prices (community receipts and shelf photos of Open Food Facts contributors, ODbL). No price is ever converted from another currency, estimated or guessed.',
+      'Only prices recorded in the last 7 days, in this country\'s currency, with a dated receipt or shelf-photo proof and no loyalty-card or multi-buy condition can be "the cheapest". Older prices stay visible as the last recorded price, with their age. Future-dated observations are rejected.',
+      'A price far from what at least three other stores recorded for the same barcode (below half or above 2.5 times their median) is shown as unusual and is never ranked or counted. The typical price is the median of the unconditional prices of the last 90 days, when at least three stores recorded one.',
+      'Prices recorded in other countries are listed separately with their own currency; they are reference only, not prices in your country.',
+      'Community coverage differs by country and product. A store with no observation shows "Not available". Shelf prices change and offers expire: check the price in store or at checkout.',
     ],
   };
 }
@@ -3362,10 +3473,12 @@ async function fsPricesRoute(request,env,ctx) {
       sourceLicenses:{openPrices:FS_PRICE_LICENSES['op:'],observatory:FS_GR_SOURCES.posokanei.license,ekatanalotis:FS_GR_SOURCES.ekatanalotis.license,bazaar:FS_GR_SOURCES.bazaar.license,lidl:FS_GR_SOURCES.lidl.license,kritikos:FS_GR_SOURCES.kritikos.license,licensedFeeds:'per feed (license_ref on every row)'}});
   }
   if(publicPath!=='compare')return fsPriceJson({error:'not_found'},404);
-  const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url);
-  if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN and optional Greek latitude, longitude and radius (1–50 km).'},400);
+  const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url, request);
+  if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN, an optional two-letter market (country) and an optional latitude, longitude and radius (1–50 km).'},400);
+  scope.marketSource = fsMarketCode(url.searchParams.get('market')) ? 'choice' : (fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry'))) ? 'network' : 'default';
+  const greekMarket = scope.market === 'GR';
   const cache = typeof caches!=='undefined' ? caches.default : null;
-  const cacheURL=new URL(url.origin+'/prices/cache/v'+FS_PRICE_VERSION+'/'+fsPriceKey(code));
+  const cacheURL=new URL(url.origin+'/prices/cache/v'+FS_PRICE_VERSION+'/'+scope.market+'/'+fsPriceKey(code));
   if(scope.nearby){cacheURL.searchParams.set('lat',String(scope.lat));cacheURL.searchParams.set('lon',String(scope.lon));cacheURL.searchParams.set('r',String(scope.radius));}
   const pkId=fsObsId(url.searchParams.get('pk'));   // 82: an observatory product the shopper confirmed for this barcode
   if(pkId)cacheURL.searchParams.set('pk',pkId);
@@ -3378,10 +3491,11 @@ async function fsPricesRoute(request,env,ctx) {
     fsPriceLocalCatalogueMeta(request, env, code).catch(()=>null),
     fsPriceOpenOffers(code, scope, env, request),
     fsPriceLicensedOffers(env, code, scope),
-    fsGrSeedOffers(request, env, code).catch(()=>({items:[],providers:{},product:null,pack:null})),
+    // 83: the Greek official and web-shop sources are consulted only for the Greek market
+    greekMarket ? fsGrSeedOffers(request, env, code).catch(()=>({items:[],providers:{},product:null,pack:null})) : Promise.resolve({items:[],providers:{},product:null,pack:null}),
   ]);
   // 82: a confirmation is used only while this barcode has no observatory link of its own (a reviewed or exact link always wins).
-  if(pkId&&!official.providers?.posokanei?.linked){
+  if(greekMarket&&pkId&&!official.providers?.posokanei?.linked){
     const c=await fsObsConfirmed(request, env, code, pkId).catch(()=>null);
     if(c){official.items.push(...c.items);if(c.items.length)official.linkMatch='user-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;}
     official.confirmed={id:pkId,name:c?.name||'',offers:c?.items.length||0,status:!c?'unavailable':!c.found?'not_found':c.items.length?'ok':'no_prices'};
