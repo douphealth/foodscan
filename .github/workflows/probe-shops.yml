@@ -1,0 +1,18 @@
+name: Probe shops (one-off, read-only)
+# Runs only when the probe script itself is pushed. It requests robots.txt, the home page and a handful of barcode searches from nine Greek supermarket web shops (<= 12 requests each, 1.5 s apart) and prints what it found. It writes nothing.
+on:
+  push:
+    paths:
+      - 'price-refresh/probe/**'
+      - '.github/workflows/probe-shops.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: node price-refresh/probe/probe-shops.mjs
