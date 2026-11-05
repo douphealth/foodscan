@@ -65,10 +65,11 @@ test('package: every precached file exists, shell pages load the v83 modules, ve
   const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
   const sw = read('sw.js'); const list = new Function('return ' + sw.match(/const PRECACHE = (\[.*?\]);/s)[1])();
   for (const f of list.filter(x => x.startsWith('/') && !x.endsWith('/'))) assert.ok(fs.existsSync(path.join(ROOT, f.split('?')[0])), `precached file missing: ${f}`);
-  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="84\.0\.0"/, page); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
-  assert.match(sw, /const CACHE = 'foodscan-84\.0\.0'/); assert.match(read('_worker.js'), /var VERSION = "84\.0\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-84\.0\.0'/);
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="85\.0\.0"/, page); assert.ok(page === 'prices/index.html' || (h.includes('/prices/reader-v85.js') && h.includes('/prices/reader-v85.css')), `${page} does not load the label reader`); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
+  assert.ok(fs.existsSync(path.join(ROOT, 'assets/domain-v8500.mjs')) && /from '\.\.\/assets\/domain-v8500\.mjs'/.test(read('prices/label-reader-v85.mjs')));
+  assert.match(sw, /const CACHE = 'foodscan-85\.0\.0'/); assert.match(read('_worker.js'), /var VERSION = "85\.0\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-85\.0\.0'/);
   // every relative import of the v83 modules resolves
-  for (const f of ['prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
+  for (const f of ['prices/reader-v85.js', 'prices/label-reader-v85.mjs', 'prices/label-ocr-v85.mjs', 'prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
 });
 
 test('the home page preloads only files that exist (module waterfall flattened)', async () => {

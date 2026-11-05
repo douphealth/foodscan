@@ -29,7 +29,7 @@ Optional (plain text): `FS_WEB_PRICES_MODEL` (default `claude-opus-5-5`; `claude
 Bindings and secrets apply to the **next deployment**: Deployments → the latest → **Retry deployment**. Then:
 ```bash
 curl -s https://YOUR-SITE/api/prices/status | grep -o '"webSearch":"[^"]*"'
-node verify-deploy.mjs https://YOUR-SITE 84.0.0
+node verify-deploy.mjs https://YOUR-SITE 85.0.0
 ```
 
 ## What the web search does, and what it costs

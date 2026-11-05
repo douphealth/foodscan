@@ -1,0 +1,43 @@
+/* FoodScan 85: the "Read the label" card. Light surface under the grade card; the grade colours are the app's own (--g-a … --g-e). */
+.fr85{position:relative;display:grid;gap:11px;margin:14px auto 6px;padding:14px 15px 14px;width:min(100%,430px);border-radius:18px;text-align:left;box-sizing:border-box;
+  background:color-mix(in srgb,var(--surface,#fff) 96%,transparent);color:var(--ink,#0C1B14);border:1px solid color-mix(in srgb,var(--ink,#0C1B14) 9%,transparent);
+  font-family:var(--font-ui,inherit);animation:fr85In .3s ease-out both}
+@keyframes fr85In{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fr85__eyebrow{font:600 .68rem/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--ink,#0C1B14) 62%,transparent)}
+.fr85__title{margin:0;font:700 1.12rem/1.25 var(--font-display,Georgia,serif);color:inherit}
+.fr85__sub,.fr85__status,.fr85__need{margin:0;font-size:.82rem;line-height:1.5;color:color-mix(in srgb,var(--ink,#0C1B14) 78%,transparent)}
+.fr85__status:empty{display:none}
+.fr85__row{display:flex;flex-wrap:wrap;gap:8px}
+.fr85__btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;font:700 .86rem/1.1 var(--font-ui,system-ui);cursor:pointer;text-align:center;
+  background:color-mix(in srgb,var(--ink,#0C1B14) 7%,transparent);color:var(--ink,#0C1B14);border:1px solid color-mix(in srgb,var(--ink,#0C1B14) 14%,transparent)}
+.fr85__btn--main{background:var(--ink,#0C1B14);color:var(--surface,#fff);border-color:transparent}
+.fr85__btn--ghost{background:transparent}
+.fr85__btn[disabled]{opacity:.45;cursor:not-allowed}
+.fr85__btn:focus-visible,.fr85 input:focus-visible,.fr85 select:focus-visible{outline:3px solid var(--g-a,#038141);outline-offset:2px}
+.fr85__wait{display:flex;align-items:center;gap:10px;font-size:.88rem}
+.fr85__spin{width:16px;height:16px;border-radius:50%;border:2px solid color-mix(in srgb,var(--ink,#0C1B14) 20%,transparent);border-top-color:var(--g-a,#038141);animation:fr85Spin .8s linear infinite}
+@keyframes fr85Spin{to{transform:rotate(360deg)}}
+.fr85__photo{border-radius:12px;overflow:hidden;background:#0001;max-height:190px}
+.fr85__photo img{display:block;width:100%;max-height:190px;object-fit:contain}
+.fr85__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.fr85__f{display:grid;gap:4px;min-width:0}
+.fr85__f>span{font-size:.74rem;font-weight:700;color:color-mix(in srgb,var(--ink,#0C1B14) 72%,transparent)}
+.fr85__f input,.fr85__f select{width:100%;min-height:44px;padding:0 10px;border-radius:10px;box-sizing:border-box;font:600 1rem/1 var(--font-ui,system-ui);color:var(--ink,#0C1B14);background:var(--surface,#fff);border:1px solid color-mix(in srgb,var(--ink,#0C1B14) 22%,transparent)}
+.fr85__f--flag input{border-color:#B7791F;box-shadow:0 0 0 2px #E9B94944}
+.fr85__f small{font-size:.7rem;line-height:1.35;color:#8A5A00}
+.fr85__check{display:flex;align-items:flex-start;gap:9px;font-size:.84rem;line-height:1.4;min-height:44px;align-items:center}
+.fr85__check input{width:20px;height:20px;flex:none}
+.fr85__live{display:grid;gap:6px;padding:10px 11px;border-radius:12px;background:color-mix(in srgb,var(--ink,#0C1B14) 5%,transparent)}
+.fr85__livehead{font:600 .66rem/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--ink,#0C1B14) 60%,transparent)}
+.fr85__res{display:flex;align-items:center;gap:11px}
+.fr85__res>div{display:grid;gap:3px;min-width:0}
+.fr85__res b{font-size:.98rem}
+.fr85__res>div>span{font-size:.76rem;line-height:1.45;color:color-mix(in srgb,var(--ink,#0C1B14) 74%,transparent)}
+.fr85__res i{font-style:normal;font-weight:700}
+.fr85__chip{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;border-radius:12px;font:800 1.5rem/1 var(--font-display,Georgia,serif);background:var(--gc,#999);color:var(--gci,#fff)}
+.fr85__chip.g-A{--gc:var(--g-a,#038141);--gci:var(--g-a-ink,#fff)}.fr85__chip.g-B{--gc:var(--g-b,#85BB2F);--gci:var(--g-b-ink,#16240A)}.fr85__chip.g-C{--gc:var(--g-c,#FECB02);--gci:var(--g-c-ink,#2A2200)}
+.fr85__chip.g-D{--gc:var(--g-d,#EE8100);--gci:var(--g-d-ink,#2A1600)}.fr85__chip.g-E{--gc:var(--g-e,#D63A0F);--gci:var(--g-e-ink,#fff)}
+.fr85__res--range .fr85__chip{width:38px;height:38px;font-size:1.25rem}
+@media (max-width:360px){.fr85{padding:12px}.fr85__grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.fr85,.fr85__spin{animation:none}}
+@media (prefers-color-scheme:dark){.fr85__f small{color:#F3D58A}.fr85__f--flag input{border-color:#E9B949}}

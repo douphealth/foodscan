@@ -3,7 +3,7 @@
 Scan a food barcode, read the source-reported nutrition grade, and see the recorded supermarket price in your own country and currency (Greece also has official sources).
 Live: https://food-scan.gearuptofit.com/
 
-**This branch (`main`) is FoodScan 84.0.0 (see [`RELEASE-84.0.0.md`](RELEASE-84.0.0.md), [`RELEASE-83.1.0.md`](RELEASE-83.1.0.md) and [`RELEASE-83.0.0.md`](RELEASE-83.0.0.md); the paragraphs below describe the Greek price sources of 80), ready for Cloudflare Pages: the repository root IS the site** (`index.html`, `_worker.js`, `_routes.json`, `_headers` at the root; no build step). It is the exact content of `FoodScan-80.0.0-Claude-Complete-Prices-Cloudflare-Pages.zip`, plus the price-refresh job below.
+**This branch (`main`) is FoodScan 85.0.0 (see [`RELEASE-85.0.0.md`](RELEASE-85.0.0.md), [`RELEASE-84.0.0.md`](RELEASE-84.0.0.md), [`RELEASE-83.1.0.md`](RELEASE-83.1.0.md) and [`RELEASE-83.0.0.md`](RELEASE-83.0.0.md); the paragraphs below describe the Greek price sources of 80), ready for Cloudflare Pages: the repository root IS the site** (`index.html`, `_worker.js`, `_routes.json`, `_headers` at the root; no build step). It is the exact content of `FoodScan-80.0.0-Claude-Complete-Prices-Cloudflare-Pages.zip`, plus the price-refresh job below.
 
 ## Setup
 [`SETUP.md`](SETUP.md): the optional D1 databases and the web price search (two secrets) in a few clicks.
