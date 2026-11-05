@@ -38,6 +38,12 @@
 .fr85__chip.g-A{--gc:var(--g-a,#038141);--gci:var(--g-a-ink,#fff)}.fr85__chip.g-B{--gc:var(--g-b,#85BB2F);--gci:var(--g-b-ink,#16240A)}.fr85__chip.g-C{--gc:var(--g-c,#FECB02);--gci:var(--g-c-ink,#2A2200)}
 .fr85__chip.g-D{--gc:var(--g-d,#EE8100);--gci:var(--g-d-ink,#2A1600)}.fr85__chip.g-E{--gc:var(--g-e,#D63A0F);--gci:var(--g-e-ink,#fff)}
 .fr85__res--range .fr85__chip{width:38px;height:38px;font-size:1.25rem}
+/* quick grade */
+.fr85__low{margin:0;padding:8px 10px;border-radius:10px;font-size:.78rem;line-height:1.45;background:#E9B94922;color:#6B4600;border:1px solid #E9B94966}
+.fr85__how{font-size:.8rem;line-height:1.5}
+.fr85__how summary{cursor:pointer;min-height:32px;display:flex;align-items:center;font-weight:700;color:color-mix(in srgb,var(--ink,#0C1B14) 80%,transparent)}
+.fr85__how ul{margin:4px 0 0;padding-left:18px;display:grid;gap:5px;color:color-mix(in srgb,var(--ink,#0C1B14) 78%,transparent)}
+@media (prefers-color-scheme:dark){.fr85__low{color:#F3D58A}}
 @media (max-width:360px){.fr85{padding:12px}.fr85__grid{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.fr85,.fr85__spin{animation:none}}
 @media (prefers-color-scheme:dark){.fr85__f small{color:#F3D58A}.fr85__f--flag input{border-color:#E9B949}}

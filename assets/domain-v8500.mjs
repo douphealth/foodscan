@@ -756,4 +756,4 @@ function explainGrade(p) {
 }
 
 
-export {parseProduct,assessGrade,estimateNutriScore,dataQuality,explainGrade,setDomainTranslator,validBarcode,parseNutriscore,ns23Verify,ns23Score,ns23GradeOfScore};
+export {parseProduct,assessGrade,estimateNutriScore,dataQuality,explainGrade,setDomainTranslator,validBarcode,parseNutriscore,ns23Verify,ns23Score,ns23GradeOfScore,ns23Tier,ns23Inputs,ns23Kinds,ns23Sweeteners,ns23Fold};

@@ -21,6 +21,17 @@ const T = {
     grade: g => `Nutri-Score ${g}`, fromLabel: 'from your label', points: (n, p) => `${n} points against it${p ? `, ${p} in its favour` : ''}`,
     basis: k => `Calculated by FoodScan from the numbers you confirmed, with the Nutri-Score 2023 table for “${k}”. Saved on this device only. It is not the manufacturer's or the database's grade.`,
     water: 'Plain water is A in Nutri-Score 2023.', photoAlt: 'Your photo of the label',
+    q: {
+      eyebrow: 'Quick grade', one: g => `Likely ${g}`, two: (a, b) => `Likely ${a} or ${b}`,
+      sub: 'Estimated by FoodScan from the nutrition values on record. It is not the official Nutri-Score.',
+      lowNote: 'Less certain for drinks and unusual products: sweeteners and the table used can move the letter.',
+      how: 'How this was worked out', basis: 'Calculated with the official Nutri-Score 2023 points from the energy, sugars, saturated fat and salt on record.',
+      kind: { general: 'general foods', beverage: 'drinks', water: 'water', cheese: 'cheese', fat: 'fats, oils, nuts and seeds' },
+      tables: k => `Table used: ${k}.`, tableGuess: ' It was chosen from the product name and its figures, because the record has no confirmed category.',
+      tableCat: ' It follows the category on record.', unknown: l => `Not reported, so every possible value was tried: ${l}.`, fvl: 'fruit and vegetable share',
+      check: 'Check it against the label photo',
+      none: 'FoodScan has no nutrition values on record for this product.', noneSome: l => `The record lacks: ${l}.`, loading: 'Estimating a grade from the values on record…',
+    },
   },
   el: {
     eyebrow: 'Ανάγνωση ετικέτας', title: 'Δεν υπάρχει βαθμός. Υπολογίστε τον από την ετικέτα.',
@@ -38,6 +49,17 @@ const T = {
     grade: g => `Nutri-Score ${g}`, fromLabel: 'από την ετικέτα σας', points: (n, p) => `${n} βαθμοί εναντίον${p ? `, ${p} υπέρ` : ''}`,
     basis: k => `Υπολογίστηκε από το FoodScan με τους αριθμούς που επιβεβαιώσατε, με τον πίνακα Nutri-Score 2023 για «${k}». Αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν είναι ο βαθμός του κατασκευαστή ούτε της βάσης δεδομένων.`,
     water: 'Το σκέτο νερό είναι A στο Nutri-Score 2023.', photoAlt: 'Η φωτογραφία σας της ετικέτας',
+    q: {
+      eyebrow: 'Γρήγορος βαθμός', one: g => `Πιθανώς ${g}`, two: (a, b) => `Πιθανώς ${a} ή ${b}`,
+      sub: 'Εκτίμηση του FoodScan από τις διατροφικές τιμές που υπάρχουν καταγεγραμμένες. Δεν είναι το επίσημο Nutri-Score.',
+      lowNote: 'Λιγότερο βέβαιο για ροφήματα και ασυνήθιστα προϊόντα: τα γλυκαντικά και ο πίνακας που εφαρμόζεται μπορούν να αλλάξουν το γράμμα.',
+      how: 'Πώς προέκυψε', basis: 'Υπολογίστηκε με τους επίσημους βαθμούς του Nutri-Score 2023 από την ενέργεια, τα σάκχαρα, τα κορεσμένα λιπαρά και το αλάτι που υπάρχουν καταγεγραμμένα.',
+      kind: { general: 'γενικά τρόφιμα', beverage: 'ροφήματα', water: 'νερό', cheese: 'τυρί', fat: 'λιπαρά, λάδια, ξηροί καρποί και σπόροι' },
+      tables: k => `Πίνακας που εφαρμόστηκε: ${k}.`, tableGuess: ' Επιλέχθηκε από το όνομα και τα στοιχεία του προϊόντος, επειδή η εγγραφή δεν έχει επιβεβαιωμένη κατηγορία.',
+      tableCat: ' Ακολουθεί την κατηγορία της εγγραφής.', unknown: l => `Δεν αναγράφονται, οπότε δοκιμάστηκαν όλες οι πιθανές τιμές: ${l}.`, fvl: 'ποσοστό φρούτων και λαχανικών',
+      check: 'Έλεγχος με φωτογραφία της ετικέτας',
+      none: 'Το FoodScan δεν έχει καταγεγραμμένες διατροφικές τιμές για αυτό το προϊόν.', noneSome: l => `Στην εγγραφή λείπουν: ${l}.`, loading: 'Εκτίμηση βαθμού από τις καταγεγραμμένες τιμές…',
+    },
   },
 };
 const lang = () => pageLang();
@@ -81,9 +103,14 @@ function savedHTML(code, saved) {
     <div class="fr85__res">${head}<div><b>${esc(title)} · ${esc(tx('fromLabel'))}</b><span>${esc(tx('basis', L))}</span></div></div>
     <div class="fr85__row"><button type="button" class="fr85__btn" data-fr="edit">${esc(tx('edit'))}</button><button type="button" class="fr85__btn fr85__btn--ghost" data-fr="remove">${esc(tx('remove'))}</button></div>`;
 }
+function idleNote(st) {
+  const q = quick.get(st.code)?.q, k = T[lang()]?.q || T.en.q;
+  if (!q || q.ok || q.reason !== 'inputs-missing') return '';
+  return `<p class="fr85__sub">${esc(q.have ? k.noneSome(q.missing.join(', ')) : k.none)}</p>`;
+}
 function idleHTML(st) {
   return `<div class="fr85__head"><span class="fr85__eyebrow">${esc(tx('eyebrow'))}</span></div>
-    <h2 class="fr85__title">${esc(tx('title'))}</h2><p class="fr85__sub">${esc(tx('sub'))}</p>
+    <h2 class="fr85__title">${esc(tx('title'))}</h2>${idleNote(st)}<p class="fr85__sub">${esc(tx('sub'))}</p>
     <div class="fr85__row"><label class="fr85__btn fr85__btn--main"><span>📷 ${esc(tx('photo'))}</span><input type="file" accept="image/*" capture="environment" data-fr="file" hidden></label>
     <button type="button" class="fr85__btn" data-fr="manual">${esc(tx('type'))}</button></div><p class="fr85__status" role="status" aria-live="polite">${esc(st.status || '')}</p>`;
 }
@@ -107,14 +134,17 @@ function formHTML(code, st) {
 
 function paint(sec, code) {
   const st = state.get(code) || { phase: 'idle' }, saved = store.get(code);
-  const view = st.phase === 'idle' && saved ? 'saved' : st.phase;
-  if (sec.dataset.view === view + ':' + lang() + ':' + (st.rev || 0)) return;
-  sec.dataset.view = view + ':' + lang() + ':' + (st.rev || 0);
+  if (st.phase === 'idle' && !saved && !quick.has(code)) loadQuick(code);
+  const qk = quick.get(code), useQuick = st.phase === 'idle' && !saved && qk?.state === 'ready' && qk.q.ok;
+  const view = st.phase === 'idle' && saved ? 'saved' : useQuick ? 'quick' : st.phase;
+  if (sec.dataset.view === view + ':' + lang() + ':' + (st.rev || 0) + ':' + (qk?.state || '')) return;
+  sec.dataset.view = view + ':' + lang() + ':' + (st.rev || 0) + ':' + (qk?.state || '');
   sec.setAttribute('aria-label', tx('eyebrow')); sec.setAttribute('aria-busy', view === 'reading' ? 'true' : 'false');
   if (view === 'saved') sec.innerHTML = savedHTML(code, saved);
+  else if (view === 'quick') sec.innerHTML = quickHTML(qk.q);
   else if (view === 'reading') sec.innerHTML = `<div class="fr85__head"><span class="fr85__eyebrow">${esc(tx('eyebrow'))}</span></div><div class="fr85__wait" role="status"><i class="fr85__spin" aria-hidden="true"></i><span>${esc(st.status || tx('reading'))}</span></div>`;
   else if (view === 'review') { sec.innerHTML = formHTML(code, st); refreshLive(sec, code); }
-  else sec.innerHTML = idleHTML(st);
+  else sec.innerHTML = idleHTML({ ...st, code });
 }
 async function refreshLive(sec, code) {
   const st = state.get(code); if (!st || st.phase !== 'review') return;
@@ -124,6 +154,32 @@ async function refreshLive(sec, code) {
   st.result = r;
 }
 const bump = st => { st.rev = (st.rev || 0) + 1; };
+
+/* ---------- the quick grade: no photo, no typing ---------- */
+const quick = new Map(); // code -> { state: 'loading' | 'ready' | 'none', q }
+async function loadQuick(code) {
+  quick.set(code, { state: 'loading' });
+  try {
+    const [D, Q] = await Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs')]);
+    const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p);
+    // the app's own verdict always wins: a grade, or a grade held back for review, is never replaced by an estimate
+    quick.set(code, { state: 'ready', q: a.grade || a.status === 'withheld' ? { ok: false, reason: 'app-has-grade' } : Q.quickGrade(p, { alcohol: body?.product?.nutriments?.alcohol_100g }) });
+  } catch { quick.set(code, { state: 'none', q: { ok: false, reason: 'unavailable' } }); }
+  schedule();
+}
+function quickHTML(q) {
+  const k = T[lang()]?.q || T.en.q, one = q.letters.length === 1;
+  const chips = one ? chip(q.letters[0]) : `${chip(q.letters[0])}<i aria-hidden="true">–</i>${chip(q.letters[1])}`;
+  const title = one ? k.one(q.letters[0]) : k.two(q.letters[0], q.letters[1]);
+  const kinds = q.kinds.map(x => k.kind[x]).join(' / '), unknown = q.missing.map(x => (x === 'fruit, vegetables and legumes' ? k.fvl : x)).join(', ');
+  return `<div class="fr85__head"><span class="fr85__eyebrow">${esc(k.eyebrow)}</span></div>
+    <div class="fr85__res${one ? '' : ' fr85__res--range'}" role="group" aria-label="${esc(title)}">${chips}<div><b>${esc(title)}</b><span>${esc(k.sub)}</span></div></div>
+    ${q.confidence === 'low' ? `<p class="fr85__low">${esc(k.lowNote)}</p>` : ''}
+    <details class="fr85__how"><summary>${esc(k.how)}</summary><ul><li>${esc(k.basis)}</li><li>${esc(k.tables(kinds))}${esc(q.inferredKind ? k.tableGuess : k.tableCat)}</li>${unknown ? `<li>${esc(k.unknown(unknown))}</li>` : ''}</ul></details>
+    <div class="fr85__row"><label class="fr85__btn"><span>📷 ${esc(k.check)}</span><input type="file" accept="image/*" capture="environment" data-fr="file" hidden></label></div>`;
+}
 
 async function startFromFile(code, file) {
   const st = state.get(code) || {}; if (st.url) URL.revokeObjectURL(st.url);
