@@ -36,7 +36,7 @@ export const daysAhead = n => new Date(Date.now() + n * 86400000).toISOString().
 let nextId = 1000;
 /** One Open Prices item in the shape of the real API (GET /api/v1/prices). */
 export function op({ code, price, currency = 'EUR', date = daysAgo(1), cc = 'FR', brand = 'Carrefour', name, per = 'UNIT', proof = 'RECEIPT', discounted = false, was = null, discountType = null, city = 'Lyon', type = 'OSM', id = nextId++ }) {
-  return { id, product_code: code, type: 'PRODUCT', price, currency, date, price_per: per, price_is_discounted: discounted, price_without_discount: was, discount_type: discountType, duplicate_of: null,
+  return { id, created: date + 'T12:00:00Z', product_code: code, type: 'PRODUCT', price, currency, date, price_per: per, price_is_discounted: discounted, price_without_discount: was, discount_type: discountType, duplicate_of: null,
     proof: proof ? { type: proof, file_path: `0001/${id}.webp`, draft: false } : null,
     location: { id: id * 10, type, osm_brand: brand, osm_name: name || `${brand} ${id}`, osm_address_country_code: cc, osm_address_city: city, osm_lat: 45.7 + (id % 50) / 100, osm_lon: 4.8 },
     product: { product_name: 'Test product', quantity: '500 g' } };
@@ -50,8 +50,10 @@ export function fakeOpenPrices(items, { rejectFilter = false, status = 200 } = {
     if (status !== 200) return json({ detail: 'x' }, status);
     const cur = url.searchParams.get('currency'), since = url.searchParams.get('date__gte');
     if ((cur || since) && rejectFilter) return json({ detail: 'filter rejected' }, 422);
-    const code = url.searchParams.get('product_code');
-    let list = items.filter(i => String(i.product_code).replace(/^0+/, '') === String(code).replace(/^0+/, ''));
+    const code = url.searchParams.get('product_code'), many = url.searchParams.get('product_code__in'), created = url.searchParams.get('created__gte');
+    const want = (many ? many.split(',') : [code]).map(c => String(c).replace(/^0+/, ''));
+    let list = items.filter(i => want.includes(String(i.product_code).replace(/^0+/, '')));
+    if (created) list = list.filter(i => (i.created || i.date + 'T12:00:00Z') >= created);
     if (cur) list = list.filter(i => i.currency === cur);
     if (since) list = list.filter(i => i.date >= since);
     list = list.slice().sort((a, b) => b.date.localeCompare(a.date));
