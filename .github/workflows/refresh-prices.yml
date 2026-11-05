@@ -4,6 +4,8 @@ name: Refresh prices
 #   seeds/*.json  the four source files (observatory, e-katanalotis, Bazaar, Lidl), each observation with its own date
 #   e-NN.json     labelled estimates for barcodes with no recorded price
 #   manifest.json calibration of the estimator and the build time
+#   op/           Open Prices snapshot: per-barcode observations of the last 120 days from the official daily dumps, and the
+#                 cutoff after which the worker asks the live API (one request per scan)
 # The site (Cloudflare Pages worker) reads this branch and uses the NEWER of the bundled and the published copy, so prices stay
 # current WITHOUT redeploying. If the branch is missing, older, incomplete or unreachable the bundled data is used.
 # Files live in the folder `price-refresh/` of the repository (refresh/, tools/, data/seeds/).
@@ -57,6 +59,11 @@ jobs:
 
       - name: Refresh
         run: node refresh/scripts/refresh-prices.mjs --work work --out out --prev prev
+
+      - name: Open Prices snapshot (official daily dumps, ODbL; keeps the previous snapshot if a download fails or looks incomplete)
+        run: node tools/build-open-prices.mjs --out out/op --prev prev/op
+        # the Greek data above must publish even if Open Prices is unreachable on the first run (no previous snapshot to keep)
+        continue-on-error: true
 
       - name: Publish to prices-data
         run: |

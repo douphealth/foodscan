@@ -1703,8 +1703,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "86.0.0";
-var BUILD = "8600-similar-grades";
+var VERSION = "87.0.0";
+var BUILD = "8700-open-prices-snapshot";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -2762,7 +2762,71 @@ async function fsPriceAdminImport(request,env) {
  *  own country. The shopper's market is therefore asked for FIRST (a country filter, up to 200 newest), next to the newest 100 of the
  *  world (for "seen elsewhere"). If the API rejects the filter (4xx) the answer falls back to the plain newest-300 read of 82. Every
  *  observation is checked again here (country, currency, date, proof), whichever way it was fetched. */
+/* ===== 87: Open Prices daily snapshot + live delta =====
+ * The daily refresh job reads the official Open Prices dumps (prices.openfoodfacts.org/data/, ODbL) and publishes per-barcode shards to the
+ * `prices-data` branch (price-refresh/tools/build-open-prices.mjs): every observation of the last 120 days with its store, proof and pack, and the
+ * CUTOFF (the newest `created` time in the dump). A lookup reads the barcode's shard and asks the live API only for what was created after the
+ * cutoff, for all barcode variants in ONE request (`product_code__in`, `created__gte`; both checked against the live API on 5 Nov 2026).
+ * The snapshot answers alone when the API is slow or down; a missing or stale (over 8 days) snapshot falls back to the full live read. */
+const FS_OP_SHARDS = 256, FS_OP_MAX_AGE = 8 * 864e5;
+const fsOpShardId = code => String(Number(fsPriceKey(code).slice(-6)) % FS_OP_SHARDS).padStart(3, '0');
+function fsOpShard(request, env, code) {
+  const base = fsV80Base(env); if (!base) return Promise.resolve(null);
+  const id = fsOpShardId(code);
+  return fsV80Cached(new URL(request?.url || 'https://food-scan.gearuptofit.com').origin + '|op|' + base + '|' + id, async () => {
+    const res = await fetch(base + '/op/' + id + '.json', {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':1800, '404':60, '500-599':0}}});
+    if (!res.ok) throw new Error('op_shard_' + res.status);
+    const raw = await res.text(); if (raw.length > 2 * 1024 * 1024) throw new Error('op_shard_too_large');
+    const d = JSON.parse(raw);
+    if (d?.schema !== 1 || !d.products || !d.locations || !Number.isFinite(Date.parse(d.cutoff))) throw new Error('op_shard_invalid');
+    return d;
+  }).catch(() => null);
+}
+/** Snapshot rows -> the shape the live API returns, so fsPriceNormalizeOpen checks both the same way. */
+function fsOpItems(shard, codes) {
+  const out = [];
+  for (const c of new Set(codes.map(fsPriceKey))) {
+    const e = shard.products[c]; if (!e || !Array.isArray(e.o)) continue;
+    const m = Array.isArray(e.m) ? e.m : null;
+    for (const o of e.o) {
+      if (!Array.isArray(o) || o.length < 12) continue;
+      const l = shard.locations[o[10]] || [];
+      out.push({id:o[0], type:'PRODUCT', product_code:c, price:o[1], currency:o[2], date:o[3], price_per:o[4] === 'K' ? 'KILOGRAM' : o[4] === 'L' ? 'LITER' : null,
+        price_is_discounted:o[5] === 1, price_without_discount:o[6], discount_type:o[7] || null, duplicate_of:null, created:o[11], location_id:o[10],
+        location:{id:o[10], type:l[0] || 'OSM', osm_address_country_code:l[1] || '', osm_address_country:l[2] || '', osm_brand:l[3] || '', osm_name:l[4] || '', osm_address_city:l[5] || '', osm_lat:l[6], osm_lon:l[7]},
+        proof:o[8] ? {type:o[8], file_path:o[9] || '', draft:false} : null,
+        product:m ? {product_name:m[0], quantity:m[1], product_quantity:m[2], product_quantity_unit:m[3]} : null});
+    }
+  }
+  return out;
+}
 async function fsPriceOpenOffers(code, scope, env, request) {
+  const snap = await fsOpShard(request, env, code);
+  if (snap && Date.now() - Date.parse(snap.cutoff) < FS_OP_MAX_AGE) return fsOpWithDelta(code, scope, env, request, snap);
+  return fsPriceOpenLive(code, scope, env, request);
+}
+async function fsOpWithDelta(code, scope, env, request, snap) {
+  const site = request ? new URL(request.url).origin : 'https://food-scan.gearuptofit.com';
+  const contact = typeof contactFor === 'function' ? contactFor(env, site) : 'https://food-scan.gearuptofit.com/how/';
+  const codes = [...new Set([String(code).trim(), String(code).replace(/^0+/, ''), String(code).padStart(13, '0')])].filter(c => /^\d{8,14}$/.test(c));
+  const headers = {'Accept':'application/json','User-Agent':`FoodScan/${FS_PRICE_VERSION} (${contact})`};
+  const delta = async n => {
+    try {
+      const res = await fetch(`${FS_PRICE_UPSTREAM}?product_code__in=${codes.map(encodeURIComponent).join(',')}&created__gte=${encodeURIComponent(snap.cutoff)}&size=100&page=${n}&order_by=-date`, {headers, redirect:'follow', signal:AbortSignal.timeout(3500)});
+      if (!res.ok) return {status:res.status === 429 ? 'rate_limited' : 'unavailable', items:[]};
+      const data = JSON.parse(await res.text());
+      return Array.isArray(data?.items) ? {status:'available', items:data.items, total:Number(data.total) || data.items.length} : {status:'unavailable', items:[]};
+    } catch { return {status:'unavailable', items:[]}; }
+  };
+  const first = await delta(1);
+  const live = first.status === 'available' && first.total > 100 ? [first, await delta(2)] : [first];
+  const seen = new Set(), raw = [];
+  for (const i of [...live.filter(r => r.status === 'available').flatMap(r => r.items), ...fsOpItems(snap, codes)]) if (i && !seen.has(i.id)) { seen.add(i.id); raw.push(i); }
+  const items = raw.map(i => fsPriceNormalizeOpen(i, code, scope)).filter(Boolean);
+  return {status:items.length ? 'ok_with_data' : 'ok_empty', items, inspected:raw.length, total:raw.length, via:first.status === 'available' ? 'snapshot+live' : 'snapshot',
+    snapshotCutoff:snap.cutoff, liveSinceCutoff:first.status === 'available' ? first.total : null, ...(first.status !== 'available' ? {liveStatus:first.status} : {})};
+}
+async function fsPriceOpenLive(code, scope, env, request) {
   const site = request ? new URL(request.url).origin : 'https://food-scan.gearuptofit.com';
   const contact = typeof contactFor === 'function' ? contactFor(env, site) : 'https://food-scan.gearuptofit.com/how/';
   const codes = [...new Set([String(code).trim(), String(code).replace(/^0+/, ''), String(code).padStart(13, '0')])].filter(c => c.length >= 8 && c.length <= 14);
@@ -3289,7 +3353,7 @@ async function fsPriceHealthV79(request, env, now=Date.now()) {
     const s = out.sources[id].seed; out.sources[id].state = !s ? 'missing' : s.ageDays <= FS_PRICE_CURRENT_DAYS ? 'seed_current' : 'seed_older';
   }
   for (const id of Object.keys(out.sources)) out.sources[id].license = FS_GR_SOURCES[id]?.license || null; // 78: per-source licence, never a blanket ODbL
-  out.openPrices = {checked:'per request (public API)', license:FS_PRICE_LICENSES['op:']};
+  out.openPrices = {checked:'daily snapshot of the official dumps (prices-data/op/, falls back to the full live read) + live API for prices created after the snapshot', license:FS_PRICE_LICENSES['op:']};
   const states = Object.values(out.sources).map(s => s.state).filter(s => s !== 'disabled');
   out.status = states.every(s => s === 'ok') ? 'ok' : out.mode === 'live' ? (states.every(s => s === 'ok' || s === 'awaiting_first_run') ? 'starting' : states.some(s => s === 'ok') ? 'degraded' : 'down') : 'seed_only';
   out.note = out.mode === 'live' ? 'Live: prices are refreshed by the foodscan-price-ingest cron Worker and read from D1 on every request.'
