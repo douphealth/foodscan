@@ -144,6 +144,7 @@ const bump = st => { st.rev = (st.rev || 0) + 1; };
 
 /* ---------- the quick grade: no photo, no typing ---------- */
 const quick = new Map(); // code -> { state: 'loading' | 'ready' | 'none', q }
+globalThis.__fs85quick = quick; // read by prices/swaps-ui-v88.js, so the swaps use the same table and estimate as the grade card (88)
 const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json';
 let peersPromise = null; // the similar-products index, fetched only when a product needs it
 const peers = S => peersPromise || (peersPromise = fetch(PEERS_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? S.prepare(j) : null)).catch(() => null));
