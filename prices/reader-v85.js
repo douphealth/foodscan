@@ -81,7 +81,7 @@ function resultHTML(r) {
   return `<div class="fr85__res fr85__res--range">${chip(r.range[0])}<i aria-hidden="true">–</i>${chip(r.range[1])}<div><b>${esc(tx('range', r.range[0], r.range[1]))}</b><span>${esc(tx('rangeWhy', list))}</span></div></div>`;
 }
 
-function gradeView(model, o) { const g = needGrade(); return g ? g.gradeHTML(model, { lang: lang(), ...o }) : `<div class="fr85__wait" role="status"><i class="fr85__spin" aria-hidden="true"></i><span>${esc(tx('q').loading)}</span></div>`; }
+function gradeView(model, o) { const g = needGrade(); return g && model ? g.gradeHTML(model, { lang: lang(), ...o }) : `<div class="fr85__wait" role="status"><i class="fr85__spin" aria-hidden="true"></i><span>${esc(tx('q').loading)}</span></div>`; }
 const savedHTML = (code, saved) => gradeView(saved.model, { kind: 'label', code, actions: true });
 function idleNote(st) {
   const q = quick.get(st.code)?.q, k = T[lang()]?.q || T.en.q;
@@ -120,7 +120,7 @@ function viewOf(code) {
   if (saved) return { view: 'saved', st, saved };
   if (!quick.has(code)) loadQuick(code);
   const qk = quick.get(code);
-  return qk?.state === 'ready' && qk.q.ok ? { view: 'quick', st, qk } : { view: 'idle', st, qk };
+  return qk?.state === 'ready' && qk.kind !== 'none' ? { view: 'quick', st, qk } : { view: 'idle', st, qk };
 }
 const isGradeView = v => v === 'saved' || v === 'quick';
 function paint(sec, code, w) {
@@ -144,20 +144,38 @@ const bump = st => { st.rev = (st.rev || 0) + 1; };
 
 /* ---------- the quick grade: no photo, no typing ---------- */
 const quick = new Map(); // code -> { state: 'loading' | 'ready' | 'none', q }
+const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json';
+let peersPromise = null; // the similar-products index, fetched only when a product needs it
+const peers = S => peersPromise || (peersPromise = fetch(PEERS_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? S.prepare(j) : null)).catch(() => null));
+const inputsOf = p => { const n = p?.nutrition || {}; return { kj: n.kj ?? (n.kcal != null ? Math.round(n.kcal * 4.184) : null), sugars: n.sugars ?? null, saturatedFat: n.saturatedFat ?? null, salt: n.salt ?? null, fibre: n.fiber ?? null, protein: n.protein ?? null, fat: n.fat ?? null, carbs: n.carbohydrates ?? null }; };
 async function loadQuick(code) {
   quick.set(code, { state: 'loading' });
   try {
-    const [D, Q] = await Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs'), needGrade() || Promise.resolve()]);
+    const [D, Q, S] = await Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
     const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error('http ' + res.status);
-    const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p);
+    const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p), alcohol = body?.product?.nutriments?.alcohol_100g;
+    const modified = Number(body?.product?.last_modified_t) > 0 ? Number(body.product.last_modified_t) * 1000 : null, meta = { modified, snapshot: Boolean(body?.catalogueSnapshot) };
     // the app's own verdict always wins: a grade, or a grade held back for review, is never replaced by an estimate
-    const modified = Number(body?.product?.last_modified_t) > 0 ? Number(body.product.last_modified_t) * 1000 : null;
-    quick.set(code, { state: 'ready', modified, snapshot: Boolean(body?.catalogueSnapshot), q: a.grade || a.status === 'withheld' ? { ok: false, reason: 'app-has-grade' } : Q.quickGrade(p, { alcohol: body?.product?.nutriments?.alcohol_100g }) });
-  } catch { quick.set(code, { state: 'none', q: { ok: false, reason: 'unavailable' } }); }
+    if (a.grade || a.status === 'withheld') { quick.set(code, { state: 'ready', ...meta, kind: 'none', q: { ok: false, reason: 'app-has-grade' } }); schedule(); return; }
+    let q = Q.quickGrade(p, { alcohol }), entry = { state: 'ready', ...meta, kind: q.ok ? 'quick' : 'none', q };
+    if (!q.ok && (q.reason === 'exempt' || q.reason === 'excluded')) entry = { ...entry, kind: 'exempt', exempt: { why: q.why || 'other', inputs: inputsOf(p) } };
+    else if (!q.ok && ['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason)) {
+      const prep = await peers(S);
+      if (prep) {
+        if (q.reason === 'too-uncertain') { const pk = S.peerKind(p, prep); const q2 = pk ? Q.quickGrade(p, { alcohol, kindsOverride: [pk.kind] }) : null; if (q2?.ok) entry = { ...entry, kind: 'quick', q: q2 }; }
+        else { const sm = S.similarGrade(p, prep); if (sm.ok) entry = { ...entry, kind: 'similar', sim: { ...sm, inputs: inputsOf(p) } }; }
+      }
+    }
+    quick.set(code, entry);
+  } catch { quick.set(code, { state: 'none', kind: 'none', q: { ok: false, reason: 'unavailable' } }); }
   schedule();
 }
-const quickHTML = (code, qk) => gradeView(qk.q, { kind: 'estimate', code, modified: qk.modified, snapshot: qk.snapshot, actions: true });
+const quickHTML = (code, qk) => {
+  const g = needGrade(), o = { lang: lang(), code, modified: qk.modified, snapshot: qk.snapshot, actions: true };
+  if (!g) return gradeView(null, o);
+  return qk.kind === 'similar' ? g.similarHTML(qk.sim, o) : qk.kind === 'exempt' ? g.exemptHTML(qk.exempt, o) : g.gradeHTML(qk.q, { ...o, kind: 'estimate' });
+};
 
 async function startFromFile(code, file) {
   const st = state.get(code) || {}; if (st.url) URL.revokeObjectURL(st.url);

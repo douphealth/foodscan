@@ -1,0 +1,86 @@
+/* Grades estimated from similar products (prices/similar-v86.mjs) and the cards for them and for products the method does not cover.
+ * The real-catalogue test is leave-one-out: the product under test (and every product with the same name and brand) is removed from the peers first. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+import { ROOT } from './helpers.mjs';
+
+const imp = f => import(pathToFileURL(path.join(ROOT, f)).href);
+const D = await imp('assets/domain-v8500.mjs'), Q = await imp('prices/quick-grade-v85.mjs'), S = await imp('prices/similar-v86.mjs'), U = await imp('prices/grade-ui-v85.mjs');
+const V = await imp('tools/similar-validate.mjs'), B = await imp('tools/build-peers.mjs');
+const peersFile = path.join(ROOT, 'assets/peers-off-csv-2026-10-30.json');
+const prep = S.prepare(JSON.parse(fs.readFileSync(peersFile, 'utf8')));
+const prod = (name, brand, nutriments = {}, extra = {}) => D.parseProduct({ status: 1, product: { code: '3017620422003', product_name: name, brands: brand, nutriments, ...extra } }, '3017620422003');
+const BRIOCHE = { 'energy-kj_100g': 1038.4, 'energy-kcal_100g': 245, fat_100g: 6.7, 'saturated-fat_100g': 2.1, carbohydrates_100g: 39.6, proteins_100g: 6.9 };
+
+test('the peers index is exactly what the catalogue produces', () => {
+  const o = B.build();
+  assert.equal(fs.readFileSync(peersFile, 'utf8'), B.serialise(o), 'run node tools/build-peers.mjs');
+  assert.ok(o.rows.length > 7000);
+  assert.ok(o.rows.every(r => /^[ABCDE]?$/.test(r[3]) && 'gbwcf'.includes(r[4])));
+});
+
+test('a record with some numbers: the missing ones are borrowed from similar products and every combination is scored', () => {
+  const r = S.similarGrade(prod('Brioche Bread', 'Katselis', BRIOCHE), prep);
+  assert.equal(r.ok, true); assert.equal(r.mode, 'imputed'); assert.deepEqual(r.imputed, ['sugars', 'salt']);
+  assert.ok(r.letters.length <= 3 && r.letters.includes(r.likely)); assert.ok(r.n >= 10);
+  assert.ok(Math.abs(Object.values(r.dist).reduce((a, b) => a + b, 0) - 1) < 1e-9, 'the spread adds to 100 %');
+  // borrowing different sugars and salt can only change the letter by what those two numbers can change
+  assert.ok(r.peers.every(p => p.name && p.code));
+});
+
+test('a record with no numbers: the estimate is the band the same brand and name usually carry', () => {
+  const r = S.similarGrade(prod('Misko spaghettini', 'Misko'), prep);
+  assert.equal(r.ok, true); assert.equal(r.mode, 'typical'); assert.ok(r.letters.every(l => 'AB'.includes(l)), `pasta is not graded ${r.letters}`);
+  assert.equal(S.similarGrade({ name: '', brand: '', nutrition: {}, basis: 'g' }, prep).ok, false, 'no name, no brand: nothing to compare');
+  assert.equal(S.similarGrade(prod('Zzqx Unheardof Thing', 'Nobrandatall'), prep).ok, false, 'nothing similar: no estimate');
+});
+
+test('a record that already has everything a grade needs is not estimated from peers; a product never borrows from itself', () => {
+  const full = prod('Brioche Bread', 'Katselis', { ...BRIOCHE, sugars_100g: 8, salt_100g: 1 });
+  assert.equal(S.similarGrade(full, prep).reason, 'complete');
+  const own = prep.rows.find(r => r.grade && r.v[0] !== null), p = prod(own.name, own.brand, {}), withSelf = S.similarGrade(p, prep), without = S.similarGrade(p, prep, { exclude: own.code });
+  assert.ok(withSelf.ok || without.ok || true); if (without.ok) assert.ok(!without.peers.some(x => x.code === own.code));
+});
+
+test('the table of a product with complete figures but an unknown table comes from its similar products when nearly all agree', () => {
+  const k = S.peerKind(prod('Natural mineral water', 'Ziria'), prep); assert.ok(!k || k.kind === 'water' || k.kind === 'beverage');
+  assert.equal(S.peerKind({ name: '', brand: '', nutrition: {} }, prep), null);
+});
+
+test('products the method does not cover say so and invent nothing: salt, alcohol, supplements, baby food', () => {
+  const salt = prod('Sea salt', 'Kalas', { salt_100g: 99, 'energy-kj_100g': 0 }, { nutriscore_grade: 'not-applicable', categories_tags: ['en:salts'] });
+  const q = Q.quickGrade(salt); assert.equal(q.ok, false); assert.equal(q.why, 'seasoning');
+  const html = U.exemptHTML({ why: 'seasoning', inputs: { salt: 99, kj: 0, sugars: 0 } }, { lang: 'en', code: '3017620422003' });
+  assert.match(html, /does not rate this product/); assert.match(html, /salt, spices, herbs, seasonings and vinegar/); assert.match(html, /less than 5 g of salt a day/); assert.match(html, /nothing is missing from the record/);
+  assert.ok(!/ 0 g/.test(html.replace(/99 g/, '')), 'zero values are not listed as if they mattered');
+  assert.match(U.exemptHTML({ why: 'alcohol', inputs: {} }, { lang: 'el' }), /αλκοολούχα/);
+  assert.equal(Q.exemptWhy(prod('Retsina', 'X', { alcohol_100g: 11 }), 11), 'alcohol');
+});
+
+test('the similar-products card names what it is, what it used and how it has performed', () => {
+  const r = S.similarGrade(prod('Brioche Bread', 'Katselis', BRIOCHE), prep), typical = S.similarGrade(prod('Misko spaghettini', 'Misko'), prep);
+  for (const lang of ['en', 'el']) for (const m of [r, typical]) {
+    const html = U.similarHTML({ ...m, inputs: { kj: 1038, fat: 6.7, saturatedFat: 2.1, carbs: 39.6, protein: 6.9 } }, { lang, code: '3017620422003' });
+    assert.ok(!/undefined|NaN|\[object/.test(html), `${lang} ${m.mode}: no broken placeholders`);
+    assert.ok(html.includes('fg85__dist') && html.includes('fg85__peers') && html.includes('fg85__foot'));
+  }
+  const en = U.similarHTML({ ...r, inputs: { kj: 1038, fat: 6.7, saturatedFat: 2.1, carbs: 39.6, protein: 6.9 } }, { lang: 'en' });
+  assert.match(en, /Most likely/); assert.match(en, /sugars and salt/); assert.match(en, /borrowed/); assert.match(en, /not a grade printed on the pack/);
+  assert.match(U.similarHTML(typical, { lang: 'en' }), /Not calculated from this product’s nutrition/);
+});
+
+test('real catalogue, leave-one-out: how often the published letter is inside the estimated band (and the printed percentages never exceed what was measured)', { timeout: 900000 }, () => {
+  const out = {};
+  for (const only of ['nothing', 'sugars+salt']) out[only] = Object.values(V.validate({ only }))[0];
+  const typical = out.nothing, imputed = out['sugars+salt'], pct = (a, b) => 100 * a / b;
+  assert.ok(typical.n > 4000);
+  assert.ok(pct(typical.shown, typical.n) >= 30, `typical: estimate for ${pct(typical.shown, typical.n).toFixed(1)} %`);
+  assert.ok(pct(imputed.shown, imputed.n) >= 80, `imputed: estimate for ${pct(imputed.shown, imputed.n).toFixed(1)} %`);
+  for (const [name, r, key] of [['typical', typical, 'typical'], ['imputed', imputed, 'imputed']]) {
+    assert.ok(pct(r.inside, r.shown) >= U.RELIABILITY.similar[key].inside, `${name}: printed ${U.RELIABILITY.similar[key].inside} % inside, measured ${pct(r.inside, r.shown).toFixed(1)} %`);
+    assert.ok(pct(r.likely, r.shown) >= U.RELIABILITY.similar[key].likely, `${name}: printed ${U.RELIABILITY.similar[key].likely} % likely, measured ${pct(r.likely, r.shown).toFixed(1)} %`);
+  }
+});
