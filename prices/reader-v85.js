@@ -22,14 +22,6 @@ const T = {
     basis: k => `Calculated by FoodScan from the numbers you confirmed, with the Nutri-Score 2023 table for “${k}”. Saved on this device only. It is not the manufacturer's or the database's grade.`,
     water: 'Plain water is A in Nutri-Score 2023.', photoAlt: 'Your photo of the label',
     q: {
-      eyebrow: 'Quick grade', one: g => `Likely ${g}`, two: (a, b) => `Likely ${a} or ${b}`,
-      sub: 'Estimated by FoodScan from the nutrition values on record. It is not the official Nutri-Score.',
-      lowNote: 'Less certain for drinks and unusual products: sweeteners and the table used can move the letter.',
-      how: 'How this was worked out', basis: 'Calculated with the official Nutri-Score 2023 points from the energy, sugars, saturated fat and salt on record.',
-      kind: { general: 'general foods', beverage: 'drinks', water: 'water', cheese: 'cheese', fat: 'fats, oils, nuts and seeds' },
-      tables: k => `Table used: ${k}.`, tableGuess: ' It was chosen from the product name and its figures, because the record has no confirmed category.',
-      tableCat: ' It follows the category on record.', unknown: l => `Not reported, so every possible value was tried: ${l}.`, fvl: 'fruit and vegetable share',
-      check: 'Check it against the label photo',
       none: 'FoodScan has no nutrition values on record for this product.', noneSome: l => `The record lacks: ${l}.`, loading: 'Estimating a grade from the values on record…',
     },
   },
@@ -50,14 +42,6 @@ const T = {
     basis: k => `Υπολογίστηκε από το FoodScan με τους αριθμούς που επιβεβαιώσατε, με τον πίνακα Nutri-Score 2023 για «${k}». Αποθηκεύεται μόνο σε αυτή τη συσκευή. Δεν είναι ο βαθμός του κατασκευαστή ούτε της βάσης δεδομένων.`,
     water: 'Το σκέτο νερό είναι A στο Nutri-Score 2023.', photoAlt: 'Η φωτογραφία σας της ετικέτας',
     q: {
-      eyebrow: 'Γρήγορος βαθμός', one: g => `Πιθανώς ${g}`, two: (a, b) => `Πιθανώς ${a} ή ${b}`,
-      sub: 'Εκτίμηση του FoodScan από τις διατροφικές τιμές που υπάρχουν καταγεγραμμένες. Δεν είναι το επίσημο Nutri-Score.',
-      lowNote: 'Λιγότερο βέβαιο για ροφήματα και ασυνήθιστα προϊόντα: τα γλυκαντικά και ο πίνακας που εφαρμόζεται μπορούν να αλλάξουν το γράμμα.',
-      how: 'Πώς προέκυψε', basis: 'Υπολογίστηκε με τους επίσημους βαθμούς του Nutri-Score 2023 από την ενέργεια, τα σάκχαρα, τα κορεσμένα λιπαρά και το αλάτι που υπάρχουν καταγεγραμμένα.',
-      kind: { general: 'γενικά τρόφιμα', beverage: 'ροφήματα', water: 'νερό', cheese: 'τυρί', fat: 'λιπαρά, λάδια, ξηροί καρποί και σπόροι' },
-      tables: k => `Πίνακας που εφαρμόστηκε: ${k}.`, tableGuess: ' Επιλέχθηκε από το όνομα και τα στοιχεία του προϊόντος, επειδή η εγγραφή δεν έχει επιβεβαιωμένη κατηγορία.',
-      tableCat: ' Ακολουθεί την κατηγορία της εγγραφής.', unknown: l => `Δεν αναγράφονται, οπότε δοκιμάστηκαν όλες οι πιθανές τιμές: ${l}.`, fvl: 'ποσοστό φρούτων και λαχανικών',
-      check: 'Έλεγχος με φωτογραφία της ετικέτας',
       none: 'Το FoodScan δεν έχει καταγεγραμμένες διατροφικές τιμές για αυτό το προϊόν.', noneSome: l => `Στην εγγραφή λείπουν: ${l}.`, loading: 'Εκτίμηση βαθμού από τις καταγεγραμμένες τιμές…',
     },
   },
@@ -68,14 +52,16 @@ const KEY = c => `fs85:label:${c}`;
 const route = () => (location.hash.startsWith('#/') ? location.hash.slice(1) : location.pathname);
 const productCode = () => route().match(/^\/p\/(\d{8}|\d{12,14})(?:[/?]|$)/)?.[1] || null;
 const store = {
-  get(c) { try { const v = JSON.parse(localStorage.getItem(KEY(c)) || 'null'); return v && v.v === 1 ? v : null; } catch { return null; } },
+  get(c) { try { const v = JSON.parse(localStorage.getItem(KEY(c)) || 'null'); return v && v.v === 2 && v.model ? v : null; } catch { return null; } },
   set(c, v) { try { localStorage.setItem(KEY(c), JSON.stringify(v)); return true; } catch { return false; } },
   del(c) { try { localStorage.removeItem(KEY(c)); } catch {} },
 };
 const FIELDS = ['kj', 'fat', 'sat', 'carbs', 'sugars', 'fibre', 'protein', 'salt'];
 const state = new Map(); // code -> { phase, file, url, values, flags, kind, fvl, sweet, serving, basis, confirmed, busy, status }
 let mods = null;
-const load = async () => mods || (mods = Promise.all([import('./label-reader-v85.mjs'), import('./label-ocr-v85.mjs')]).then(([reader, ocr]) => ({ reader, ocr })));
+const load = async () => mods || (mods = Promise.all([import('./label-reader-v85.mjs'), import('./label-ocr-v85.mjs'), import('./quick-grade-v85.mjs')]).then(([reader, ocr, quickG]) => ({ reader, ocr, quickG })));
+let G = null, gLoading = false; // the grade card builder, loaded when a grade is first shown
+function needGrade() { if (!G && !gLoading) { gLoading = true; import('./grade-ui-v85.mjs').then(m => { G = m; schedule(); }).catch(() => { gLoading = false; }); } return G; }
 const num = s => { const n = Number(String(s ?? '').trim().replace(',', '.')); return String(s ?? '').trim() === '' || !Number.isFinite(n) || n < 0 ? null : n; };
 const show = n => (n == null ? '' : String(n));
 
@@ -95,14 +81,8 @@ function resultHTML(r) {
   return `<div class="fr85__res fr85__res--range">${chip(r.range[0])}<i aria-hidden="true">–</i>${chip(r.range[1])}<div><b>${esc(tx('range', r.range[0], r.range[1]))}</b><span>${esc(tx('rangeWhy', list))}</span></div></div>`;
 }
 
-function savedHTML(code, saved) {
-  const r = saved.result, L = tx('kinds')[saved.kind] || '';
-  const head = r.kind === 'water' ? chip('A') : r.grade ? chip(r.grade) : `${chip(r.range[0])}<i aria-hidden="true">–</i>${chip(r.range[1])}`;
-  const title = r.kind === 'water' ? tx('grade', 'A') : r.grade ? tx('grade', r.grade) : tx('range', r.range[0], r.range[1]);
-  return `<div class="fr85__head"><span class="fr85__eyebrow">${esc(tx('eyebrow'))}</span></div>
-    <div class="fr85__res">${head}<div><b>${esc(title)} · ${esc(tx('fromLabel'))}</b><span>${esc(tx('basis', L))}</span></div></div>
-    <div class="fr85__row"><button type="button" class="fr85__btn" data-fr="edit">${esc(tx('edit'))}</button><button type="button" class="fr85__btn fr85__btn--ghost" data-fr="remove">${esc(tx('remove'))}</button></div>`;
-}
+function gradeView(model, o) { const g = needGrade(); return g ? g.gradeHTML(model, { lang: lang(), ...o }) : `<div class="fr85__wait" role="status"><i class="fr85__spin" aria-hidden="true"></i><span>${esc(tx('q').loading)}</span></div>`; }
+const savedHTML = (code, saved) => gradeView(saved.model, { kind: 'label', code, actions: true });
 function idleNote(st) {
   const q = quick.get(st.code)?.q, k = T[lang()]?.q || T.en.q;
   if (!q || q.ok || q.reason !== 'inputs-missing') return '';
@@ -132,16 +112,23 @@ function formHTML(code, st) {
     <div class="fr85__row"><button type="button" class="fr85__btn fr85__btn--main" data-fr="save" disabled>${esc(tx('save'))}</button><label class="fr85__btn"><span>${esc(tx('retake'))}</span><input type="file" accept="image/*" capture="environment" data-fr="file" hidden></label><button type="button" class="fr85__btn fr85__btn--ghost" data-fr="cancel">${esc(tx('cancel'))}</button></div>`;
 }
 
-function paint(sec, code) {
-  const st = state.get(code) || { phase: 'idle' }, saved = store.get(code);
-  if (st.phase === 'idle' && !saved && !quick.has(code)) loadQuick(code);
-  const qk = quick.get(code), useQuick = st.phase === 'idle' && !saved && qk?.state === 'ready' && qk.q.ok;
-  const view = st.phase === 'idle' && saved ? 'saved' : useQuick ? 'quick' : st.phase;
-  if (sec.dataset.view === view + ':' + lang() + ':' + (st.rev || 0) + ':' + (qk?.state || '')) return;
-  sec.dataset.view = view + ':' + lang() + ':' + (st.rev || 0) + ':' + (qk?.state || '');
-  sec.setAttribute('aria-label', tx('eyebrow')); sec.setAttribute('aria-busy', view === 'reading' ? 'true' : 'false');
+/** Which view the card shows: a saved exact grade, the quick estimate, or the reading/review/ask panels. */
+function viewOf(code) {
+  const st = state.get(code) || { phase: 'idle' };
+  if (st.phase !== 'idle') return { view: st.phase, st };
+  const saved = store.get(code);
+  if (saved) return { view: 'saved', st, saved };
+  if (!quick.has(code)) loadQuick(code);
+  const qk = quick.get(code);
+  return qk?.state === 'ready' && qk.q.ok ? { view: 'quick', st, qk } : { view: 'idle', st, qk };
+}
+const isGradeView = v => v === 'saved' || v === 'quick';
+function paint(sec, code, w) {
+  const { view, st, saved, qk } = w, key = [view, lang(), st.rev || 0, qk?.state || '', G ? 1 : 0].join(':');
+  if (sec.dataset.view === key) return;
+  sec.dataset.view = key; sec.setAttribute('aria-label', isGradeView(view) ? tx('eyebrow') : tx('eyebrow')); sec.setAttribute('aria-busy', view === 'reading' ? 'true' : 'false');
   if (view === 'saved') sec.innerHTML = savedHTML(code, saved);
-  else if (view === 'quick') sec.innerHTML = quickHTML(qk.q);
+  else if (view === 'quick') sec.innerHTML = quickHTML(code, qk);
   else if (view === 'reading') sec.innerHTML = `<div class="fr85__head"><span class="fr85__eyebrow">${esc(tx('eyebrow'))}</span></div><div class="fr85__wait" role="status"><i class="fr85__spin" aria-hidden="true"></i><span>${esc(st.status || tx('reading'))}</span></div>`;
   else if (view === 'review') { sec.innerHTML = formHTML(code, st); refreshLive(sec, code); }
   else sec.innerHTML = idleHTML({ ...st, code });
@@ -160,26 +147,17 @@ const quick = new Map(); // code -> { state: 'loading' | 'ready' | 'none', q }
 async function loadQuick(code) {
   quick.set(code, { state: 'loading' });
   try {
-    const [D, Q] = await Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs')]);
+    const [D, Q] = await Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs'), needGrade() || Promise.resolve()]);
     const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error('http ' + res.status);
     const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p);
     // the app's own verdict always wins: a grade, or a grade held back for review, is never replaced by an estimate
-    quick.set(code, { state: 'ready', q: a.grade || a.status === 'withheld' ? { ok: false, reason: 'app-has-grade' } : Q.quickGrade(p, { alcohol: body?.product?.nutriments?.alcohol_100g }) });
+    const modified = Number(body?.product?.last_modified_t) > 0 ? Number(body.product.last_modified_t) * 1000 : null;
+    quick.set(code, { state: 'ready', modified, snapshot: Boolean(body?.catalogueSnapshot), q: a.grade || a.status === 'withheld' ? { ok: false, reason: 'app-has-grade' } : Q.quickGrade(p, { alcohol: body?.product?.nutriments?.alcohol_100g }) });
   } catch { quick.set(code, { state: 'none', q: { ok: false, reason: 'unavailable' } }); }
   schedule();
 }
-function quickHTML(q) {
-  const k = T[lang()]?.q || T.en.q, one = q.letters.length === 1;
-  const chips = one ? chip(q.letters[0]) : `${chip(q.letters[0])}<i aria-hidden="true">–</i>${chip(q.letters[1])}`;
-  const title = one ? k.one(q.letters[0]) : k.two(q.letters[0], q.letters[1]);
-  const kinds = q.kinds.map(x => k.kind[x]).join(' / '), unknown = q.missing.map(x => (x === 'fruit, vegetables and legumes' ? k.fvl : x)).join(', ');
-  return `<div class="fr85__head"><span class="fr85__eyebrow">${esc(k.eyebrow)}</span></div>
-    <div class="fr85__res${one ? '' : ' fr85__res--range'}" role="group" aria-label="${esc(title)}">${chips}<div><b>${esc(title)}</b><span>${esc(k.sub)}</span></div></div>
-    ${q.confidence === 'low' ? `<p class="fr85__low">${esc(k.lowNote)}</p>` : ''}
-    <details class="fr85__how"><summary>${esc(k.how)}</summary><ul><li>${esc(k.basis)}</li><li>${esc(k.tables(kinds))}${esc(q.inferredKind ? k.tableGuess : k.tableCat)}</li>${unknown ? `<li>${esc(k.unknown(unknown))}</li>` : ''}</ul></details>
-    <div class="fr85__row"><label class="fr85__btn"><span>📷 ${esc(k.check)}</span><input type="file" accept="image/*" capture="environment" data-fr="file" hidden></label></div>`;
-}
+const quickHTML = (code, qk) => gradeView(qk.q, { kind: 'estimate', code, modified: qk.modified, snapshot: qk.snapshot, actions: true });
 
 async function startFromFile(code, file) {
   const st = state.get(code) || {}; if (st.url) URL.revokeObjectURL(st.url);
@@ -198,10 +176,14 @@ async function startFromFile(code, file) {
   bump(st); schedule();
 }
 function startManual(code) { const st = state.get(code) || {}; Object.assign(st, { phase: 'review', url: '', values: {}, flags: {}, kind: 'general', fvl: 'le40', sweet: false, basis: null, confirmed: false, status: '' }); bump(st); state.set(code, st); schedule(); }
-function save(code) {
+async function save(code) {
   const st = state.get(code); if (!st?.result?.ok || !st.confirmed) return;
-  const r = st.result;
-  store.set(code, { v: 1, at: Date.now(), kind: st.kind, fvl: st.fvl, sweet: Boolean(st.sweet), serving: num(st.serving), basis: st.basis, values: st.values, result: { grade: r.grade, score: r.score, range: r.range, exact: r.exact, kind: r.kind, unknown: r.unknown, detail: r.detail } });
+  const { reader, quickG } = await load();
+  let v = { ...st.values }; if (st.basis === 'serving') v = reader.perHundred(v, num(st.serving));
+  const band = reader.FVL_BANDS[st.fvl], fvlText = tx('fvls')[st.fvl];
+  const model = quickG.labelGrade(v, { kind: st.kind, fvl: st.fvl === 'unknown' ? null : band ?? 0, fvlText: st.fvl === 'unknown' ? null : fvlText, sweeteners: Boolean(st.sweet) });
+  if (!model.ok) return;
+  store.set(code, { v: 2, at: Date.now(), kind: st.kind, fvl: st.fvl, sweet: Boolean(st.sweet), serving: num(st.serving), basis: st.basis, values: st.values, model });
   if (st.url) URL.revokeObjectURL(st.url);
   state.delete(code); schedule();
 }
@@ -236,20 +218,26 @@ const hasNoGrade = hero => { const gc = hero.querySelector('.gradecard'); return
 function ensure() {
   timer = 0;
   const view = document.querySelector('#view'), code = productCode();
+  const clean = () => { document.querySelectorAll('.fr85').forEach(n => n.remove()); document.querySelectorAll('.gradecard[data-fg85]').forEach(n => n.removeAttribute('data-fg85')); };
   document.querySelectorAll('.fr85').forEach(n => { if (!code || n.dataset.code !== code || !n.isConnected) n.remove(); });
-  if (!view || !code) return;
+  if (!view || !code) return clean();
   const hero = view.querySelector('article.hero');
-  let anchor = null, mode = '';
-  if (hero) {
-    if (!hero.textContent.includes(code) || !hasNoGrade(hero)) { view.querySelectorAll('.fr85').forEach(n => n.remove()); return; }
-    anchor = hero.querySelector(':scope > .gradecard') || hero; mode = anchor === hero ? 'after' : 'afterCard'; // right under the "No grade" card, where the shopper is looking
-  } else { const page = view.querySelector('#instant-calc')?.closest('.page'); if (!page) return; anchor = page; mode = 'prepend'; }
+  let gc = null, page = null;
+  if (hero) { if (!hero.textContent.includes(code) || !hasNoGrade(hero)) return clean(); gc = hero.querySelector(':scope > .gradecard'); }
+  else { page = view.querySelector('#instant-calc')?.closest('.page'); if (!page) return; }
+  const w = viewOf(code), inCard = Boolean(gc) && isGradeView(w.view);
   let sec = view.querySelector(`.fr85[data-code="${code}"]`);
   if (!sec) { sec = document.createElement('section'); sec.className = 'fr85'; sec.dataset.code = code; }
-  const lead = mode === 'prepend' ? anchor.querySelector(':scope > .fp80-standalone') : null;
-  const placed = mode === 'prepend' ? (lead ? lead.nextElementSibling === sec : anchor.firstElementChild === sec) : anchor.nextElementSibling === sec;
-  if (!placed) { if (mode === 'prepend') { if (lead) lead.after(sec); else anchor.prepend(sec); } else anchor.after(sec); }
-  paint(sec, code);
+  sec.classList.toggle('fr85--grade', isGradeView(w.view));
+  // a grade replaces the "No grade" header of the card it sits in; any other panel goes right under that card
+  if (gc) {
+    if (inCard) { if (gc.firstElementChild !== sec) gc.prepend(sec); gc.setAttribute('data-fg85', '1'); }
+    else { gc.removeAttribute('data-fg85'); if (gc.nextElementSibling !== sec) gc.after(sec); }
+  } else {
+    const lead = page.querySelector(':scope > .fp80-standalone');
+    if (lead ? lead.nextElementSibling !== sec : page.firstElementChild !== sec) { if (lead) lead.after(sec); else page.prepend(sec); }
+  }
+  paint(sec, code, w);
 }
 let timer = 0;
 function schedule() { if (!timer) timer = setTimeout(ensure, 70); }
