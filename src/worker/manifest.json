@@ -1,0 +1,122 @@
+{
+ "output": "_worker.js",
+ "note": "Concatenated in this order they reproduce the deployed _worker.js byte for byte (node build.mjs --check).",
+ "files": [
+  {
+   "file": "src/worker/00-header.js",
+   "lines": 3,
+   "bytes": 137
+  },
+  {
+   "file": "src/lib/i18n.js",
+   "lines": 16,
+   "bytes": 815
+  },
+  {
+   "file": "src/domain/model.js",
+   "lines": 202,
+   "bytes": 13551
+  },
+  {
+   "file": "src/domain/estimate.js",
+   "lines": 88,
+   "bytes": 8296
+  },
+  {
+   "file": "src/domain/nutriscore2023.js",
+   "lines": 214,
+   "bytes": 19474
+  },
+  {
+   "file": "src/domain/grade.js",
+   "lines": 215,
+   "bytes": 20607
+  },
+  {
+   "file": "src/domain/allergens.js",
+   "lines": 316,
+   "bytes": 11415
+  },
+  {
+   "file": "src/domain/categories.js",
+   "lines": 185,
+   "bytes": 12496
+  },
+  {
+   "file": "src/data/countries.js",
+   "lines": 254,
+   "bytes": 5053
+  },
+  {
+   "file": "src/domain/profile.js",
+   "lines": 8,
+   "bytes": 485
+  },
+  {
+   "file": "src/domain/facts.js",
+   "lines": 6,
+   "bytes": 238
+  },
+  {
+   "file": "src/domain/alternatives.js",
+   "lines": 24,
+   "bytes": 1367
+  },
+  {
+   "file": "src/domain/versus.js",
+   "lines": 36,
+   "bytes": 2141
+  },
+  {
+   "file": "src/domain/seo.js",
+   "lines": 28,
+   "bytes": 1297
+  },
+  {
+   "file": "src/data/indexable.js",
+   "lines": 108,
+   "bytes": 2296
+  },
+  {
+   "file": "src/worker/core.js",
+   "lines": 665,
+   "bytes": 35954
+  },
+  {
+   "file": "src/worker/prices.js",
+   "lines": 1202,
+   "bytes": 109226
+  },
+  {
+   "file": "src/worker/webprices.js",
+   "lines": 261,
+   "bytes": 22451
+  },
+  {
+   "file": "src/worker/routes.js",
+   "lines": 918,
+   "bytes": 61433
+  },
+  {
+   "file": "src/worker/catalog-extension.js",
+   "lines": 395,
+   "bytes": 40711
+  },
+  {
+   "file": "src/worker/og-render.js",
+   "lines": 129,
+   "bytes": 9099
+  },
+  {
+   "file": "src/worker/growth-extension.js",
+   "lines": 117,
+   "bytes": 12990
+  },
+  {
+   "file": "src/worker/tail.js",
+   "lines": 104,
+   "bytes": 9731
+  }
+ ],
+ "sha256": "3bc84575213541042f5294e222d83530baa85812c8a595022dfad367a72fa3f0"
+}

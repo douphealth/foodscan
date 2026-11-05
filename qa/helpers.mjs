@@ -41,17 +41,19 @@ export function op({ code, price, currency = 'EUR', date = daysAgo(1), cc = 'FR'
     location: { id: id * 10, type, osm_brand: brand, osm_name: name || `${brand} ${id}`, osm_address_country_code: cc, osm_address_city: city, osm_lat: 45.7 + (id % 50) / 100, osm_lon: 4.8 },
     product: { product_name: 'Test product', quantity: '500 g' } };
 }
-/** A fake Open Prices that filters by `location__osm_address_country_code` like the real API, pages by 100, and can reject the filter. */
+/** A fake Open Prices that behaves like the real API's filter set (open_prices/api/prices/filters.py): product_code, currency, date__gte, lat+lon+radius_km, order_by=-date,
+ *  pages by 100, IGNORES parameters it does not know (django-filter does), and can reject the filters with a 4xx. */
 export function fakeOpenPrices(items, { rejectFilter = false, status = 200 } = {}) {
   const calls = [];
   const handler = (u) => {
     const url = new URL(u); calls.push(url.search);
     if (status !== 200) return json({ detail: 'x' }, status);
-    const cc = url.searchParams.get('location__osm_address_country_code');
-    if (cc && rejectFilter) return json({ detail: 'unknown filter' }, 422);
+    const cur = url.searchParams.get('currency'), since = url.searchParams.get('date__gte');
+    if ((cur || since) && rejectFilter) return json({ detail: 'filter rejected' }, 422);
     const code = url.searchParams.get('product_code');
     let list = items.filter(i => String(i.product_code).replace(/^0+/, '') === String(code).replace(/^0+/, ''));
-    if (cc) list = list.filter(i => i.location?.osm_address_country_code?.toUpperCase() === cc.toUpperCase());
+    if (cur) list = list.filter(i => i.currency === cur);
+    if (since) list = list.filter(i => i.date >= since);
     list = list.slice().sort((a, b) => b.date.localeCompare(a.date));
     const page = Number(url.searchParams.get('page') || 1), size = Number(url.searchParams.get('size') || 10);
     return json({ items: list.slice((page - 1) * size, page * size), total: list.length, page, size, pages: Math.ceil(list.length / size) });
@@ -61,11 +63,21 @@ export function fakeOpenPrices(items, { rejectFilter = false, status = 200 } = {
 
 let ipN = 1;
 /** GET /api/prices/compare as a visitor in `cf.country`, optionally with ?market=. */
-export async function compare(code, { items = [], market, country, nearby, opts = {}, env = makeEnv(), fresh = true } = {}) {
+export async function compare(code, { items = [], market, country, nearby, opts = {}, env = makeEnv(), fresh = true, extra = [], deep = false } = {}) {
   const worker = await loadWorker();
   const fake = fakeOpenPrices(items, opts);
-  const qs = new URLSearchParams({ barcode: code, ...(market ? { market } : {}), ...(fresh ? { fresh: '1' } : {}), ...(nearby || {}) });
+  const qs = new URLSearchParams({ barcode: code, ...(market ? { market } : {}), ...(fresh ? { fresh: '1' } : {}), ...(deep ? { deep: '1' } : {}), ...(nearby || {}) });
   const request = new Request(`https://food-scan.test/api/prices/compare?${qs}`, { headers: { 'CF-Connecting-IP': '203.0.113.' + (ipN++ % 250 + 1) } });
   if (country) Object.defineProperty(request, 'cf', { value: { country } });
-  return withNetwork(fake.handlers, async () => { const res = await worker.fetch(request, env, { waitUntil() {} }); return { res, body: await res.json(), calls: fake.calls }; });
+  return withNetwork([...fake.handlers, ...extra], async () => { const res = await worker.fetch(request, env, { waitUntil() {} }); return { res, body: await res.json(), calls: fake.calls }; });
+}
+
+/** A D1-compatible database over real SQLite (node:sqlite): prepare(sql).bind(...).first()/run()/all(), like Cloudflare's binding. */
+import { DatabaseSync } from 'node:sqlite';
+export function fakeD1() {
+  const db = new DatabaseSync(':memory:');
+  return { raw: db, exec: sql => db.exec(sql), prepare(sql) { const st = db.prepare(sql); return { bind: (...p) => ({
+    first: async () => { const r = st.get(...p); return r === undefined ? null : { ...r }; },
+    run: async () => { st.run(...p); return { success: true }; },
+    all: async () => ({ results: st.all(...p).map(r => ({ ...r })) }) }) }; } };
 }

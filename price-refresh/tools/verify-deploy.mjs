@@ -3,7 +3,7 @@
  *    node tools/verify-deploy.mjs https://food-scan.gearuptofit.com [expectedVersion]
  *  Exit code 0 only when the site serves the expected release AND its price API answers with sources, dates and an estimate contract. */
 const base = (process.argv[2] || 'https://food-scan.gearuptofit.com').replace(/\/+$/, '');
-const want = process.argv[3] || '83.2.0';
+const want = process.argv[3] || '85.0.0';
 const UA = { 'User-Agent': 'FoodScan-verify/80' };
 let bad = 0; const ok = (c, msg) => { console.log((c ? '  ok   ' : '  FAIL ') + msg); if (!c) bad++; };
 const get = async (p, init) => { try { const r = await fetch(base + p + (p.includes('?') ? '&' : '?') + 'r=' + Math.random(), { headers: UA, ...init, signal: AbortSignal.timeout(30000) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return { status: r.status, text: t, json: j }; } catch (e) { return { status: 0, text: String(e), json: null }; } };
@@ -24,4 +24,9 @@ for (const [market, currency] of [['FR', 'EUR'], ['US', 'USD'], ['GB', 'GBP'], [
   if (j && Array.isArray(j.offers)) ok(j.offers.every(o => o.countryCode === market && o.currency && o.source && o.date && o.price > 0 && (!o.rankingEligible || o.currency === currency)), `market ${market}: ${j.offers.length} offers, each in its own country and currency, ranked only in ${currency}`);
   if (j) ok(!Object.keys(j.providers || {}).some(k => ['observatory', 'ekatanalotis', 'bazaar', 'lidl'].includes(k)), `market ${market}: no Greek source is consulted`);
 }
+// 84: the web price search reports whether it is switched on; when it is, no web price may rank without a link, a date and a shop of the shopper's country.
+{ const r = await get('/api/prices/compare?barcode=5449000214911&market=FR', { method: 'POST' }); const w = r.json?.providers?.webSearch;
+  ok(Boolean(w) && ['disabled', 'ok_with_data', 'ok_empty', 'unavailable'].includes(w.status), `web price search: ${w ? w.status + (w.reason ? ' (' + w.reason + ')' : '') : 'missing from the answer'}`);
+  const web = (r.json?.offers || []).filter(o => String(o.id).startsWith('ws:'));
+  ok(web.every(o => o.sourceURL?.startsWith('https://') && o.date && o.countryCode === 'FR' && o.currency === 'EUR'), `web price search: ${web.length} web offers, each with link, date, country and currency`); }
 console.log(bad ? `\n${bad} check(s) failed: this deployment does NOT serve the price system.` : '\nAll checks passed.'); process.exit(bad ? 1 : 0);
