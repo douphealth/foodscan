@@ -16,7 +16,7 @@ var POINTS = Object.freeze({
   fvl: (pct) => pct > 80 ? 5 : pct > 60 ? 2 : pct > 40 ? 1 : 0
 });
 var gradeOfScore = (s) => s <= 0 ? "A" : s <= 2 ? "B" : s <= 10 ? "C" : s <= 18 ? "D" : "E";
-var proteinCounts = (negative, fvlPoints) => negative < 11 || fvlPoints === 5;
+var proteinCounts = (negative, fvlPoints) => negative < 11; // 2023 method: no fruit/vegetable exception (2017 rule)
 function scoreFrom({ kj, sugars, saturatedFat, salt, fibre = 0, protein = 0, fvl = 0 }) {
   const negative = { energy: POINTS.energy(kj), sugars: POINTS.sugars(sugars), saturatedFat: POINTS.saturatedFat(saturatedFat), salt: POINTS.salt(salt) };
   negative.total = negative.energy + negative.sugars + negative.saturatedFat + negative.salt;

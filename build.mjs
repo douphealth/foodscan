@@ -3,6 +3,7 @@
  *
  *   node build.mjs            write _worker.js
  *   node build.mjs --check    build in memory and fail (exit 1) if it differs from the _worker.js on disk
+ *   node build.mjs --update-manifest   refresh sizes, line counts and the checksum in src/worker/manifest.json after editing a module (then run node build.mjs)
  *   node build.mjs --out FILE write somewhere else
  *
  * What the modules are: the worker was produced by a bundler that keeps one comment per source module ("// src/domain/grade.js", "// worker/_worker.js", ...).
@@ -24,6 +25,13 @@ const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = n => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : null; };
+  if (process.argv.includes('--update-manifest')) {
+    const mf = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/worker/manifest.json'), 'utf8'));
+    for (const f of mf.files) { const buf = fs.readFileSync(path.join(ROOT, f.file)); f.bytes = buf.length; f.lines = buf.toString('utf8').split('\n').length - (buf.length && buf[buf.length - 1] === 10 ? 1 : 0); }
+    mf.sha256 = sha(Buffer.concat(mf.files.map(f => fs.readFileSync(path.join(ROOT, f.file)))));
+    fs.writeFileSync(path.join(ROOT, 'src/worker/manifest.json'), JSON.stringify(mf, null, 1) + '\n');
+    console.log(`manifest updated: ${mf.files.length} modules, sha256 ${mf.sha256.slice(0, 16)}...`); process.exit(0);
+  }
   const { manifest, output } = build();
   const target = path.resolve(ROOT, arg('--out') || manifest.output);
   if (process.argv.includes('--check')) {

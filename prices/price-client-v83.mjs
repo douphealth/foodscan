@@ -35,16 +35,16 @@ function recall(code) {
   let e = memory.get(code);
   if (!e) { try { e = JSON.parse(store?.getItem(KEY + code) || 'null'); } catch { e = null; } }
   if (!e || Date.now() - e.at > TTL) return null;
-  const r = e.raw?.kind === 'open' ? fromOpenPrices(e.raw.items, code.split(/[~@#]/)[0], Date.now(), e.raw.quantity, e.raw.market || '', marketCurrency(e.raw.market || '')) : checkPayload(e.raw);
+  const r = e.raw?.kind === 'open' ? fromOpenPrices(e.raw.items, code.split(/[~@#!]/)[0], Date.now(), e.raw.quantity, e.raw.market || '', marketCurrency(e.raw.market || '')) : checkPayload(e.raw);
   return r ? {...r, raw:e.raw, cached:true} : null;
 }
 const timeout = (ms, outer) => { const c = new AbortController(); const id = setTimeout(() => c.abort(), ms); outer?.addEventListener?.('abort', () => c.abort()); return {signal:c.signal, done:() => clearTimeout(id)}; };
 
-async function viaService(code, signal, near, fresh, market) {
+async function viaService(code, signal, near, fresh, market, deep = false, cheap = false) {
   const pk = market && market !== 'GR' ? null : confirmedFor(code);
-  const q = (market ? `&market=${market}` : '') + (near ? `&lat=${near.lat}&lon=${near.lon}&radius_km=25` : '') + (fresh ? '&fresh=1' : '') + (pk ? `&pk=${pk.id}` : '');
+  const q = (market ? `&market=${market}` : '') + (near ? `&lat=${near.lat}&lon=${near.lon}&radius_km=25` : '') + (fresh ? '&fresh=1' : '') + (pk ? `&pk=${pk.id}` : '') + (deep ? '&deep=1' : '') + (cheap ? '&web=0' : '');
   for (const path of PATHS) {
-    const t = timeout(7000, signal);
+    const t = timeout(deep ? 60000 : 12000, signal);
     try {
       const res = await fetch(`${path}?barcode=${encodeURIComponent(code)}${q}`, {headers:{Accept:'application/json'}, credentials:'same-origin', signal:t.signal});
       if (res.status === 404) continue;
@@ -58,11 +58,12 @@ async function viaService(code, signal, near, fresh, market) {
   return null;
 }
 async function viaOpenPrices(code, signal, quantity, market) {
-  const t = timeout(7000, signal);
+  const t = timeout(12000, signal);
   try {
-    // the shopper's country first (a popular product has thousands of observations from everywhere), the plain newest 100 if that is not understood
+    // the shopper's currency and the last 90 days first (the API's real filters: it has no country filter), the plain newest 100 if that is not understood
     const base = `https://prices.openfoodfacts.org/api/v1/prices?product_code=${encodeURIComponent(code)}&size=100&order_by=-date`;
-    let res = market ? await fetch(`${base}&location__osm_address_country_code=${market}`, {headers:{Accept:'application/json'}, signal:t.signal}).catch(() => null) : null;
+    const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10), cur = marketCurrency(market);
+    let res = market && cur ? await fetch(`${base}&date__gte=${since}&currency=${cur}`, {headers:{Accept:'application/json'}, signal:t.signal}).catch(() => null) : null;
     if (!res || !res.ok) res = await fetch(base, {headers:{Accept:'application/json'}, signal:t.signal});
     if (!res.ok) return null;
     const data = await res.json();
@@ -72,25 +73,35 @@ async function viaOpenPrices(code, signal, quantity, market) {
   } catch { return null; } finally { t.done(); }
 }
 /** @returns {Promise<object>} a checked result; status is observations_available, no_data, incomplete or temporarily_unavailable. */
-export function getPrices(code, {signal, quantity = '', fresh = false, near = null, market = detectMarket().code} = {}) {
+const deepAsked = new Set();
+export function getPrices(code, {signal, quantity = '', fresh = false, near = null, market = detectMarket().code, cheap = false} = {}) {
   code = String(code || '').trim();
   if (!validBarcode(code)) return Promise.resolve({barcode:code, status:'invalid', offers:[], elsewhere:[], best:null, latest:null});
   const pk = market && market !== 'GR' ? null : confirmedFor(code);
-  const id = code + (market ? `~${market}` : '') + (near ? `@${near.lat},${near.lon}` : '') + (pk ? `#${pk.id}` : '');
+  const id = code + (market ? `~${market}` : '') + (near ? `@${near.lat},${near.lon}` : '') + (pk ? `#${pk.id}` : '') + (cheap ? '!c' : '');
   if (!fresh) { const hit = recall(id); if (hit) return Promise.resolve(hit); }
   if (!fresh && inflight.has(id)) return inflight.get(id);
   const job = (async () => {
-    let r = await viaService(code, signal, near, fresh, market);
+    let r = await viaService(code, signal, near, fresh, market, false, cheap);
     // Nearby answers need the server's distance filter: no direct fallback for them.
     if (!near && (!r || r.status === 'temporarily_unavailable')) r = (await viaOpenPrices(code, signal, quantity, market)) || r;
     if (!r) r = {barcode:code, status:'temporarily_unavailable', offers:[], elsewhere:[], best:null, latest:null, raw:null};
-    if (r.raw) remember(id, r);
-    return r;
+    // 84: the shops' web search was still running when this answer left: keep the answer it gave, and ask once more, waiting for the search to finish. The
+    // finished answer is remembered and announced, so the price card, comparisons and the Prices page fill in by themselves.
+    const webPending = r?.raw?.providers?.webSearch?.reason === 'pending';
+    if (r.raw && !webPending) remember(id, r);
+    if (webPending && !near && !deepAsked.has(id)) {
+      deepAsked.add(id);
+      viaService(code, undefined, null, false, market, true).then(d => {
+        if (d?.raw && d.raw.providers?.webSearch?.reason !== 'pending') { remember(id, d); try { window.dispatchEvent(new CustomEvent('foodscan:prices-updated', {detail:{code, market, result:d}})); } catch {} }
+      }).catch(() => {}).finally(() => deepAsked.delete(id));
+    }
+    return {...r, webPending};
   })().finally(() => inflight.delete(id));
   inflight.set(id, job);
   return job;
 }
-export const peekPrices = (code, market = detectMarket().code) => { code = String(code || ''); const pk = market && market !== 'GR' ? null : confirmedFor(code); return recall(code + (market ? `~${market}` : '') + (pk ? `#${pk.id}` : '')); };
+export const peekPrices = (code, market = detectMarket().code, cheap = false) => { code = String(code || ''); const pk = market && market !== 'GR' ? null : confirmedFor(code); return recall(code + (market ? `~${market}` : '') + (pk ? `#${pk.id}` : '') + (cheap ? '!c' : '')); };
 /** Forget the device copy of one barcode (used before a forced refresh). */
-export const forgetPrices = code => { code = String(code || ''); for (const k of [...memory.keys()]) if (k === code || /^[0-9]+/.test(k) && k.replace(/[~@#].*$/, '') === code) memory.delete(k);
-  try { for (let i = (store?.length || 0) - 1; i >= 0; i--) { const k = store.key(i); if (k && k.startsWith(KEY) && k.slice(KEY.length).replace(/[~@#].*$/, '') === code) store.removeItem(k); } } catch {} };
+export const forgetPrices = code => { code = String(code || ''); for (const k of [...memory.keys()]) if (k === code || /^[0-9]+/.test(k) && k.replace(/[~@#!].*$/, '') === code) memory.delete(k);
+  try { for (let i = (store?.length || 0) - 1; i >= 0; i--) { const k = store.key(i); if (k && k.startsWith(KEY) && k.slice(KEY.length).replace(/[~@#!].*$/, '') === code) store.removeItem(k); } } catch {} };

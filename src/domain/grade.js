@@ -129,8 +129,13 @@ function assessGrade(p, { estimate = true } = {}) {
   if (fields < 4) caveats.push(t("Few label values are reported for this product."));
   const anatomy = explainGrade(p);
   if (!anatomy && !p.partial) caveats.push(t("The source did not publish the point-by-point calculation for this record."));
-  const confidence = p.partial ? "low" : fields >= 6 && anatomy ? "high" : fields >= 3 ? "medium" : "low";
-  return { status: p.partial ? "preview" : "reported", grade: p.nutriScore, score: Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null, confidence, caveats, reasons: [], anatomy, method: p.nutriScoreMethod || (anatomy ? "2023" : null), quality };
+  // 84.0 audit: a grade whose core label values (energy, sugars, saturated fat, salt) are absent from the record cannot be checked against the label;
+  // say exactly which are missing and never present it with more than low confidence.
+  const coreN = p?.nutrition || {}, coreKnown = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+  const coreMissing = [!coreKnown(coreN.kj) && !coreKnown(coreN.kcal) && "energy", !coreKnown(coreN.sugars) && "sugars", !coreKnown(coreN.saturatedFat) && "saturated fat", !coreKnown(coreN.salt) && "salt"].filter(Boolean);
+  if (coreMissing.length && !p.partial) caveats.unshift(t("Unverified grade: the record is missing {list}, so this grade cannot be checked against the label. Check the package.", { list: coreMissing.map((x) => t(x)).join(", ") }));
+  const confidence = p.partial || coreMissing.length ? "low" : fields >= 6 && anatomy ? "high" : fields >= 3 ? "medium" : "low";
+  return { status: p.partial ? "preview" : "reported", missingInputs: coreMissing.length ? coreMissing : void 0, unverified: coreMissing.length > 0 || void 0, grade: p.nutriScore, score: Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null, confidence, caveats, reasons: [], anatomy, method: p.nutriScoreMethod || (anatomy ? "2023" : null), quality };
 }
 const snapshotExpired = p => Number.isFinite(p?.catalogueSnapshot?.exportedAt) && Date.now() - p.catalogueSnapshot.exportedAt > 90 * 864e5;
 function reproducedByPoints(p, quality, proof) {
@@ -185,7 +190,7 @@ function explainGrade(p) {
   const maxOf = (list2) => list2.reduce((a, x) => a + x.max, 0);
   const score = Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null;
   const counted = d.countProteins;
-  const note = !counted && !d.water ? /greater_than_or_equal_to_11|negative_points/.test(d.proteinReason) && !d.cheese ? t("Protein is not counted here: the Nutri-Score rules leave it out when a product has 11 or more unfavourable points and little fruit or vegetable.") : t("Protein is not counted for this product under the Nutri-Score rules.") : "";
+  const note = !counted && !d.water ? /greater_than_or_equal_to_11|negative_points/.test(d.proteinReason) && !d.cheese ? (/greater_than_or_equal_to_7/.test(d.proteinReason) ? t("Protein is not counted here: for fats, oils, nuts and seeds the Nutri-Score rules leave it out when a product has 7 or more unfavourable points.") : t("Protein is not counted here: the Nutri-Score rules leave it out when a product has 11 or more unfavourable points.")) : t("Protein is not counted for this product under the Nutri-Score rules.") : "";
   const why = [], what = (x) => x.amount ? t("{label} at {amount}", { label: x.label.toLowerCase(), amount: x.amount }) : x.label.toLowerCase();
   const parts = (x, side) => ({ label: x.label, amount: x.amount, points: x.points, max: x.max, side });
   for (const x of [...negative].filter((x2) => x2.points > 0).sort((a, b) => b.share - a.share || b.points - a.points).slice(0, 2))

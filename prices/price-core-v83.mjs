@@ -78,10 +78,10 @@ export function checkOffer(o, pack, now = Date.now()) {
   if (!o || typeof o !== 'object') return null;
   if (o.estimated || o.synthetic || o.benchmark || o.modelled) return null;
   const id = text(o.id, 200);
-  if (!/^(?:op|lf|pk|ek|bz|li|note):/.test(id)) return null;
-  const kind = o.sourceKind || (id.startsWith('op:') ? 'community' : id.startsWith('lf:') ? 'licensed' : /^(?:pk|ek):/.test(id) ? 'official' : /^(?:bz|li):/.test(id) ? 'retailer' : 'personal');
+  if (!/^(?:op|lf|pk|ek|bz|li|ws|note):/.test(id)) return null;
+  const kind = o.sourceKind || (id.startsWith('op:') ? 'community' : id.startsWith('lf:') ? 'licensed' : /^(?:pk|ek):/.test(id) ? 'official' : /^(?:bz|li|ws):/.test(id) ? 'retailer' : 'personal');
   if ((kind === 'official') !== /^(?:pk|ek):/.test(id)) return null; // an official label only on an official-source id
-  if ((kind === 'retailer') !== /^(?:bz|li):/.test(id)) return null;   // a web-shop label only on a web-shop id (73; li: = lidl.gr, 74)
+  if ((kind === 'retailer') !== /^(?:bz|li|ws):/.test(id)) return null;   // a web-shop label only on a web-shop id (73; li: = lidl.gr, 74)
   if (!KINDS.has(kind)) return null;
   const price = num(o.price);
   const currency = /^[A-Z]{3}$/.test(String(o.currency || '')) ? String(o.currency) : (o.currency ? null : CURRENCY); // 83: any ISO 4217 currency, kept as recorded

@@ -14,6 +14,7 @@
 | `src/data/countries.js`, `src/data/indexable.js` | country list and the indexable catalogue sample |
 | `src/worker/core.js` | request handling: limits, Open Food Facts lookup, search, caching, health |
 | `src/worker/prices.js` | the price service (83: market and currency aware; Open Prices; Greek official and web-shop sources; estimates removed since 81) |
+| `src/worker/webprices.js` | 84: the web price search (Firecrawl + Claude, verified by code, cached in D1, spending cap) |
 | `src/worker/routes.js` | the `fetch` router, product and compare pages, site documents, the product index |
 | `src/worker/catalog-extension.js`, `og-render.js`, `growth-extension.js`, `tail.js` | public catalogue pages, social images, battles/challenges, cloud backup, static catalogue reads |
 
@@ -22,8 +23,11 @@
 ## Browser app
 - `index.html`, `prices/`, `market-hint-v71.js`, `growth-ui.*`, `ui-v80.css`: readable, hand-edited source (`prices/*-v83.*` is the 83 price client and pages).
 - `assets/domain-v8100.mjs`, `market-catalogue-v8100.mjs`, `recommendations-core-v8100.mjs`, `match-policy-v7540.mjs`, `comparison-guards-v7540.mjs`, `nutrition-choices-v7540.mjs`, `profile-evidence-v7540.mjs`, `balance-view-v7540.mjs`: readable modules used by the app.
-- `assets/*-v8300.js`: the app's views and lookup, **minified/generated** (no source in this repository). `assets/*-v8200.js` is the previous generation and stays for tabs left open.
+- `assets/*-v8400.js` (and `domain-v8400.mjs`, `market-catalogue-v8400.mjs`, `recommendations-core-v8400.mjs`): the app's views and lookup, **minified/generated** (no source in this repository) plus the browser grade engine. Older generations (`-v8300`, `-v8200`) stay for tabs left open. `node tools/new-generation.mjs v8400 v8500 ...` makes the next one.
 - Changing a file under `assets/` that the browser caches for a year means copying it under a new generation name and rewriting the imports (see `RELEASE-83.1.0.md`).
+
+## Databases
+`d1-schema/*.sql` define the three optional D1 databases; `SETUP.md` is the click-by-click guide. `qa/d1-schema.test.mjs` runs them on real SQLite with the worker's own statements.
 
 ## Data and tools
 - `assets/gr-prices-v72/`, `gr-obs-v82/`, `gr-est-v80/`, `greece-r20261030/`: price seeds, observatory products, saved catalogue.

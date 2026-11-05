@@ -44,9 +44,11 @@ const T = {
     none:'Δεν βρέθηκε επαληθευμένη τιμή', noneSub:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό το barcode. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται.', elseLine:(c, p, s, d) => `Καταγραφή σε ${c}: ${p} · ${s} · ${d}`},
 };
 Object.assign(T.en, {inCountry:(c, cur) => `Prices in ${c}${cur ? ' · ' + cur : ''}`, change:'Change', pickLabel:'Country for prices', pickAuto:'Automatic (where you are)', pickClose:'Done',
+  webWait:'Checking shops online…', webWaitSub:'FoodScan is reading local shops\' product pages for this barcode. This can take up to a minute; the price appears here by itself.',
   typical:'Typical price', typBasis:(n, m) => `${n} prices${m > 1 ? ` at ${m} chains` : ''} · last 90 days`, noneIn:c => `No price for this barcode is on record in ${c} yet. FoodScan does not guess prices. That does not mean it is not sold.`,
   elseIn:c => `Only seen outside ${c}`, outsideTag:'other country', online:'Online price', liveShop:'Check live prices online', liveShopNote:'Opens a Google search for this barcode. Those prices are the shops\', not FoodScan\'s.'});
 Object.assign(T.el, {inCountry:(c, cur) => `Τιμές σε ${c}${cur ? ' · ' + cur : ''}`, change:'Αλλαγή', pickLabel:'Χώρα για τις τιμές', pickAuto:'Αυτόματα (όπου βρίσκεστε)', pickClose:'Τέλος',
+  webWait:'Έλεγχος καταστημάτων online…', webWaitSub:'Το FoodScan διαβάζει σελίδες προϊόντων τοπικών καταστημάτων για αυτό το barcode. Μπορεί να πάρει έως ένα λεπτό· η τιμή εμφανίζεται μόνη της.',
   typical:'Τυπική τιμή', typBasis:(n, m) => `${n} τιμές${m > 1 ? ` σε ${m} αλυσίδες` : ''} · τελευταίες 90 ημέρες`, noneIn:c => `Δεν υπάρχει ακόμη καταγεγραμμένη τιμή για αυτό το barcode σε ${c}. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται.`,
   elseIn:c => `Καταγραφή μόνο εκτός ${c}`, outsideTag:'άλλη χώρα', online:'Τιμή e-shop', liveShop:'Δείτε ζωντανές τιμές online', liveShopNote:'Ανοίγει αναζήτηση Google για αυτό το barcode. Οι τιμές είναι των καταστημάτων, όχι του FoodScan.'});
 const lang = () => pageLang();
@@ -61,21 +63,26 @@ const route = () => (location.hash.startsWith('#/') ? location.hash.slice(1) : l
 const productCode = () => route().match(/^\/p\/(\d{8}|\d{12,14})(?:[/?]|$)/)?.[1] || null;
 const compareCodes = () => { const m = route().match(/^\/compare\/(\d{8,14})\/(\d{8,14})/); return m ? [m[1], m[2]] : null; };
 // 78: every result carries the time it was read and expires with the device cache (10 min); v77 kept them for the whole session.
-const results = new Map(), asked = new Set();
+const results = new Map(), asked = new Set(), cheapResults = new Map(), cheapAsked = new Set();
 const keep = (code, r) => { results.set(code, {...r, readAt:Date.now()}); };
-const want = (code, {fresh:force = false} = {}) => { if (!code) return null;
-  const have = results.get(code);
+/** 84: `cheap` = the answer for a small chip (a better choice listed under another product): FoodScan's free sources only, never the paid web search; the product
+ *  the shopper opens, and a comparison, always ask in full. */
+const want = (code, {fresh:force = false, cheap = false} = {}) => { if (!code) return null;
+  const R = cheap ? cheapResults : results, A = cheap ? cheapAsked : asked, put = (c, r) => R.set(c, {...r, readAt:Date.now()});
+  const have = R.get(code);
   // A partial or failed answer is re-asked after one minute (not on every repaint); a complete one after 10 minutes.
   const life = have && (have.status === 'temporarily_unavailable' || have.status === 'incomplete') ? 60000 : TTL;
   if (have && !force && Date.now() - have.readAt < life) return have;
-  if (have && !force && asked.has(code)) return have; // a request is already on its way
-  if (!force) { const hit = peekPrices(code); if (hit) { keep(code, hit); return results.get(code); } }
-  if (force) { forgetPrices(code); results.delete(code); }
-  asked.add(code);
+  if (have && !force && A.has(code)) return have; // a request is already on its way
+  if (!force) { const hit = peekPrices(code, undefined, cheap); if (hit) { put(code, hit); return R.get(code); } }
+  if (force) { forgetPrices(code); R.delete(code); }
+  A.add(code);
   const asking = detectMarket().code; // 83: an answer for a market the shopper has since left is dropped
-  getPrices(code, {fresh:force}).then(r => { if (asking === detectMarket().code) keep(code, r); asked.delete(code); schedule(); }).catch(() => asked.delete(code)); return force ? null : have || null; };
+  getPrices(code, {fresh:force, cheap}).then(r => { if (asking === detectMarket().code) put(code, r); A.delete(code); schedule(); }).catch(() => A.delete(code)); return force ? null : have || null; };
+// 84: a finished web price search replaces the earlier answer at once.
+window.addEventListener('foodscan:prices-updated', e => { const c = e.detail?.code; if (c && e.detail.result) { keep(c, e.detail.result); schedule(); } });
 const fresh = o => tx(o.freshness === 'current' ? 'fresh' : o.freshness);
-const proof = o => o.id?.startsWith('pk:') ? tx('observatory') + (o.match === 'auto-exact' ? ' · ' + tx('auto') : o.match === 'user-confirmed' ? ' · ' + tx('userConf') : '') : /^(?:bz|li):/.test(o.id || '') ? tx('web') : o.id?.startsWith('ek:') ? tx('basket') : o.sourceKind === 'licensed' ? tx('feed') : o.proofType === 'RECEIPT' || o.proofType === 'PRICE_TAG' ? tx('shopper') + ' · ' + tx(o.proofType === 'RECEIPT' ? 'receipt' : 'photo') : '';
+const proof = o => o.id?.startsWith('pk:') ? tx('observatory') + (o.match === 'auto-exact' ? ' · ' + tx('auto') : o.match === 'user-confirmed' ? ' · ' + tx('userConf') : '') : /^(?:bz|li|ws):/.test(o.id || '') ? tx('web') : o.id?.startsWith('ek:') ? tx('basket') : o.sourceKind === 'licensed' ? tx('feed') : o.proofType === 'RECEIPT' || o.proofType === 'PRICE_TAG' ? tx('shopper') + ' · ' + tx(o.proofType === 'RECEIPT' ? 'receipt' : 'photo') : '';
 const condLabel = o => o.conditional === 'LOYALTY_PROGRAM' ? tx('card') : o.conditional === 'QUANTITY' ? tx('multi') : tx('cond');
 const where = o => esc(o.retailer) + (o.city ? ` · ${esc(o.city)}` : '');
 /** One badge per chain: its cheapest current price (any source), cheapest first. Real offers only; a chain with no current
@@ -167,6 +174,8 @@ function stripHTML0(code, r) {
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>${r ? marketLine(r, L) : ''}`;
   const link = (label, cta) => `<a class="fp75__all${cta ? ' fp75__all--cta' : ''}" href="${pricesURL(code)}">${esc(label)}${chev}</a>`;
   if (!r) return `${head('')}<div class="fp75__skel" aria-hidden="true"><i class="fp75__sk fp75__sk--price"></i><span><i class="fp75__sk"></i><i class="fp75__sk fp75__sk--short"></i></span></div><p class="fp75__sr">${esc(tx('checking'))}</p>`;
+  // 84: the shops' web search is still running (the app asks again by itself and replaces this when it finishes)
+  if (r.webPending && !r.best && !r.latest) return `${head('')}<div class="fp75__none"><div><b>${esc(tx('webWait'))}</b><span>${esc(tx('webWaitSub'))}</span></div></div>`;
   if (r.status === 'temporarily_unavailable') return `${head('')}<div class="fp75__none"><div><b>${esc(tx('na'))}</b><span>${esc(tx('down'))}</span></div><button type="button" class="fp75__all" data-fp71-retry="${esc(code)}">${esc(tx('retry'))}</button></div>`;
   if (r.status === 'incomplete' && !r.best && !r.latest) return `${head('')}<div class="fp75__none"><div><b>${esc(tx('na'))}</b><span>${esc(tx('partial'))}</span></div><button type="button" class="fp75__all" data-fp71-retry="${esc(code)}">${esc(tx('retry'))}</button></div>`;
   const b = r.best;
@@ -274,7 +283,7 @@ function paintChoices() {
   for (const card of cards) {
     const a = card.querySelector('a[href^="#/p/"]'); const alt = a?.getAttribute('href').match(/#\/p\/(\d{8,14})/)?.[1];
     if (!alt || alt === code) continue;
-    const r = want(alt);
+    const r = want(alt, {cheap:true});
     const state = (r ? r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') : 'wait') + '|' + (base?.best?.id || '');
     let slot = card.querySelector('.fp71-slot');
     if (slot && slot.dataset.state === state) continue;
@@ -410,7 +419,7 @@ function onRoute() {
   want(productCode(), {fresh:fromScan && Boolean(productCode())}); compareCodes()?.forEach(c => want(c)); schedule();
 }
 /* 83: market choice. A change drops every answer held for the old market and asks again for the new one. */
-const marketChanged = () => { results.clear(); asked.clear(); ui.picker = false; schedule(); };
+const marketChanged = () => { results.clear(); asked.clear(); cheapResults.clear(); cheapAsked.clear(); ui.picker = false; schedule(); };
 addEventListener('foodscan:market', marketChanged);
 document.addEventListener('change', e => { const sel = e.target.closest?.('[data-fs-market-select]'); if (!sel) return; setMarket(sel.value); });
 document.addEventListener('click', e => {
@@ -436,7 +445,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-83.2.0';
+export const BUILD = 'foodscan-84.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

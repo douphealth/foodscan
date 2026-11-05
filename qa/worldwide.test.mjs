@@ -90,18 +90,18 @@ test('old prices are kept as the last recorded price, never ranked', async () =>
   assert.equal(body.summary.latestOfferId, body.offers[0].id); assert.equal(body.status, 'observations_available');
 });
 
-test('the country filter is used first; if the API rejects it the plain newest-300 read still answers', async () => {
+test('the API\'s real filters are used first (the market\'s currency, the last 90 days); if it rejects them the plain newest-300 read still answers', async () => {
   const items = Array.from({ length: 250 }, (_, i) => op({ code: CODE, price: 1 + i / 100, cc: i < 240 ? 'IN' : 'FR', currency: i < 240 ? 'INR' : 'EUR', brand: 'B' + i, date: daysAgo(1 + (i % 5)) }));
   const ok = await compare(CODE, { items, market: 'FR' });
-  assert.equal(ok.body.offers.length, 10); assert.ok(ok.calls.some(c => c.includes('location__osm_address_country_code=FR')));
+  assert.equal(ok.body.offers.length, 10); assert.ok(ok.calls.some(c => c.includes('currency=EUR') && c.includes('date__gte=')) && !ok.calls.some(c => c.includes('osm_address_country_code')));
   const rejected = await compare(CODE, { items, market: 'FR', opts: { rejectFilter: true } });
   assert.equal(rejected.body.status, 'observations_available'); assert.equal(rejected.body.offers.length, 10);
-  assert.ok(rejected.calls.some(c => !c.includes('location__osm_address_country_code')));
+  assert.ok(rejected.calls.some(c => !c.includes('currency=') && !c.includes('date__gte')));
 });
 
 test('outside Greece no Greek source is consulted or reported (no phantom "unavailable" providers)', async () => {
   const { body } = await compare(CODE, { items: [op({ code: CODE, price: 3, cc: 'DE', brand: 'Edeka' })], market: 'DE' });
-  assert.deepEqual(Object.keys(body.providers).sort(), ['liveDatabase', 'openPrices']);
+  assert.deepEqual(Object.keys(body.providers).sort(), ['liveDatabase', 'openPrices', 'webSearch']); assert.equal(body.providers.webSearch.status, 'disabled'); // 84: off without its keys
   assert.equal(body.providerSummary.unavailable, 0); assert.equal(body.scope, 'market');
   assert.equal(body.candidates.length, 0); assert.equal(body.estimate, null);
 });
@@ -145,4 +145,10 @@ test('the same barcode in the same country keeps one price per store (the newest
   b.location.id = a.location.id; // same shop
   const { body } = await compare(CODE, { items: [a, b], market: 'FR' });
   assert.equal(body.offers.length, 1); assert.equal(body.offers[0].price, 3.2);
+});
+
+test('nearby: the API\'s own lat, lon and radius_km are sent (the server keeps only locations inside the radius), and results are still checked here', async () => {
+  const near = op({ code: CODE, price: 3.1, cc: 'FR', brand: 'Carrefour' }); near.location.osm_lat = 45.76; near.location.osm_lon = 4.83;
+  const { calls } = await compare(CODE, { items: [near], market: 'FR', nearby: { lat: '45.76', lon: '4.83', radius_km: '25' } });
+  assert.ok(calls.some(c => c.includes('lat=45.76') && c.includes('lon=4.83') && c.includes('radius_km=25') && c.includes('currency=EUR')));
 });

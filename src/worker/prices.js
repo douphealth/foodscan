@@ -417,16 +417,21 @@ async function fsPriceOpenOffers(code, scope, env, request) {
     const more = await Promise.all(Array.from({length:maxPages - 1}, (_, i) => i + 2).filter(n => (n - 1) * 100 < first.total).map(n => page(candidate, n, extra)));
     return {...first, items:[...first.items, ...more.filter(r => r.status === 'available').flatMap(r => r.items)], pages:1 + more.length};
   };
-  const focus = `&location__osm_address_country_code=${encodeURIComponent(scope.market || FS_MARKET_DEFAULT)}`;
+  // 84: the filters the Open Prices API REALLY has (checked in its source, open_prices/api/prices/filters.py): `currency` (exact), `date__gte`, and the nearby
+  // trio `lat` + `lon` + `radius_km` (the server keeps only prices at locations within the radius). It has NO country filter: the 83 filter
+  // `location__osm_address_country_code` was ignored by the API, so that read was a duplicate of the plain one. Every observation is still re-checked here.
+  const since = new Date(Date.now() - FS_PRICE_OLDER_DAYS * 86400000).toISOString().slice(0, 10), cur = fsMarketCurrencies(scope.market || FS_MARKET_DEFAULT)?.[0];
+  const recent = `&date__gte=${since}`;
+  const focus = recent + (cur ? `&currency=${cur}` : '') + (scope.nearby ? `&lat=${scope.lat}&lon=${scope.lon}&radius_km=${scope.radius}` : '');
   const one = async candidate => {
-    const [focused, world] = await Promise.all([read(candidate, focus, 2), read(candidate, '', 1)]);
-    if (focused.status === 'unavailable' && focused.httpStatus >= 400 && focused.httpStatus < 500) { // filter not understood: the plain newest-300 read
+    const [focused, world] = await Promise.all([read(candidate, focus, 2), read(candidate, recent, 1)]);
+    if (focused.status === 'unavailable' && focused.httpStatus >= 400 && focused.httpStatus < 500) { // filters not understood: the plain newest-300 read
       const plain = await read(candidate, '', 3);
       return {...plain, focusedBy:'none'};
     }
     const answered = [focused, world].filter(r => r.status === 'available');
     if (!answered.length) return focused.status === 'rate_limited' || world.status === 'rate_limited' ? {status:'rate_limited', items:[], httpStatus:429} : (focused.httpStatus ? focused : world);
-    return {status:'available', items:answered.flatMap(r => r.items), total:Math.max(...answered.map(r => r.total || 0)), focusedBy:focused.status === 'available' ? 'country' : 'none'};
+    return {status:'available', items:answered.flatMap(r => r.items), total:Math.max(...answered.map(r => r.total || 0)), focusedBy:focused.status === 'available' ? 'currency' : 'none'};
   };
   const results = await Promise.all(codes.map(one));
   const answered = results.filter(r => r.status === 'available');
@@ -751,13 +756,13 @@ function fsPriceMarketGuard(local, home) {
   return {offers:guarded, currency, typical};
 }
 /** The whole answer, built from evidence only. Exported shape is shared with prices/price-core-v79.mjs. */
-function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items:[],providers:{},pack:null}, now=Date.now()}) {
+function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items:[],providers:{},pack:null}, web={status:'disabled',items:[]}, now=Date.now()}) {
   const home = scope.market || FS_MARKET_DEFAULT;
   // D1 observatory rows carry no link method; the seed's link file says how this barcode was tied to the observatory product.
   const off = FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status === 'disabled').map(id => FS_GR_SOURCES[id].prefix);
   const lic = licensed.items.filter(o => !off.some(pre => String(o.id||'').startsWith(pre))) // 79: a disabled source never shows, even from D1
     .map(o => o.id?.startsWith('pk:') ? {...o, match:official.linkMatch || o.match} : o);
-  const all = [...official.items, ...lic, ...open.items];
+  const all = [...official.items, ...lic, ...(web.items||[]), ...open.items];
   // 78: product identity, quantity and grade come ONLY from the validated catalogue / Open Food Facts record.
   // Open Prices embeds the Open Food Facts product record, so it is accepted as a fallback and labelled as such.
   const sample = open.items.find(o => o.productName || o.productQuantity || o.productAmount) || {};
@@ -813,6 +818,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   const providers = {
     openPrices:fsProvider(open, {inspected:open.inspected||0, greek:open.items.filter(o=>o.market===home).length, local:open.items.filter(o=>o.market===home).length, elsewhere:open.items.filter(o=>o.market!==home).length, license:FS_PRICE_LICENSES['op:']}),
     liveDatabase:fsProvider(licensed, {count:licensed.items.length}),
+    webSearch:fsProvider(web, {count:(web.items||[]).length, checkedAt:web.checkedAt||null, cached:Boolean(web.cached)}),
     // 83: the Greek official and web-shop sources exist only for the Greek market; elsewhere they are not part of the answer at all (no "unavailable" noise).
     ...(greekMarket ? {
       observatory:fsProvider(official.providers.posokanei, {source:'posokanei.gov.gr', d1:licensed.items.filter(o=>o.id.startsWith('pk:')).length, packMismatch}),
@@ -854,6 +860,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       `Only real, dated prices are shown, each with its own source and licence: the Ministry of Development price observatory (posokanei.gov.gr, national chain prices), e-katanalotis (history only), Open Prices (community receipts and shelf photos, ODbL), the chains' own web shops (${FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status !== 'disabled').map(id => new URL(FS_GR_SOURCES[id].url).hostname.replace(/^www\./, '')).join(', ')}) and licensed retailer feeds when configured. No price is ever estimated (81). When a barcode has no recorded price, "related" may list up to 3 close products (same brand, similar name and size) with THEIR OWN recorded price, source and date; they are never presented as this product's price.`,
       'Only observations from the last 7 days, with no expired promotion and a dated proof, can be "the cheapest". Older prices are still shown, as the last recorded price, with their age. Future-dated observations are rejected.',
       'The observatory publishes no barcodes. Its prices appear only for barcodes linked to its products by a reviewed link, an automatic exact match, or (81) a price-anchored match (a chain web shop and the observatory report the same chain\'s regular price to the cent, same brand and size, one product only); each price says which. If its pack size disagrees with the label, its prices never rank.',
+      'Web-shop prices found by FoodScan\'s web search (84) come from shops\' own product pages in your country. An AI model reads the page, then every price is checked: it must appear on that page, in your currency, for this barcode or the exact same name, brand and size. Each shows the shop, the link and when it was read.',
       'Lidl prices can vary by region; lidl.gr shows its default (national) price. Web-shop prices are the shop\'s online price; shelf prices in stores may differ.',
       'A web-shop price is checked against the label size. If the shop sells this barcode as another size it is shown as "same product, other size" with its own unit price, and never ranks. Prices older than 7 days are shown as "older price" with their date and age.',
       'A store with no observation shows "Not available". Shelf prices change and offers expire: check the price in store or at checkout.',
@@ -861,6 +868,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       'Only real, dated prices are shown, each with its own source, store and date. They come from Open Prices (community receipts and shelf photos of Open Food Facts contributors, ODbL). No price is ever converted from another currency, estimated or guessed.',
       'Only prices recorded in the last 7 days, in this country\'s currency, with a dated receipt or shelf-photo proof and no loyalty-card or multi-buy condition can be "the cheapest". Older prices stay visible as the last recorded price, with their age. Future-dated observations are rejected.',
       'A price far from what at least three other stores recorded for the same barcode (below half or above 2.5 times their median) is shown as unusual and is never ranked or counted. The typical price is the median of the unconditional prices of the last 90 days, when at least three stores recorded one.',
+      'Shop prices found by web search come from shops\' own product pages in this country. Each price was read from the page, checked to appear there in this country\'s currency, and only an exact barcode or exact name, brand and size match in stock can be the cheapest. Each shows the shop, a link and when it was read.',
       'Prices recorded in other countries are listed separately with their own currency; they are reference only, not prices in your country.',
       'Community coverage differs by country and product. A store with no observation shows "Not available". Shelf prices change and offers expire: check the price in store or at checkout.',
     ],
@@ -1088,6 +1096,44 @@ async function fsPriceHealth(request, env, now=Date.now()) {
 }
 /* ===== end FoodScan 80 ===== */
 
+
+/* ===== FoodScan 84: AI web price search (host-provided env.FS_WEB_PRICES) =====
+ * Shops' own product pages in the shopper's country, read by an AI model and then checked: the price must literally appear on the page,
+ * be in the market's currency and come from a shop page. Only barcode or exact name+brand+size matches that are in stock can rank. */
+async function fsPriceWebOffers(env, code, scope, meta, fresh) {
+  if (!env?.FS_WEB_PRICES) return {status:'disabled',items:[]};
+  const market = scope.market || FS_MARKET_DEFAULT;
+  const r = await env.FS_WEB_PRICES.lookup({code:fsPriceKey(code), market, name:meta?.name||'', brand:meta?.brand||'', quantity:meta?.quantity||'', currencies:fsMarketCurrencies(market)||[], fresh});
+  const today = fsPriceToday(Date.now());
+  // Pack size: each shop page's own size is checked against the label (fsPriceBuildPayload marks a different size "other size").
+  // Without a label size, name matches are trusted only when every shop reports the same size (else: "size unconfirmed").
+  const label = fsPricePack(meta?.quantity, meta?.productAmount, meta?.productAmountUnit);
+  const packs = (r?.items||[]).map(o => fsPricePack(fsPriceText(o.packSize||o.productTitle||'', 60)));
+  const sizes = new Set(packs.filter(Boolean).map(p => p.unit+':'+Math.round(p.amount*1000)));
+  const sizeAgreed = !label && sizes.size === 1 && packs.every(Boolean);
+  const items = (r?.items||[]).map((o, i) => {
+    const shopPack = packs[i];
+    const host = (() => { try { return new URL(o.url).hostname.replace(/^www\./,''); } catch { return ''; } })();
+    const chain = FS_PRICE_CHAINS.find(c => c[2].test(o.retailer) || c[2].test(host));
+    const date = String(o.checkedAt||'').slice(0,10) || today, age = fsPriceAge(date) ?? 0;
+    const sameSize = label && shopPack && label.unit === shopPack.unit && Math.abs(label.amount - shopPack.amount) / label.amount <= 0.05;
+    // Only verified local barcode or exact brand+name+pack evidence can rank; close names never do.
+    const strong = Boolean(o.countryCode === market && (o.match === 'barcode' || (o.match === 'exact' && sameSize)));
+    const unconfirmed = !strong && !(label && shopPack && !sameSize);
+    return {
+      id:'ws:'+host+':'+i, barcode:code, price:o.price, regularPrice:null, currency:o.currency, basis:'item', date, ageDays:age, validUntil:null,
+      freshness:fsPriceFreshness(age), rankingEligible:strong && o.inStock !== false && age <= FS_PRICE_CURRENT_DAYS,
+      countryCode:market, market, retailer:chain ? chain[1] : o.retailer, retailerId:chain ? chain[0] : 'web:'+host,
+      storeName:o.retailer, storeId:'web:'+host, storeScope:'online', city:'', discounted:false, discountType:'', offerConditions:'',
+      proofType:'WEB_PAGE', source:host, sourceKind:'retailer', sourceLicense:'Shop web page (price read on '+date+')',
+      sourceURL:o.url, evidenceURL:o.url, proofURL:null, latitude:null, longitude:null, available:o.inStock !== false,
+      match:o.match, webTitle:o.productTitle||'', webPack:o.packSize||'', fetchedAt:o.checkedAt||null, origin:'web',
+      ...(shopPack ? {shopPack} : {}), ...(unconfirmed ? {packUnconfirmed:true} : {}),
+    };
+  });
+  return {status:r?.status||'unavailable', items, checkedAt:r?.checkedAt, cached:r?.cached};
+}
+
 async function fsPricesRoute(request,env,ctx) {
   const url=new URL(request.url);
   const publicPath=url.pathname.startsWith('/prices/service/') ? url.pathname.slice('/prices/service/'.length) :
@@ -1105,7 +1151,7 @@ async function fsPricesRoute(request,env,ctx) {
       try{const r=await fetch('https://prices.openfoodfacts.org/api/v1/status',{headers:{'Accept':'application/json','User-Agent':`FoodScan/${FS_PRICE_VERSION} (https://food-scan.gearuptofit.com)`},signal:AbortSignal.timeout(4000)});probe=r.ok?'responding':'http_'+r.status;}
       catch{probe='network_unavailable';}
     }
-    return fsPriceJson({version:FS_PRICE_VERSION,route:'ready',endpoint:url.pathname,serverSideProxy:true,sources:{openPrices:'public_api',licensedFeeds:env?.FOODSCAN_PRICES_DB?'configured':'not_configured',observatory:'seed+d1',ekatanalotis:'seed_historical',retailerWeb:'seed+d1 (bazaar-online.gr, lidl.gr, kritikos-sm.gr + live product-page check)'},health:'/api/prices/health',probe,
+    return fsPriceJson({version:FS_PRICE_VERSION,route:'ready',endpoint:url.pathname,serverSideProxy:true,sources:{webSearch:(env?.FS_WEB_PRICES||fsWebConfigured(env))?'on (FIRECRAWL_API_KEY, ANTHROPIC_API_KEY and FOODSCAN_PRICES_DB present)':'off (needs the secrets FIRECRAWL_API_KEY and ANTHROPIC_API_KEY and the D1 binding FOODSCAN_PRICES_DB)',openPrices:'public_api',licensedFeeds:env?.FOODSCAN_PRICES_DB?'configured':'not_configured',observatory:'seed+d1',ekatanalotis:'seed_historical',retailerWeb:'seed+d1 (bazaar-online.gr, lidl.gr, kritikos-sm.gr + live product-page check)'},health:'/api/prices/health',probe,
       policy:'evidence_only: no estimated, benchmark or multiplier prices; missing prices are reported as not available',currentDays:FS_PRICE_CURRENT_DAYS,
       sourceLicenses:{openPrices:FS_PRICE_LICENSES['op:'],observatory:FS_GR_SOURCES.posokanei.license,ekatanalotis:FS_GR_SOURCES.ekatanalotis.license,bazaar:FS_GR_SOURCES.bazaar.license,lidl:FS_GR_SOURCES.lidl.license,kritikos:FS_GR_SOURCES.kritikos.license,licensedFeeds:'per feed (license_ref on every row)'}});
   }
@@ -1117,6 +1163,7 @@ async function fsPricesRoute(request,env,ctx) {
   const cache = typeof caches!=='undefined' ? caches.default : null;
   const cacheURL=new URL(url.origin+'/prices/cache/v'+FS_PRICE_VERSION+'/'+scope.market+'/'+fsPriceKey(code));
   if(scope.nearby){cacheURL.searchParams.set('lat',String(scope.lat));cacheURL.searchParams.set('lon',String(scope.lon));cacheURL.searchParams.set('r',String(scope.radius));}
+  if(url.searchParams.get('web')==='0')cacheURL.searchParams.set('web','0');
   const pkId=fsObsId(url.searchParams.get('pk'));   // 82: an observatory product the shopper confirmed for this barcode
   if(pkId)cacheURL.searchParams.set('pk',pkId);
   const cacheKey=new Request(cacheURL.toString());
@@ -1137,9 +1184,16 @@ async function fsPricesRoute(request,env,ctx) {
     if(c){official.items.push(...c.items);if(c.items.length)official.linkMatch='user-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;}
     official.confirmed={id:pkId,name:c?.name||'',offers:c?.items.length||0,status:!c?'unavailable':!c.found?'not_found':c.items.length?'ok':'no_prices'};
   }
-  const payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official});
-  // 78: an answer with any provider down is never cached (the next scan asks again). Complete answers are kept 10 minutes.
-  const ttl = payload.providerSummary.unavailable === 0 && payload.status !== 'temporarily_unavailable' ? 600 : 0;
+  let web = {status:'disabled',items:[]}, payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
+  // 84: the web search costs money, so it runs only when the cheap sources left this barcode without a CURRENT price in the shopper's market (or the shopper
+  // asked again). deep=1 is the app's follow-up to a search that was still running: it waits for the whole search inside its own request.
+  const webSvc = url.searchParams.get('web') === '0' ? null : fsWebService(env, ctx, url.searchParams.get('deep') === '1'); // web=0: a chip, never the paid search
+  if (webSvc && payload.summary.currentOffers === 0) {
+    web = await fsPriceWebOffers({FS_WEB_PRICES:webSvc}, code, scope, meta, forceFresh).catch(()=>({status:'unavailable',items:[]}));
+    payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
+  }
+  // 78: an answer with any provider down is never cached (the next scan asks again). Complete answers are kept 10 minutes. 84: nor while the web search is still running.
+  const ttl = payload.providerSummary.unavailable === 0 && payload.status !== 'temporarily_unavailable' && web.status !== 'pending' ? 600 : 0;
   const output=fsPriceJson(payload,200,{'Cache-Control':ttl?`public, max-age=0, s-maxage=${ttl}`:'no-store','X-Price-Cache-TTL':String(ttl)});
   if(cache&&ttl){try{const copy=output.clone();const cacheable=new Response(copy.body,{status:200,headers:{...Object.fromEntries(copy.headers),'Cache-Control':`public, max-age=${ttl}`}});ctx?.waitUntil?.(cache.put(cacheKey,cacheable).catch(()=>{}));}catch{}}
   return output;

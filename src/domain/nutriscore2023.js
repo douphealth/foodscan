@@ -35,7 +35,7 @@ function ns23GradeOfScore(score, kind = 'general') {
   if (kind === 'fat') return score <= -6 ? 'A' : score <= 2 ? 'B' : score <= 10 ? 'C' : score <= 18 ? 'D' : 'E';
   return score <= 0 ? 'A' : score <= 2 ? 'B' : score <= 10 ? 'C' : score <= 18 ? 'D' : 'E';
 }
-const ns23ProteinCounts = (negative, kind, fvlPoints) => ns23Drink(kind) || kind === 'cheese' ? true : kind === 'fat' ? negative < 7 || fvlPoints === 5 : negative < 11 || fvlPoints === 5;
+const ns23ProteinCounts = (negative, kind, fvlPoints) => ns23Drink(kind) || kind === "cheese" ? true : kind === "fat" ? negative < 7 : negative < 11; // 2023 method: no fruit/vegetable exception (that was the 2017 rule)
 const ns23Ratio = (sat, fat) => (sat > 0 ? Math.round(sat / (fat > 0 ? fat : sat) * 1000) / 10 : 0);
 
 /** The whole calculation for exact inputs. `sweeteners` is the count of non-nutritive sweeteners (drinks only). */
