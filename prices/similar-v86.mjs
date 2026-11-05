@@ -11,7 +11,14 @@ import { inferKinds } from './quick-grade-v85.mjs';
 
 const KIND = { g: 'general', b: 'beverage', w: 'water', c: 'cheese', f: 'fat' };
 const STOP = new Set('and the with from for of in a an the με και απο για του της των το τα την στο στη kai mit und der die das de la le les del di da pack packet product προιον συσκευασια'.split(' '));
-const tokens = s => [...new Set(ns23Fold(s || '').split(/[^\p{L}]+/u).filter(t => t.length >= 3 && !STOP.has(t)))];
+// 87.2: Greek script and Greeklish written the same product in different ways ("μπισκότα", "mpiskota", "biskota"); both are reduced to one sound skeleton
+const GR = { 'ου': 'u', 'μπ': 'b', 'ντ': 'd', 'γκ': 'g', 'γγ': 'g', 'αι': 'e', 'ει': 'i', 'οι': 'i', 'υι': 'i', 'αυ': 'av', 'ευ': 'ev', 'θ': 'th', 'ψ': 'ps', 'ξ': 'x', 'χ': 'x', 'α': 'a', 'β': 'v', 'γ': 'g', 'δ': 'd', 'ε': 'e', 'ζ': 'z', 'η': 'i', 'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'n', 'ο': 'o', 'π': 'p', 'ρ': 'r', 'σ': 's', 'ς': 's', 'τ': 't', 'υ': 'i', 'φ': 'f', 'ω': 'o' };
+const LAT = [['mp', 'b'], ['nt', 'd'], ['gk', 'g'], ['ou', 'u'], ['ai', 'e'], ['ei', 'i'], ['oi', 'i'], ['ch', 'x'], ['ks', 'x'], ['ph', 'f'], ['y', 'i'], ['w', 'o'], ['h', 'i'], ['c', 'k'], ['q', 'k']];
+export const skeleton = t => { let x = t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ου|μπ|ντ|γκ|γγ|αι|ει|οι|υι|αυ|ευ|[α-ως]/g, m => GR[m] ?? m); for (const [a, b] of LAT) x = x.split(a).join(b); return x.replace(/(.)\1+/g, '$1'); };
+const tokens = s => [...new Set(ns23Fold(s || '').split(/[^\p{L}]+/u).filter(t => t.length >= 3 && !STOP.has(t)).map(skeleton))];
+/** The maker's part of a barcode: GS1 company prefixes are 7 to 9 digits (13-digit form). In-store and restricted codes (2x, 02x, 04x) and short codes say nothing about the maker. */
+export const makerOf = code => { const c = String(code || '').replace(/\D/g, '').padStart(13, '0').slice(-13); return /^(0000|02|04|2)/.test(c) ? '' : c; };
+const makerSim = (a, b) => { if (!a || !b) return 0; let i = 0; while (i < 13 && a[i] === b[i]) i++; return i >= 9 ? 1 : i >= 8 ? 0.8 : i >= 7 ? 0.5 : 0; };
 const FIELDS = ['kj', 'sugars', 'saturatedFat', 'salt', 'fibre', 'protein', 'fat', 'carbohydrates'];
 // how far apart two values may be and still count as "the same kind of product": relative share plus an absolute slack per nutrient
 const SLACK = { kj: 60, sugars: 1.5, saturatedFat: 0.8, salt: 0.15, fibre: 1, protein: 1.5, fat: 1.5, carbohydrates: 3 };
@@ -19,7 +26,7 @@ const known = v => typeof v === 'number' && Number.isFinite(v);
 
 /** peers JSON -> searchable structure */
 export function prepare(json) {
-  const rows = json.rows.map(r => ({ code: r[0], name: r[1], brand: r[2], grade: r[3], kind: KIND[r[4]] || 'general', family: r[5], v: r[6], tokens: tokens(r[1]) }));
+  const rows = json.rows.map(r => ({ code: r[0], name: r[1], brand: r[2], grade: r[3], kind: KIND[r[4]] || 'general', family: r[5], v: r[6], tokens: tokens(r[1]), maker: makerOf(r[0]) }));
   const df = new Map(); for (const r of rows) for (const t of r.tokens) df.set(t, (df.get(t) || 0) + 1);
   const idf = t => Math.log((rows.length + 1) / (1 + (df.get(t) || 0)));
   const byBrand = new Map(); for (const r of rows) if (r.brand) (byBrand.get(r.brand) || byBrand.set(r.brand, []).get(r.brand)).push(r);
@@ -40,13 +47,16 @@ function distance(a, b) {
 const NEEDED = [0, 1, 2, 3]; // energy, sugars, saturated fat, salt: what a grade needs
 /** The estimate for a normalised product (domain parseProduct) from the prepared peers; `exclude` removes a code (and, with `noTwins`, products with the same name and brand). */
 /** Parameters chosen on the catalogue (tools/similar-validate.mjs): with numbers known, similar numbers matter more than similar names. */
-const PARAMS = { imputed: { minSim: 0, k: 25, mass: 0.9, dMax: 0.35, bonus: 0.1 }, typical: { minSim: 0.2, k: 40, mass: 0.9, dMax: 0.4, bonus: 0 } };
+/** 87.2, typical: with no numbers, the maker (from the barcode) and the catalogue's product family count too; measured leave-one-out (tools/similar-validate.mjs). */
+const PARAMS = { imputed: { minSim: 0, k: 25, mass: 0.9, dMax: 0.35, bonus: 0.1 }, typical: { minSim: 0.2, k: 40, mass: 0.85, dMax: 0.4, bonus: 0 } };
+const TYPICAL_W = { name: 0.45, brand: 0.2, maker: 0.2, family: 0.15 };
 export function similarGrade(p, prep, { exclude = null, noTwins = false, maxWidth = 3, ...override } = {}) {
   const name = p.name || '', toks = tokens(name), brand = ns23Fold((p.brand || '').split(',')[0]).trim();
   const tv = targetVector(p), have = tv.map(v => v !== null), complete = NEEDED.every(i => have[i]);
   const knownCount = have.filter(Boolean).length, { minSim, k, mass, dMax, bonus } = { ...PARAMS[knownCount >= 3 ? 'imputed' : 'typical'], ...override };
   if (complete) return { ok: false, reason: 'complete' };
-  if (!toks.length && !brand) return { ok: false, reason: 'no-name' };
+  const maker = makerOf(p.barcode || p.code), family = p.family && p.family !== 'other' ? p.family : '', typical = knownCount < 3, named = Boolean(toks.length || brand);
+  if (!named && !(typical && (maker || family))) return { ok: false, reason: 'no-name' };
   const idfSum = toks.reduce((s, t) => s + prep.idf(t), 0) || 1, set = new Set(toks);
   const inf = inferKinds(p), kindOf = peer => (inf.via === 'default' ? peer.kind : inf.kinds[0]);
   const scored = [];
@@ -55,7 +65,8 @@ export function similarGrade(p, prep, { exclude = null, noTwins = false, maxWidt
     if (noTwins && peer.name === ns23Fold(name) && peer.brand === brand) continue;
     const brandEq = brand && peer.brand === brand ? 1 : 0;
     let overlap = 0; for (const t of peer.tokens) if (set.has(t)) overlap += prep.idf(t);
-    const nameSim = overlap / idfSum, sim = 0.65 * nameSim + 0.35 * brandEq;
+    const nameSim = toks.length ? overlap / idfSum : 0;
+    const sim = typical ? TYPICAL_W.name * nameSim + TYPICAL_W.brand * brandEq + TYPICAL_W.maker * makerSim(maker, peer.maker) + TYPICAL_W.family * (family && peer.family === family ? 1 : 0) : 0.65 * nameSim + 0.35 * brandEq;
     if (sim < minSim) continue;
     if (knownCount >= 3 && NEEDED.some(i => peer.v[i] === null)) continue; // a peer with no numbers cannot lend any
     const d = knownCount ? distance(tv, peer.v) : 0;
@@ -84,7 +95,7 @@ export function similarGrade(p, prep, { exclude = null, noTwins = false, maxWidt
   const letters = [...L].slice(best.a, best.b + 1), likely = [...L].sort((x, y) => dist[y] - dist[x])[0];
   if (letters.length > maxWidth) return { ok: false, reason: 'too-wide', letters, dist };
   const distN = Object.fromEntries(Object.entries(dist).map(([g, w]) => [g, w / total]));
-  return { ok: true, mode, letters, likely, share: Math.round(best.m * 100) / 100, dist: distN, n: top.length, topSim: Math.round(top[0].sim * 100) / 100, kind: inf.via === 'default' ? top[0].peer.kind : inf.kinds[0],
+  return { ok: true, mode, basis: mode === 'typical' && !named ? 'maker' : 'name', letters, likely, share: Math.round(best.m * 100) / 100, dist: distN, n: top.length, topSim: Math.round(top[0].sim * 100) / 100, kind: inf.via === 'default' ? top[0].peer.kind : inf.kinds[0],
     imputed: mode === 'imputed' ? ['sugars', 'saturatedFat', 'salt'].filter((_, i) => !have[i + 1]).concat(have[0] ? [] : ['energy']) : [],
     peers: top.slice(0, 6).map(({ peer }) => ({ code: peer.code, name: peer.name, brand: peer.brand, grade: peer.grade })) };
 }

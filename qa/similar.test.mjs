@@ -89,12 +89,13 @@ test('one number missing and no category (like an orange juice with no salt on r
 
 test('real catalogue, leave-one-out: how often the published letter is inside the estimated band (and the printed percentages never exceed what was measured)', { timeout: 900000 }, () => {
   const out = {};
-  for (const only of ['nothing', 'sugars+salt']) out[only] = Object.values(V.validate({ only }))[0];
-  const typical = out.nothing, imputed = out['sugars+salt'], pct = (a, b) => 100 * a / b;
+  for (const only of ['nothing', 'maker', 'sugars+salt']) out[only] = Object.values(V.validate({ only }))[0];
+  const typical = out.nothing, maker = out.maker, imputed = out['sugars+salt'], pct = (a, b) => 100 * a / b;
   assert.ok(typical.n > 4000);
   assert.ok(pct(typical.shown, typical.n) >= 30, `typical: estimate for ${pct(typical.shown, typical.n).toFixed(1)} %`);
   assert.ok(pct(imputed.shown, imputed.n) >= 80, `imputed: estimate for ${pct(imputed.shown, imputed.n).toFixed(1)} %`);
-  for (const [name, r, key] of [['typical', typical, 'typical'], ['imputed', imputed, 'imputed']]) {
+  assert.ok(pct(typical.shown, typical.n) >= 55, `typical (87.2: maker, family, Greeklish): estimate for ${pct(typical.shown, typical.n).toFixed(1)} %`);
+  for (const [name, r, key] of [['typical', typical, 'typical'], ['maker', maker, 'typicalMaker'], ['imputed', imputed, 'imputed']]) {
     assert.ok(pct(r.inside, r.shown) >= U.RELIABILITY.similar[key].inside, `${name}: printed ${U.RELIABILITY.similar[key].inside} % inside, measured ${pct(r.inside, r.shown).toFixed(1)} %`);
     assert.ok(pct(r.likely, r.shown) >= U.RELIABILITY.similar[key].likely, `${name}: printed ${U.RELIABILITY.similar[key].likely} % likely, measured ${pct(r.likely, r.shown).toFixed(1)} %`);
   }
@@ -104,4 +105,21 @@ test('an estimate hides the card\'s own "No grade" block, whatever stylesheet lo
   const fs = await import('node:fs'), css = fs.readFileSync(new URL('../prices/reader-v85.css', import.meta.url), 'utf8');
   for (const part of ['snip__head', 'snip__core', 'snip__glow']) assert.ok(css.includes(`.gradecard[data-fg85]>.${part}`), part);
   assert.match(css, /\.gradecard\[data-fg85\]>\.snip__glow\{display:none!important\}/);
+});
+
+test('87.2: Greek and Greeklish spellings match; a record with no name is matched by its maker and family and the card says so', () => {
+  assert.equal(S.skeleton('μπισκότα'), S.skeleton('mpiskota'));
+  assert.equal(S.skeleton('φρυγανιές'), S.skeleton('friganies'));
+  assert.equal(S.makerOf('2205930000016'), '', 'in-store codes say nothing about the maker');
+  assert.equal(S.makerOf('40000374'), '', 'short codes neither');
+  const cookie = prep.rows.find(r => r.grade && r.maker.startsWith('5201004') && r.family === 'biscuit');
+  assert.ok(cookie, 'a graded Papadopoulos biscuit in the peers');
+  const r = S.similarGrade({ name: '', brand: '', barcode: '5201004999999', family: 'biscuit', nutrition: {}, basis: 'g', categories: [], pnns: 'unknown' }, prep);
+  assert.ok(r.ok && r.mode === 'typical' && r.basis === 'maker', JSON.stringify(r).slice(0, 200));
+  for (const lang of ['en', 'el']) {
+    const html = U.similarHTML(r, { lang });
+    assert.match(html, new RegExp(`${U.RELIABILITY.similar.typicalMaker.inside} %`), lang + ': the maker figures are printed');
+    assert.match(html, lang === 'en' ? /same maker \(the company part of the barcode\)/ : /ίδιο παραγωγό/);
+  }
+  assert.equal(S.similarGrade({ name: '', brand: '', barcode: '2205930000016', family: 'other', nutrition: {}, basis: 'g' }, prep).reason, 'no-name', 'no name, no maker, no family: nothing');
 });
