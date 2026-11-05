@@ -80,7 +80,7 @@
   {
    "file": "src/worker/core.js",
    "lines": 665,
-   "bytes": 35964
+   "bytes": 35971
   },
   {
    "file": "src/worker/prices.js",
@@ -118,5 +118,5 @@
    "bytes": 9942
   }
  ],
- "sha256": "1044a7d227097c4d52f2f89b807b23c38f60b74f42fa4e968924a053983f718f"
+ "sha256": "0cd76890ba51ca678bd8dc161a86f492bf14ed4525f417be8f85896ae73ff51a"
 }

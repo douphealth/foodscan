@@ -1,19 +1,19 @@
 <!doctype html>
-<html lang="en" data-foodscan-version="87.2.0">
+<html lang="en" data-foodscan-version="88.0.0">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F1F5EE"><meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F4EFE2" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#050F0A" media="(prefers-color-scheme: dark)"><meta name="color-scheme" content="light dark">
 <meta name="description" content="Compare observed grocery prices by barcode in your country's supermarkets, in the local currency. Prices are dated, attributed and never estimated. Build a private grocery basket and see evidence coverage.">
 <meta name="robots" content="index,follow"><link rel="canonical" href="https://food-scan.gearuptofit.com/prices/">
 <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest">
 <title>FoodScan Prices · Real supermarket price observations</title>
 <link rel="stylesheet" href="/prices/prices-base-v80.css"><link rel="stylesheet" href="/prices/native-v83.css"><link rel="stylesheet" href="/prices/prices-v83.css"><script type="module" src="/prices/prices-v83.js"></script>
-<link rel="stylesheet" href="/ui-v80.css"></head>
+<link rel="stylesheet" href="/ui-v80.css"><link rel="stylesheet" href="/prices/prices-app-v88.css"></head>
 <body class="fp-body">
 <a class="fp-skip" href="#fpMain" data-i18n="skip">Skip to comparisons</a>
 <header class="fp-head"><div class="fp-frame fp-head__row">
   <a class="fp-logo" href="/#/" aria-label="FoodScan home"><span class="fp-logo__icon">▤</span>FoodScan<span class="fp-logo__suffix" data-i18n="logoSuffix">/ Prices</span></a>
-  <nav class="fp-head__nav" aria-label="Main"><a href="/#/" data-i18n="nutrition">Nutrition</a><a href="/#/scan" data-i18n="scan">Scan</a><a href="/#/choices" data-i18n="saved">Saved foods</a></nav>
+  <nav class="fp-head__nav" aria-label="Main"><a href="/#/" data-i18n="navHome">Home</a><a href="/#/s/" data-i18n="navSearch">Search</a><a href="/#/choices" data-i18n="navChoices">Choices</a><a href="/prices/" aria-current="page" data-i18n="navPrices">Prices</a><a href="/#/me" data-i18n="navMe">Me</a></nav>
   <div class="fp-head__right"><button type="button" class="fp-lang" id="fpLang" aria-label="Change language">ΕΛ</button><a class="fp-btn fp-btn--primary fp-btn--sm" href="/#/scan" data-i18n="scanFood">Scan food</a></div>
 </div></header>
 <main id="fpMain"><div class="fp-frame">
@@ -35,4 +35,12 @@
   <footer class="fp-foot"><div><strong data-i18n="brandFoot">FoodScan Prices</strong><p data-i18n="footer">Recorded prices: the Ministry of Development price observatory (posokanei.gov.gr, national chain prices, linked to barcodes by exact or name-and-size matching), the Bazaar and Lidl web shops (re-read on every scan when they answer), e-katanalotis (older prices, shown as history) and Open Prices by Open Food Facts (ODbL). Estimates are labelled and are not recorded prices. Confirm shelf prices, discounts and availability before purchasing.</p></div><div class="fp-foot__links"><a href="https://prices.openfoodfacts.org/" target="_blank" rel="noopener noreferrer">Open Prices ↗</a><a href="/#/" data-i18n="backFood">FoodScan nutrition</a></div></footer>
 </div></main>
 <div id="fpToast" class="fp-toast" role="status" aria-live="polite" hidden></div>
+<nav class="dock fp-dock-expanded" aria-label="Main">
+  <a href="/#/"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg><span data-i18n="navHome">Home</span></a>
+  <a href="/#/s/"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span data-i18n="navSearch">Search</span></a>
+  <a class="dock__scan" href="/#/scan" aria-label="Scan a barcode"><span><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M4 12h16"/></svg></span></a>
+  <a href="/#/choices"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l8.5 4.6L12 12.7 3.5 8.1 12 3.5z"/><path d="M3.5 12.3L12 17l8.5-4.7M3.5 16.4L12 21l8.5-4.6"/></svg><span data-i18n="navChoices">Choices</span></a>
+  <a href="/prices/" aria-current="page"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span data-i18n="navPrices">Prices</span></a>
+  <a href="/#/me"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg><span data-i18n="navMe">Me</span></a>
+</nav>
 </body></html>

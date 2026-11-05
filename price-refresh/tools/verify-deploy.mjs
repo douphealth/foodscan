@@ -3,7 +3,7 @@
  *    node tools/verify-deploy.mjs https://food-scan.gearuptofit.com [expectedVersion]
  *  Exit code 0 only when the site serves the expected release AND its price API answers with sources, dates and an estimate contract. */
 const base = (process.argv[2] || 'https://food-scan.gearuptofit.com').replace(/\/+$/, '');
-const want = process.argv[3] || '87.2.0';
+const want = process.argv[3] || '88.0.0';
 const UA = { 'User-Agent': 'FoodScan-verify/80' };
 let bad = 0; const ok = (c, msg) => { console.log((c ? '  ok   ' : '  FAIL ') + msg); if (!c) bad++; };
 const get = async (p, init) => { try { const r = await fetch(base + p + (p.includes('?') ? '&' : '?') + 'r=' + Math.random(), { headers: UA, ...init, signal: AbortSignal.timeout(30000) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return { status: r.status, text: t, json: j }; } catch (e) { return { status: 0, text: String(e), json: null }; } };

@@ -1,0 +1,38 @@
+/* FoodScan 88: the "Healthier swaps" card on the product page (prices/swaps-ui-v88.js). The app's tokens only, light and dark. */
+.fs88{position:relative;overflow:hidden;display:grid;gap:14px;padding:20px 18px 16px;border-radius:30px;border:1px solid color-mix(in srgb,var(--brand) 32%,var(--line));
+  background:radial-gradient(420px 220px at 100% 0,color-mix(in srgb,var(--brand) 16%,transparent),transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--brand-soft) 55%,var(--surface)),var(--surface) 58%);
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 22px 48px -26px color-mix(in srgb,var(--brand) 55%,transparent),var(--shadow)}
+.fs88__head{display:grid;gap:6px}
+.fs88__eyebrow{display:inline-flex;align-items:center;gap:7px;width:max-content;max-width:100%;padding:5px 11px 5px 9px;border-radius:999px;background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--brand);font:700 .72rem/1.2 var(--font-mono);letter-spacing:.12em;text-transform:uppercase}
+.fs88__eyebrow svg{width:15px;height:15px}
+.fs88 h2{margin:2px 0 0;font:700 clamp(1.35rem,4.6vw,1.7rem)/1.12 var(--font-display);letter-spacing:-.02em;color:var(--ink)}
+.fs88__head p{margin:0;color:var(--ink2);font-size:.95rem;line-height:1.5}
+.fs88__warn{padding:9px 12px;border-radius:14px;background:var(--warn-bg);color:var(--warn)!important;font-size:.86rem!important}
+.fs88__list{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.fs88__item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:13px;padding:10px 12px 10px 10px;border-radius:20px;background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px solid var(--line);color:var(--ink);text-decoration:none;transition:transform .18s cubic-bezier(.22,1,.36,1),border-color .18s,box-shadow .18s}
+.fs88__item:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--brand) 45%,var(--line));box-shadow:0 14px 30px -20px color-mix(in srgb,var(--brand) 70%,transparent)}
+.fs88__item:active{transform:scale(.985)}
+.fs88__item:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.fs88__ph{position:relative;width:58px;height:58px;border-radius:16px;overflow:hidden;display:grid;place-items:center;background:#fff;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent) inset}
+.fs88__ph:not(:has(img)){background:var(--surface2)}
+.fs88__ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:4px;z-index:1}
+.fs88__ph i{color:#7d9a8a;display:grid;place-items:center}
+.fs88__txt{display:grid;gap:2px;min-width:0}
+.fs88__txt b{font-weight:700;font-size:.95rem;line-height:1.3;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.fs88__txt small{color:var(--ink3);font-size:.78rem;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs88__txt em{font-style:normal;font-weight:700;font-size:.74rem;line-height:1.35;color:var(--good);display:flex;align-items:flex-start;gap:6px}
+.fs88__txt em:before{content:"";flex:none;margin-top:.34em;width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 22%,transparent)}
+.fs88__grade{display:grid;place-items:center;width:46px;height:52px;border-radius:15px;font:800 1.5rem/1 var(--font-display);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 10px 20px -12px rgba(0,0,0,.6)}
+.fs88__grade.g-A{background:var(--g-a,#038141);color:var(--g-a-ink,#fff)}.fs88__grade.g-B{background:var(--g-b,#85BB2F);color:var(--g-b-ink,#16240A)}.fs88__grade.g-C{background:var(--g-c,#FECB02);color:var(--g-c-ink,#2A2200)}.fs88__grade.g-D{background:var(--g-d,#EE8100);color:var(--g-d-ink,#2A1600)}.fs88__grade.g-E{background:var(--g-e,#D63A0F);color:var(--g-e-ink,#fff)}
+.fs88__empty{margin:0;padding:14px;border-radius:18px;border:1.5px dashed var(--line2);color:var(--ink2);font-size:.92rem}
+.fs88__how{border-top:1px solid color-mix(in srgb,var(--line) 80%,transparent);padding-top:10px}
+.fs88__how summary{cursor:pointer;font-weight:700;font-size:.88rem;color:var(--brand);list-style:none;display:flex;align-items:center;gap:6px}
+.fs88__how summary::-webkit-details-marker{display:none}
+.fs88__how summary:after{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+.fs88__how[open] summary:after{transform:rotate(225deg)}
+.fs88__how p{margin:8px 0 0;color:var(--ink2);font-size:.84rem;line-height:1.5}
+.fs88__how .fs88__src{color:var(--ink3);font-size:.76rem}
+.card--swap[data-fs88-hidden]{display:none!important}
+@media(min-width:900px){.fs88{padding:24px 24px 18px}.fs88__list{grid-template-columns:1fr 1fr}}
+@media(max-width:360px){.fs88__item{grid-template-columns:48px minmax(0,1fr) auto;gap:10px}.fs88__ph{width:48px;height:48px}.fs88__grade{width:40px;height:46px;font-size:1.3rem}}
+@media(prefers-reduced-motion:reduce){.fs88__item{transition:none}}

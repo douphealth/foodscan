@@ -5,7 +5,7 @@ import { detectMarket, setMarket, marketName, marketFlag, marketsSorted } from '
    Opened straight from a scan via /prices/?barcode=. Private notes & basket stay on the device and are never shown as store prices. */
 const I18N = {
   el: {
-    skip:'Μετάβαση στις συγκρίσεις',logoSuffix:'/ Τιμές',brandFoot:'FoodScan Τιμές',nutrition:'Διατροφή',scan:'Σάρωση',saved:'Αποθηκευμένα',scanFood:'Σάρωση',eyebrow:'ΠΡΑΓΜΑΤΙΚΑ ΔΕΔΟΜΕΝΑ · ΗΜΕΡΟΜΗΝΙΕΣ · ΕΛΛΑΔΑ',
+    skip:'Μετάβαση στις συγκρίσεις',navHome:'Αρχική',navSearch:'Αναζήτηση',navChoices:'Επιλογές',navPrices:'Τιμές',navMe:'Προφίλ',logoSuffix:'/ Τιμές',brandFoot:'FoodScan Τιμές',nutrition:'Διατροφή',scan:'Σάρωση',saved:'Αποθηκευμένα',scanFood:'Σάρωση',eyebrow:'ΠΡΑΓΜΑΤΙΚΑ ΔΕΔΟΜΕΝΑ · ΗΜΕΡΟΜΗΝΙΕΣ · ΕΛΛΑΔΑ',
     hero:'Τρώτε καλύτερα.<br><em>Ξοδεύετε λιγότερα.</em>',intro:'Σαρώστε ένα προϊόν και συγκρίνετε καταγεγραμμένες τιμές σε ελληνικά καταστήματα, με πηγή και ημερομηνία. Χωρίς επινοημένες τιμές.',
     barcode:'Ταύτιση barcode',verified:'Πηγές και ημερομηνίες',basket:'Έξυπνο καλάθι',clarity:'Κάθε τιμή έχει ιστορία.',claritySub:'Πού · Πότε · Με ποιους όρους',
     compare:'Σύγκριση τιμών',myBasket:'Το καλάθι μου',private:'Το καλάθι και οι σημειώσεις μένουν στη συσκευή σας',

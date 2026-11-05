@@ -15,7 +15,7 @@ const STOP = new Set('and the with from for of in a an the με και απο γ
 const GR = { 'ου': 'u', 'μπ': 'b', 'ντ': 'd', 'γκ': 'g', 'γγ': 'g', 'αι': 'e', 'ει': 'i', 'οι': 'i', 'υι': 'i', 'αυ': 'av', 'ευ': 'ev', 'θ': 'th', 'ψ': 'ps', 'ξ': 'x', 'χ': 'x', 'α': 'a', 'β': 'v', 'γ': 'g', 'δ': 'd', 'ε': 'e', 'ζ': 'z', 'η': 'i', 'ι': 'i', 'κ': 'k', 'λ': 'l', 'μ': 'm', 'ν': 'n', 'ο': 'o', 'π': 'p', 'ρ': 'r', 'σ': 's', 'ς': 's', 'τ': 't', 'υ': 'i', 'φ': 'f', 'ω': 'o' };
 const LAT = [['mp', 'b'], ['nt', 'd'], ['gk', 'g'], ['ou', 'u'], ['ai', 'e'], ['ei', 'i'], ['oi', 'i'], ['ch', 'x'], ['ks', 'x'], ['ph', 'f'], ['y', 'i'], ['w', 'o'], ['h', 'i'], ['c', 'k'], ['q', 'k']];
 export const skeleton = t => { let x = t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ου|μπ|ντ|γκ|γγ|αι|ει|οι|υι|αυ|ευ|[α-ως]/g, m => GR[m] ?? m); for (const [a, b] of LAT) x = x.split(a).join(b); return x.replace(/(.)\1+/g, '$1'); };
-const tokens = s => [...new Set(ns23Fold(s || '').split(/[^\p{L}]+/u).filter(t => t.length >= 3 && !STOP.has(t)).map(skeleton))];
+export const tokens = s => [...new Set(ns23Fold(s || '').split(/[^\p{L}]+/u).filter(t => t.length >= 3 && !STOP.has(t)).map(skeleton))];
 /** The maker's part of a barcode: GS1 company prefixes are 7 to 9 digits (13-digit form). In-store and restricted codes (2x, 02x, 04x) and short codes say nothing about the maker. */
 export const makerOf = code => { const c = String(code || '').replace(/\D/g, '').padStart(13, '0').slice(-13); return /^(0000|02|04|2)/.test(c) ? '' : c; };
 const makerSim = (a, b) => { if (!a || !b) return 0; let i = 0; while (i < 13 && a[i] === b[i]) i++; return i >= 9 ? 1 : i >= 8 ? 0.8 : i >= 7 ? 0.5 : 0; };
