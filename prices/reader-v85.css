@@ -50,7 +50,8 @@
 
 /* ===== 85: the grade card (fg85): quick estimate and grade from a label ===== */
 .fr85--grade{padding:0;margin:0;width:100%;border:0;background:none;box-shadow:none;animation:none;gap:0}
-.gradecard[data-fg85]>.snip__head,.gradecard[data-fg85]>.snip__core,.gradecard[data-fg85]>.snip__glow{display:none}
+/* !important: ui-v80.css shows the hero's .snip__core with an equally specific, later rule (.report .hero:not(.hero--none) .snip__core), which left "No grade" under every estimate (fixed in 87.1) */
+.gradecard[data-fg85]>.snip__head,.gradecard[data-fg85]>.snip__core,.gradecard[data-fg85]>.snip__glow{display:none!important}
 .gradecard[data-fg85]{padding-top:12px}
 .fg85{--gc:var(--g-d,#EE8100);--gci:var(--g-d-ink,#2A1600);position:relative;display:grid;gap:14px;box-sizing:border-box;width:100%;min-width:0;padding:16px 14px 14px;border-radius:22px;text-align:left;color:var(--ink,#0C1B14);font-family:var(--font-ui,inherit);
   background:radial-gradient(130% 80% at 0% 0%,color-mix(in srgb,var(--gc) 16%,transparent),transparent 62%),color-mix(in srgb,var(--surface,#fff) 97%,transparent);

@@ -6,7 +6,7 @@ import { esc } from './price-core-v83.mjs';
 
 /** Percent of graded Greek products (categories hidden) for which the published letter was inside the shown band, and for which the "most likely" letter equalled it. */
 export const RELIABILITY = { inside: { high: 96, medium: 93, low: 76 }, likely: { high: 94, medium: 89, low: 63 }, sample: 4103,
-  similar: { imputed: { inside: 87, likely: 71 }, typical: { inside: 92, likely: 58 } } };
+  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 } } };
 
 const T = {
   en: {
@@ -51,9 +51,9 @@ const T = {
       tag: 'Similar products', chip: 'Estimate',
       typicalOne: g => `Usually ${g}`, typicalBand: (a, b) => `Usually ${a} or ${b}`, typicalWide: (a, b) => `Usually ${a} to ${b}`, imputed: g => `Most likely ${g}`,
       subTypical: 'This product’s own nutrition is not on record. This is what similar products usually score.',
-      subImputed: 'Based on its recorded numbers, with the missing values borrowed from similar products.',
+      subImputed: one => `Based on its recorded numbers, with the missing ${one ? 'value' : 'values'} borrowed from similar products.`,
       proofTypical: n => `Not calculated from this product’s nutrition: there is none on record. It is the grade range of the ${n} most similar graded products in the Open Food Facts catalogue.`,
-      proofImputed: (list, n) => `Calculated with the official Nutri-Score 2023 algorithm from the numbers on record. The missing ${list} were borrowed from the ${n} most similar products, one at a time, and the resulting letters were combined.`,
+      proofImputed: (list, n, one) => `Calculated with the official Nutri-Score 2023 algorithm from the numbers on record. ${one ? `The value for ${list} was` : `The missing ${list} were`} borrowed from the ${n} most similar products, one at a time, and the resulting letters were combined.`,
       whyTitle: 'Why this is an estimate',
       whyT: ['The record has no nutrition numbers, so the estimate rests only on similar products.', 'Similar means the same brand and/or a similar name. The more they agree with each other, the better the estimate; the bar below shows how they are spread.'],
       whyI: list => [`The record does not give: ${list}.`, 'Similar products were chosen by name and brand and by how close their recorded numbers are to this product’s.', 'The Nutri-Score table is assumed from the similar products, because the record has no confirmed category.'],
@@ -110,9 +110,9 @@ const T = {
       tag: 'Παρόμοια προϊόντα', chip: 'Εκτίμηση',
       typicalOne: g => `Συνήθως ${g}`, typicalBand: (a, b) => `Συνήθως ${a} ή ${b}`, typicalWide: (a, b) => `Συνήθως από ${a} έως ${b}`, imputed: g => `Πιθανότερα ${g}`,
       subTypical: 'Οι διατροφικές τιμές αυτού του προϊόντος δεν είναι καταγεγραμμένες. Αυτό βαθμολογούνται συνήθως τα παρόμοια προϊόντα.',
-      subImputed: 'Βασίζεται στους καταγεγραμμένους αριθμούς του, με τις τιμές που λείπουν δανεισμένες από παρόμοια προϊόντα.',
+      subImputed: one => `Βασίζεται στους καταγεγραμμένους αριθμούς του, με ${one ? 'την τιμή που λείπει δανεισμένη' : 'τις τιμές που λείπουν δανεισμένες'} από παρόμοια προϊόντα.`,
       proofTypical: n => `Δεν υπολογίστηκε από τη διατροφή αυτού του προϊόντος: δεν υπάρχει καταγεγραμμένη. Είναι το εύρος βαθμών των ${n} πιο παρόμοιων προϊόντων με βαθμό στον κατάλογο του Open Food Facts.`,
-      proofImputed: (list, n) => `Υπολογίστηκε με τον επίσημο αλγόριθμο Nutri-Score 2023 από τους αριθμούς που υπάρχουν. Τα στοιχεία που λείπουν (${list}) δανείστηκαν από τα ${n} πιο παρόμοια προϊόντα, ένα κάθε φορά, και συνδυάστηκαν τα γράμματα που προέκυψαν.`,
+      proofImputed: (list, n, one) => `Υπολογίστηκε με τον επίσημο αλγόριθμο Nutri-Score 2023 από τους αριθμούς που υπάρχουν. ${one ? `Το στοιχείο που λείπει (${list}) δανείστηκε` : `Τα στοιχεία που λείπουν (${list}) δανείστηκαν`} από τα ${n} πιο παρόμοια προϊόντα, ένα κάθε φορά, και συνδυάστηκαν τα γράμματα που προέκυψαν.`,
       whyTitle: 'Γιατί είναι εκτίμηση',
       whyT: ['Η εγγραφή δεν έχει διατροφικούς αριθμούς, οπότε η εκτίμηση στηρίζεται μόνο σε παρόμοια προϊόντα.', 'Παρόμοια σημαίνει ίδια μάρκα ή/και παρόμοιο όνομα. Όσο περισσότερο συμφωνούν μεταξύ τους, τόσο καλύτερη η εκτίμηση· η μπάρα παρακάτω δείχνει πώς κατανέμονται.'],
       whyI: list => [`Η εγγραφή δεν δίνει: ${list}.`, 'Τα παρόμοια προϊόντα επιλέχθηκαν από το όνομα και τη μάρκα και από το πόσο κοντά είναι οι καταγεγραμμένοι αριθμοί τους σε αυτούς του προϊόντος.', 'Ο πίνακας Nutri-Score θεωρήθηκε από τα παρόμοια προϊόντα, επειδή η εγγραφή δεν έχει επιβεβαιωμένη κατηγορία.'],
@@ -226,15 +226,15 @@ export function similarHTML(m, o = {}) {
     return `<li class="fg85__tile${borrowed ? ' is-unreported' : ''}"><span class="fg85__tl">${esc(t.fields[id])}</span><b class="fg85__tv">${borrowed ? esc(k.borrowed) : esc(`${fmt(v, L)} ${unit}`)}</b>${borrowed ? '<span class="fg85__bar is-unknown" aria-hidden="true"></span>' : ''}</li>`;
   }).join('') : '';
   const peers = (m.peers || []).map(x => `<li><span>${esc(x.name || x.brand || x.code)}${x.brand && x.name ? ` <small>${esc(x.brand)}</small>` : ''}</span>${x.grade ? `<b class="fg85__pg g-${x.grade}">${x.grade}</b>` : `<em>${esc(k.peerGrade(''))}</em>`}</li>`).join('');
-  const rel = RELIABILITY.similar[m.mode], when = o.modified ? new Intl.DateTimeFormat(L === 'el' ? 'el-GR' : 'en-GB', { dateStyle: 'medium' }).format(new Date(o.modified)) : '';
+  const oneMissing = imputed && (m.imputed || []).length === 1, rel = RELIABILITY.similar[oneMissing ? 'imputedOne' : m.mode], when = o.modified ? new Intl.DateTimeFormat(L === 'el' ? 'el-GR' : 'en-GB', { dateStyle: 'medium' }).format(new Date(o.modified)) : '';
   return `<section class="fg85 fg85--sim" data-g="${seal}" aria-label="${esc(title)}">
     <header class="fg85__top"><span class="fg85__tag">${esc(k.tag)}</span><span class="fg85__chipmini is-est">${esc(k.chip)}</span><span class="fg85__method">${esc(t.method)}</span></header>
     <div class="fg85__hero">
       <div class="fg85__seal g-${seal}" role="img" aria-label="${esc(title)}"><span class="fg85__ring" aria-hidden="true"></span><b${band && !imputed ? ' class="is-range"' : ''}>${band && !imputed ? `${esc(first)}–${esc(last)}` : esc(seal)}</b><small>${esc(k.chip)}</small></div>
-      <div class="fg85__verdict"><strong>${esc(title)}</strong><span>${esc(imputed ? k.subImputed : k.subTypical)}</span></div>
+      <div class="fg85__verdict"><strong>${esc(title)}</strong><span>${esc(imputed ? k.subImputed(oneMissing) : k.subTypical)}</span></div>
     </div>
     <ol class="fg85__scale" aria-label="${esc(t.scaleLabel(m.likely, letters.join(', ')))}">${pills}</ol>${band ? `<p class="fg85__legend">${esc(t.legend)}</p>` : ''}
-    <p class="fg85__proof"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 1.8 3.2 4.4v5c0 4 2.7 7.1 6.8 8.8 4.1-1.7 6.8-4.8 6.8-8.8v-5L10 1.8Zm-1 11.4-3-3 1.1-1.1L9 11l3.9-3.9L14 8.2l-5 5Z" fill="currentColor"/></svg><span>${esc(imputed ? k.proofImputed(listText, m.n) : k.proofTypical(m.n))}</span></p>
+    <p class="fg85__proof"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 1.8 3.2 4.4v5c0 4 2.7 7.1 6.8 8.8 4.1-1.7 6.8-4.8 6.8-8.8v-5L10 1.8Zm-1 11.4-3-3 1.1-1.1L9 11l3.9-3.9L14 8.2l-5 5Z" fill="currentColor"/></svg><span>${esc(imputed ? k.proofImputed(listText, m.n, oneMissing) : k.proofTypical(m.n))}</span></p>
     <div class="fg85__block fg85__block--why"><h2>${esc(k.whyTitle)}</h2><ul class="fg85__list">${why.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
     ${tiles ? `<div class="fg85__facts-open"><h2 class="fg85__h">${esc(k.known)} <small>${esc(t.factsSub(m.kind === 'beverage' ? 'ml' : 'g'))}</small></h2><ul class="fg85__tiles">${tiles}</ul></div>` : ''}
     <div class="fg85__facts-open"><h2 class="fg85__h">${esc(k.dist)} <small>${m.n}</small></h2><div class="fg85__dist" role="img" aria-label="${esc(LETTERS.filter(g => m.dist?.[g] > 0.004).map(g => `${g} ${Math.round(m.dist[g] * 100)} %`).join(', '))}">${dist}</div></div>
