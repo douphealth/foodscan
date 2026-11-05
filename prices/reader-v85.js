@@ -163,7 +163,9 @@ async function loadQuick(code) {
     else if (!q.ok && ['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason)) {
       const prep = await peers(S);
       if (prep) {
-        if (q.reason === 'too-uncertain') { const pk = S.peerKind(p, prep); const q2 = pk ? Q.quickGrade(p, { alcohol, kindsOverride: [pk.kind] }) : null; if (q2?.ok) entry = { ...entry, kind: 'quick', q: q2 }; }
+        // too uncertain: first the table from similar products; if that does not settle it, the missing number is borrowed from them (87.1: this step was skipped)
+        const pk = q.reason === 'too-uncertain' ? S.peerKind(p, prep) : null, q2 = pk ? Q.quickGrade(p, { alcohol, kindsOverride: [pk.kind] }) : null;
+        if (q2?.ok) entry = { ...entry, kind: 'quick', q: q2 };
         else { const sm = S.similarGrade(p, prep); if (sm.ok) entry = { ...entry, kind: 'similar', sim: { ...sm, inputs: inputsOf(p) } }; }
       }
     }

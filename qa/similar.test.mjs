@@ -72,6 +72,21 @@ test('the similar-products card names what it is, what it used and how it has pe
   assert.match(U.similarHTML(typical, { lang: 'en' }), /Not calculated from this product’s nutrition/);
 });
 
+test('one number missing and no category (like an orange juice with no salt on record): the missing number is borrowed, and the printed figures never exceed what was measured', { timeout: 900000 }, () => {
+  const p = { name: 'Orange', brand: '', code: '5201005001824', basis: 'g', categories: [], pnns: 'unknown', nutrition: { kcal: 49, kj: 205, protein: 0.3, carbohydrates: 11.4, sugars: 11.4, fat: 0.1, saturatedFat: 0, fiber: 0.4, salt: null, sodium: null } };
+  assert.equal(Q.quickGrade(p).reason, 'too-uncertain', 'its own numbers alone leave A to D');
+  const sm = S.similarGrade(p, prep);
+  assert.ok(sm.ok && sm.mode === 'imputed' && sm.imputed.join() === 'salt', 'salt is borrowed from similar products');
+  const html = U.similarHTML({ ...sm, inputs: { kj: 205, sugars: 11.4, saturatedFat: 0, fat: 0.1, carbs: 11.4, protein: 0.3 } }, { lang: 'en' });
+  assert.match(html, new RegExp(`about ${U.RELIABILITY.similar.imputedOne.inside} %`), 'the card prints the one-missing figures');
+  const pct = (a, b) => 100 * a / b;
+  for (const [name, r] of Object.entries(V.validateOneMissing())) {
+    if (r.shown < 30) continue; // too few to measure
+    assert.ok(pct(r.inside, r.shown) >= U.RELIABILITY.similar.imputedOne.inside, `${name}: printed ${U.RELIABILITY.similar.imputedOne.inside} % inside, measured ${pct(r.inside, r.shown).toFixed(1)} %`);
+    assert.ok(pct(r.likely, r.shown) >= U.RELIABILITY.similar.imputedOne.likely, `${name}: printed ${U.RELIABILITY.similar.imputedOne.likely} % likely, measured ${pct(r.likely, r.shown).toFixed(1)} %`);
+  }
+});
+
 test('real catalogue, leave-one-out: how often the published letter is inside the estimated band (and the printed percentages never exceed what was measured)', { timeout: 900000 }, () => {
   const out = {};
   for (const only of ['nothing', 'sugars+salt']) out[only] = Object.values(V.validate({ only }))[0];
@@ -83,4 +98,10 @@ test('real catalogue, leave-one-out: how often the published letter is inside th
     assert.ok(pct(r.inside, r.shown) >= U.RELIABILITY.similar[key].inside, `${name}: printed ${U.RELIABILITY.similar[key].inside} % inside, measured ${pct(r.inside, r.shown).toFixed(1)} %`);
     assert.ok(pct(r.likely, r.shown) >= U.RELIABILITY.similar[key].likely, `${name}: printed ${U.RELIABILITY.similar[key].likely} % likely, measured ${pct(r.likely, r.shown).toFixed(1)} %`);
   }
+});
+
+test('an estimate hides the card\'s own "No grade" block, whatever stylesheet loads after it (87.1: ui-v80.css used to win and left "No grade" under every estimate)', async () => {
+  const fs = await import('node:fs'), css = fs.readFileSync(new URL('../prices/reader-v85.css', import.meta.url), 'utf8');
+  for (const part of ['snip__head', 'snip__core', 'snip__glow']) assert.ok(css.includes(`.gradecard[data-fg85]>.${part}`), part);
+  assert.match(css, /\.gradecard\[data-fg85\]>\.snip__glow\{display:none!important\}/);
 });

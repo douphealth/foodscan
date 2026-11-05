@@ -17,8 +17,9 @@ export function coverage() {
     if (q.ok) { c.calculated++; continue; }
     if (q.reason === 'exempt' || q.reason === 'excluded') { c.notRated++; continue; }
     if (['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason)) {
-      if (q.reason === 'too-uncertain') { const pk = S.peerKind(p, prep); const q2 = pk ? Q.quickGrade(p, { alcohol: raw.nutriments?.alcohol_100g, kindsOverride: [pk.kind] }) : null; if (q2?.ok) { c.calculated++; continue; } }
-      else { const sm = S.similarGrade(p, prep); if (sm.ok) { c[sm.mode]++; continue; } }
+      const pk = q.reason === 'too-uncertain' ? S.peerKind(p, prep) : null, q2 = pk ? Q.quickGrade(p, { alcohol: raw.nutriments?.alcohol_100g, kindsOverride: [pk.kind] }) : null;
+      if (q2?.ok) { c.calculated++; continue; }
+      const sm = S.similarGrade(p, prep); if (sm.ok) { c[sm.mode]++; continue; }
     }
     c.none++;
   }
