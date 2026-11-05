@@ -1703,8 +1703,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "87.1.0";
-var BUILD = "8710-one-missing-borrowed";
+var VERSION = "87.2.0";
+var BUILD = "8720-maker-family-greeklish";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -5553,6 +5553,7 @@ async function fs60LocalProduct(request,env,code){
   const m=await fs60Manifest(request,env,true),key=String(code).padStart(14,'0'),bucket=String(Number(key.slice(-6))%32).padStart(2,'0'),index=await fs60ReadAsset(request,env,`codes-${bucket}.json`);
   if(index.revision!==m.revision)return null;const file=index.codes?.[key];if(!file)return null;
   const data=await fs61Rows(request,env,m,[file]),product=data.products.find(p=>String(p.code).padStart(14,'0')===key);if(!product)return null;
-  return json({status:1,product,fetchedAt:m.exportedAt,catalogueSnapshot:{provider:'openfoodfacts-daily-export',exportedAt:m.exportedAt,revision:m.revision,source:m.source},version:VERSION},200,{'X-FoodScan-Cache':'DATED-CATALOGUE'});
+  // family: the catalogue's product family (the shard the barcode is filed in); 87.2 uses it to find similar products for records with no nutrition
+  return json({status:1,product,fetchedAt:m.exportedAt,catalogueSnapshot:{provider:'openfoodfacts-daily-export',exportedAt:m.exportedAt,revision:m.revision,source:m.source,family:(/^part-([a-z-]+)-\d+\.json$/.exec(file)||[])[1]||null},version:VERSION},200,{'X-FoodScan-Cache':'DATED-CATALOGUE'});
  }catch{return null;}
 }

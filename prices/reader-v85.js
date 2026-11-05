@@ -155,6 +155,7 @@ async function loadQuick(code) {
     const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error('http ' + res.status);
     const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p), alcohol = body?.product?.nutriments?.alcohol_100g;
+    p.family = body?.catalogueSnapshot?.family || ''; // the catalogue's product family, used to find similar products (87.2)
     const modified = Number(body?.product?.last_modified_t) > 0 ? Number(body.product.last_modified_t) * 1000 : null, meta = { modified, snapshot: Boolean(body?.catalogueSnapshot) };
     // the app's own verdict always wins: a grade, or a grade held back for review, is never replaced by an estimate
     if (a.grade || a.status === 'withheld') { quick.set(code, { state: 'ready', ...meta, kind: 'none', q: { ok: false, reason: 'app-has-grade' } }); schedule(); return; }

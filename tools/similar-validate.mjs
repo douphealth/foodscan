@@ -15,16 +15,17 @@ const QG = await import(path.join(here, '../prices/quick-grade-v85.mjs'));
 
 export function validate({ limit = Infinity, opts = {}, only = null } = {}) {
   const dir = path.join(here, '../assets/greece-r20261030'), items = [];
-  for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) items.push({ raw, p: D.parseProduct({ status: 1, product: raw }, raw.code) });
+  for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) items.push({ raw, p: Object.assign(D.parseProduct({ status: 1, product: raw }, raw.code), { family: /^part-([a-z-]+)-\d+\.json$/.exec(f)[1] }) });
   const prep = S.prepare(JSON.parse(fs.readFileSync(B.fileFor(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'))).revision), 'utf8')));
   const graded = items.filter(x => /^[A-E]$/.test(x.p.nutriScore || '') && D.ns23Inputs(x.p) && Number.isFinite(x.p.nutriScoreValue) && x.p.name);
   const out = {};
-  for (const [scenario, hide] of [['nothing', n => ({ nutriments: null })], ['sugars+salt', n => ({ sugars: null, salt: null })]].filter(x => !only || x[0] === only)) for (const noTwins of only ? [true] : [false, true]) {
+  // maker: a record with no usable name and no brand either, matched by the maker's barcode prefix and the product family only (87.2)
+  for (const [scenario, hide] of [['nothing', n => ({ nutriments: null })], ['maker', n => ({ nutriments: null })], ['sugars+salt', n => ({ sugars: null, salt: null })]].filter(x => !only || x[0] === only)) for (const noTwins of only ? [true] : [false, true]) {
     const r = out[`${scenario}${noTwins ? ' (no twins)' : ''}`] = { n: 0, shown: 0, inside: 0, likely: 0, width: { 1: 0, 2: 0, 3: 0 }, reasons: {}, byWidthInside: { 1: 0, 2: 0, 3: 0 } };
     for (const x of graded.slice(0, limit)) {
       r.n++;
-      const nutrition = scenario === 'nothing' ? {} : { ...x.p.nutrition, ...hide() };
-      const q = S.similarGrade({ ...x.p, nutrition, categories: [], pnns: 'unknown' }, prep, { exclude: x.raw.code, noTwins, ...opts });
+      const nutrition = scenario === 'sugars+salt' ? { ...x.p.nutrition, ...hide() } : {};
+      const q = S.similarGrade({ ...x.p, nutrition, categories: [], pnns: 'unknown', ...(scenario === 'maker' ? { name: '', brand: '' } : {}) }, prep, { exclude: x.raw.code, noTwins, ...opts });
       if (!q.ok) { r.reasons[q.reason] = (r.reasons[q.reason] || 0) + 1; continue; }
       r.shown++; r.width[q.letters.length]++; const inside = q.letters.includes(x.p.nutriScore); if (inside) { r.inside++; r.byWidthInside[q.letters.length]++; } if (q.likely === x.p.nutriScore) r.likely++;
     }
@@ -36,7 +37,7 @@ export function validate({ limit = Infinity, opts = {}, only = null } = {}) {
  *  number borrowed from similar products. Only the products that end on the last step are counted, leave-one-out with twins removed. */
 export function validateOneMissing() {
   const Q = QG, dir = path.join(here, '../assets/greece-r20261030'), items = [];
-  for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) items.push({ raw, p: D.parseProduct({ status: 1, product: raw }, raw.code) });
+  for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) items.push({ raw, p: Object.assign(D.parseProduct({ status: 1, product: raw }, raw.code), { family: /^part-([a-z-]+)-\d+\.json$/.exec(f)[1] }) });
   const prep = S.prepare(JSON.parse(fs.readFileSync(B.fileFor(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'))).revision), 'utf8')));
   const graded = items.filter(x => /^[A-E]$/.test(x.p.nutriScore || '') && D.ns23Inputs(x.p) && Number.isFinite(x.p.nutriScoreValue) && x.p.name);
   const out = {};
