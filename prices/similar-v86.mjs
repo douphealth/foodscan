@@ -95,7 +95,16 @@ export function similarGrade(p, prep, { exclude = null, noTwins = false, maxWidt
   const letters = [...L].slice(best.a, best.b + 1), likely = [...L].sort((x, y) => dist[y] - dist[x])[0];
   if (letters.length > maxWidth) return { ok: false, reason: 'too-wide', letters, dist };
   const distN = Object.fromEntries(Object.entries(dist).map(([g, w]) => [g, w / total]));
-  return { ok: true, mode, basis: mode === 'typical' && !named ? 'maker' : 'name', letters, likely, share: Math.round(best.m * 100) / 100, dist: distN, n: top.length, topSim: Math.round(top[0].sim * 100) / 100, kind: inf.via === 'default' ? top[0].peer.kind : inf.kinds[0],
+  // 89: the values that were borrowed, for the card: the weighted median of the similar products and the range of the middle 80 % of them
+  const borrowed = {};
+  if (mode === 'imputed') for (const [i, key] of [[0, 'energy'], [1, 'sugars'], [2, 'saturatedFat'], [3, 'salt']]) {
+    if (have[i]) continue;
+    const vals = top.map(({ peer, w }) => ({ v: peer.v[i], w })).filter(x => x.v !== null).sort((a, b) => a.v - b.v), sw = vals.reduce((s, x) => s + x.w, 0);
+    if (vals.length < 3 || !sw) continue;
+    const at = q => { let acc = 0; for (const x of vals) { acc += x.w; if (acc >= q * sw) return x.v; } return vals.at(-1).v; };
+    borrowed[key] = { value: at(0.5), lo: at(0.1), hi: at(0.9), n: vals.length };
+  }
+  return { ok: true, mode, borrowed, basis: mode === 'typical' && !named ? 'maker' : 'name', letters, likely, share: Math.round(best.m * 100) / 100, dist: distN, n: top.length, topSim: Math.round(top[0].sim * 100) / 100, kind: inf.via === 'default' ? top[0].peer.kind : inf.kinds[0],
     imputed: mode === 'imputed' ? ['sugars', 'saturatedFat', 'salt'].filter((_, i) => !have[i + 1]).concat(have[0] ? [] : ['energy']) : [],
     peers: top.slice(0, 6).map(({ peer }) => ({ code: peer.code, name: peer.name, brand: peer.brand, grade: peer.grade })) };
 }

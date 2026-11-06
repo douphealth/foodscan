@@ -123,3 +123,14 @@ test('87.2: Greek and Greeklish spellings match; a record with no name is matche
   }
   assert.equal(S.similarGrade({ name: '', brand: '', barcode: '2205930000016', family: 'other', nutrition: {}, basis: 'g' }, prep).reason, 'no-name', 'no name, no maker, no family: nothing');
 });
+
+test('89: borrowed values are shown with their range, and the printed accuracy never exceeds what was measured', { timeout: 900000 }, () => {
+  const r = S.similarGrade(prod('Brioche Bread', 'Katselis', BRIOCHE), prep);
+  assert.ok(r.borrowed.sugars && r.borrowed.salt, 'sugars and salt borrowed with values');
+  for (const b of Object.values(r.borrowed)) assert.ok(b.lo <= b.value && b.value <= b.hi);
+  const html = U.similarHTML({ ...r, inputs: { kj: 1038, fat: 6.7, saturatedFat: 2.1, carbs: 39.6, protein: 6.9 } }, { lang: 'en' });
+  assert.match(html, /≈ [\d.,]+ g/); assert.match(html, /in similar products/); assert.match(html, /inside the range in 85 to 89 %/);
+  const m = V.validateBorrowed();
+  for (const [k, x] of Object.entries(m)) assert.ok(100 * x.inside / x.n >= 84.5, `${k}: printed "85 to 89 %", measured ${(100 * x.inside / x.n).toFixed(1)} %`);
+  assert.ok(m.sugars.medianError <= 0.85 && m.saturatedFat.medianError <= 0.25 && m.salt.medianError <= 0.09, JSON.stringify(m));
+});
