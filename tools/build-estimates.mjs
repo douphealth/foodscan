@@ -10,11 +10,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
 const D = await import(path.join(here, '../assets/domain-v8500.mjs')), Q = await import(path.join(here, '../prices/quick-grade-v85.mjs')), S = await import(path.join(here, '../prices/similar-v86.mjs')), P = await import(path.join(here, 'build-peers.mjs'));
+const W = await import(path.join(here, '../prices/swaps-v88.mjs')), SW = await import(path.join(here, 'build-swaps.mjs'));
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));
 export const fileFor = rev => path.join(here, `../assets/estimates-${rev}.json`);
 
 /** The page's verdict for one parsed product (p.family set): null when the page shows nothing, else { letters, likely, tier }. */
-export function verdict(p, alcohol, prep) {
+export function verdict(p, alcohol, prep, raw = null, swaps = null) {
   const a = D.assessGrade(p); if (a.grade || a.status === 'withheld') return null;
   const q = Q.quickGrade(p, { alcohol });
   if (q.ok) return { letters: q.letters, likely: q.likely || (q.letters.length === 1 ? q.letters[0] : ''), tier: 'q' };
@@ -22,20 +23,24 @@ export function verdict(p, alcohol, prep) {
   if (!['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason)) return null;
   const pk = q.reason === 'too-uncertain' ? S.peerKind(p, prep) : null, q2 = pk ? Q.quickGrade(p, { alcohol, kindsOverride: [pk.kind] }) : null;
   if (q2?.ok) return { letters: q2.letters, likely: q2.likely || (q2.letters.length === 1 ? q2.letters[0] : ''), tier: 'q' };
-  const sm = S.similarGrade(p, prep); if (!sm.ok) return null;
-  return { letters: sm.letters, likely: sm.likely, tier: sm.mode === 'imputed' ? 'i' : sm.basis === 'maker' ? 'm' : 't' };
+  const sm = S.similarGrade(p, prep);
+  if (sm.ok) return { letters: sm.letters, likely: sm.likely, tier: sm.mode === 'imputed' ? 'i' : sm.basis === 'maker' ? 'm' : 't' };
+  if (!swaps || !(raw?.categories_tags || []).length) return null; // 89: products that share its categories (prices/reader-v85.js categoryEstimate)
+  const k = D.ns23Kinds(p), kind = k.kinds?.length ? k.kinds[0] : Q.inferKinds(p).kinds[0];
+  const cg = W.categoryGrade({ code: p.barcode, name: p.name, brand: (raw.brands || '').split(',')[0], categories: raw.categories_tags, kind }, swaps);
+  return cg.ok ? { letters: cg.letters, likely: cg.likely, tier: 'c' } : null;
 }
 
 export function build() {
-  const prep = S.prepare(JSON.parse(fs.readFileSync(P.fileFor(index.revision), 'utf8'))), e = {};
+  const prep = S.prepare(JSON.parse(fs.readFileSync(P.fileFor(index.revision), 'utf8'))), swaps = W.prepare(JSON.parse(fs.readFileSync(SW.fileFor(index.revision), 'utf8'))), e = {};
   for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) {
     const family = /^part-([a-z-]+)-\d+\.json$/.exec(f)[1];
     for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) {
       const p = D.parseProduct({ status: 1, product: raw }, raw.code); p.family = family;
-      const v = verdict(p, raw.nutriments?.alcohol_100g, prep); if (v) e[raw.code] = `${v.letters.join('')}|${v.likely}|${v.tier}`;
+      const v = verdict(p, raw.nutriments?.alcohol_100g, prep, raw, swaps); if (v) e[raw.code] = `${v.letters.join('')}|${v.likely}|${v.tier}`;
     }
   }
-  return { schema: 1, revision: index.revision, format: 'code -> LETTERS|LIKELY|TIER (q calculated, i borrowed, t typical, m maker, x not rated)', e: Object.fromEntries(Object.entries(e).sort()) };
+  return { schema: 1, revision: index.revision, format: 'code -> LETTERS|LIKELY|TIER (q calculated, i borrowed, t typical, m maker, c categories, x not rated)', e: Object.fromEntries(Object.entries(e).sort()) };
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const o = build(), text = JSON.stringify(o), file = fileFor(o.revision);

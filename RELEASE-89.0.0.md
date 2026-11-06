@@ -20,12 +20,21 @@ A borrowed sugars, saturated fat, salt or energy value is now printed on the car
 
 The card's reliability note quotes these ("85 to 89 %"); `qa/similar.test.mjs` fails if the measurement drops below what is printed. The label-facts panel still says "Not reported" for these nutrients, because they are not on the label.
 
-## 3. Tried and not shipped (measured)
+## 3. More products with a grade estimate: their Open Food Facts categories
+A record with no usable numbers whose name and brand match nothing close enough now gets the grade band of the graded products that share its Open Food Facts categories (rarer, more specific categories count more; always the same Nutri-Score table): `categoryGrade` in `prices/swaps-v88.mjs`, the last step before "no grade" on the product page and in the list index. Its card says it rests on the categories and says nothing about this product's recipe.
+- Measured leave-one-out on 4,176 graded Greek products with categories (`node tools/swaps-validate.mjs`): estimate for 64.3 %, published letter inside the band 91.2 %, "most likely" exact 57.3 %. The card prints 91 / 57; `qa/swaps.test.mjs` fails if the measurement drops below.
+- Examples: an Ecomil almond drink "Usually B or C", Sprite C–E, Lidl eggs A–B.
+- Catalogue (`node tools/coverage.mjs`): 138 more products; **nothing to show drops from 1,649 to 1,511**; some grade or an explanation for **87.6 %** (was 86.4 %).
+- Also checked and found empty: Open Food Facts' own nutrition estimate from the ingredient list (`nutriments_estimated`): none of 26 sampled no-grade products has one, only 2 list ingredients.
+
+The 1,511 left have no usable numbers and nothing close by name, brand, maker, family or category; for 857 of them similar products exist but spread over four or five letters, which is not a credible grade.
+
+## 4. Tried and not shipped (measured)
 - **Numbers from the same product under another barcode** (same name and brand, agreeing numbers): published letter inside only 74.7 % of the time, worse than the similar-products method (88 %), and only 18 products reached. Variants under one name (2 % and 5 % yogurt) differ too much.
 - **Shop photos** (Bazaar, Lidl): not used; they belong to the shops and manufacturers, and the page's security policy allows only Open Food Facts images.
 - **Rodogal's price**: no source has it (observatory, Bazaar, Lidl, Open Prices, e-katanalotis), and no estimate is possible because the record has no pack size.
 
-## 4. Photos (follow-up)
+## 5. Photos (follow-up)
 `tools/build-photos.mjs` asks Open Food Facts for every catalogue product without a front image and keeps a real photo of it (a front image of another language, then the first uploaded photo). A sample found one for about 12 % of the 3,380. The Open Food Facts search API was answering "busy" for most requests, so this release carries the index of a first run over 100 products (11 photos found); the full run over all 3,380 ships in 89.1. `prices/fill-v89.js` shows a photo only where the index has one and keeps the illustration otherwise, or if the photo does not load.
 
 ## Checked
