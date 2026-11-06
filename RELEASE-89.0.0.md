@@ -26,7 +26,7 @@ The card's reliability note quotes these ("85 to 89 %"); `qa/similar.test.mjs` f
 - **Rodogal's price**: no source has it (observatory, Bazaar, Lidl, Open Prices, e-katanalotis), and no estimate is possible because the record has no pack size.
 
 ## 4. Photos (follow-up)
-`tools/build-photos.mjs` asks Open Food Facts for every catalogue product without a front image and keeps a real photo of it (a front image of another language, then the first uploaded photo). A sample found one for about 12 % of the 3,380. The Open Food Facts search API was answering "busy" for most requests, so the index was not ready for this release; `prices/fill-v89.js` already uses it when the file is present (a missing file leaves the illustration, as today). It ships in 89.1.
+`tools/build-photos.mjs` asks Open Food Facts for every catalogue product without a front image and keeps a real photo of it (a front image of another language, then the first uploaded photo). A sample found one for about 12 % of the 3,380. The Open Food Facts search API was answering "busy" for most requests, so this release carries the index of a first run over 100 products (11 photos found); the full run over all 3,380 ships in 89.1. `prices/fill-v89.js` shows a photo only where the index has one and keeps the illustration otherwise, or if the photo does not load.
 
 ## Checked
 Real `_worker.js` locally as a Greek visitor (Chromium, Greek locale, Athens time zone): the search list, the Rodogal page (borrowed values, swaps: Fage Total Greek yogurts graded A). No page errors. 123 tests pass; `node build.mjs --check` OK. Not checked on the live site.
