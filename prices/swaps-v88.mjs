@@ -81,3 +81,27 @@ export function findSwaps(t0, prep, { exclude = null, limit = PARAMS.limit, minS
   swaps.sort((a, b) => RANK[a.row.grade] - RANK[b.row.grade] || b.score - a.score); // the healthiest first
   return { ok: true, mode, against, inferredShelf: inferred, swaps: swaps.map(x => ({ row: x.row, sim: Math.round(x.sim * 100) / 100, sharedCats: x.cat, sameName: x.nm, tier: inferred ? 'inferred' : have.cats && x.cat >= 0.6 ? 'shelf' : 'aisle' })) };
 }
+
+/** 89: a grade band from the products that share this record's Open Food Facts categories, for a record whose own numbers cannot give one and whose name and
+ *  brand match nothing close enough. Like "typical for similar products", it says nothing about this exact product's nutrition, and the card says so.
+ *  Measured leave-one-out on graded products with categories (tools/swaps-validate.mjs validateCategory): see CATEGORY_RELIABILITY. */
+export const CATEGORY_PARAMS = { minCat: 0.5, k: 30, mass: 0.85, maxWidth: 3, minPeers: 5 };
+export function categoryGrade(t, prep, { exclude = null, ...o } = {}) {
+  const { minCat, k, mass, maxWidth, minPeers } = { ...CATEGORY_PARAMS, ...o };
+  const tc = (t.categories || []).filter(c => prep.catDf.has(c)); if (!tc.length) return { ok: false, reason: 'no-category' };
+  const total = tc.reduce((s, c) => s + prep.catIdf(c), 0), set = new Set(tc), key = ns23Fold(t.name || '') + '|' + ns23Fold(t.brand || ''), sc = [];
+  for (const r of prep.rows) {
+    if (r.code === t.code || r.code === exclude || r.key === key || (t.kind && r.kind !== t.kind)) continue;
+    let c = 0; for (const x of r.cats) if (set.has(x)) c += prep.catIdf(x); c /= total; if (c < minCat) continue;
+    sc.push({ row: r, w: c * c });
+  }
+  if (sc.length < minPeers) return { ok: false, reason: 'no-similar' };
+  sc.sort((a, b) => b.w - a.w);
+  const top = sc.slice(0, k), dist = { A: 0, B: 0, C: 0, D: 0, E: 0 }, L = 'ABCDE'; let tw = 0;
+  for (const x of top) { dist[x.row.grade] += x.w; tw += x.w; }
+  let best = null; for (let a = 0; a < 5; a++) for (let b = a; b < 5; b++) { let m = 0; for (let i = a; i <= b; i++) m += dist[L[i]]; m /= tw; if (m >= mass && (!best || b - a < best.b - best.a || (b - a === best.b - best.a && m > best.m))) best = { a, b, m }; }
+  const letters = [...L].slice(best.a, best.b + 1), likely = [...L].sort((x, y) => dist[y] - dist[x])[0];
+  if (letters.length > maxWidth) return { ok: false, reason: 'too-wide', letters };
+  return { ok: true, mode: 'typical', basis: 'category', letters, likely, share: Math.round(best.m * 100) / 100, dist: Object.fromEntries(Object.entries(dist).map(([g, w]) => [g, w / tw])), n: top.length, kind: t.kind || top[0].row.kind, imputed: [], borrowed: {},
+    peers: top.slice(0, 6).map(({ row }) => ({ code: row.code, name: row.name, brand: row.brand, grade: row.grade })) };
+}

@@ -6,7 +6,7 @@ import { esc } from './price-core-v83.mjs';
 
 /** Percent of graded Greek products (categories hidden) for which the published letter was inside the shown band, and for which the "most likely" letter equalled it. */
 export const RELIABILITY = { inside: { high: 96, medium: 93, low: 76 }, likely: { high: 94, medium: 89, low: 63 }, sample: 4103,
-  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 }, typicalMaker: { inside: 87, likely: 56 } } };
+  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 }, typicalMaker: { inside: 87, likely: 56 }, typicalCategory: { inside: 91, likely: 57 } } };
 
 const T = {
   en: {
@@ -56,9 +56,10 @@ const T = {
       proofImputed: (list, n, one) => `Calculated with the official Nutri-Score 2023 algorithm from the numbers on record. ${one ? `The value for ${list} was` : `The missing ${list} were`} borrowed from the ${n} most similar products, one at a time, and the resulting letters were combined.`,
       whyTitle: 'Why this is an estimate',
       whyT: ['The record has no nutrition numbers, so the estimate rests only on similar products.', 'Similar means a similar name (Greek and Greeklish spellings count as the same), the same brand, the same maker (the company part of the barcode) and the same product family. The more they agree with each other, the better the estimate; the bar below shows how they are spread.'],
+      whyTC: ['The record has no usable nutrition numbers, and its name and brand match no close product.', 'The estimate rests on graded products that share its Open Food Facts categories (rarer, more specific categories count more). It says nothing about this exact product\'s recipe.'],
       whyTM: ['The record has no nutrition numbers and no usable name or brand.', 'The estimate rests on graded products from the same maker (the company part of the barcode) and, where known, the same product family. That is a weaker match than a name, and the reliability figures below are lower to match.'],
       whyI: list => [`The record does not give: ${list}.`, 'Similar products were chosen by name and brand and by how close their recorded numbers are to this product’s.', 'The Nutri-Score table is assumed from the similar products, because the record has no confirmed category.'],
-      dist: 'How the similar products are spread', peers: 'Similar products used', peerGrade: g => (g ? `Grade ${g}` : 'no published grade'), known: 'Numbers on record', borrowed: 'borrowed', notOnRecord: 'not on record',
+      dist: 'How the similar products are spread', peers: 'Similar products used', peerGrade: g => (g ? `Grade ${g}` : 'no published grade'), known: 'Numbers on record', borrowed: 'borrowed', borrowedRange: (lo, hi, u) => `borrowed · ${lo}–${hi} ${u} in similar products`, borrowedNote: 'A borrowed value is the middle value of the similar products; the range holds the middle 80 % of them. Measured on 3,528 graded Greek products with their numbers hidden: the real value was inside the range in 85 to 89 % of cases (typical error: sugars 0.8 g, saturated fat 0.2 g, salt 0.08 g per 100 g).', notOnRecord: 'not on record',
       reliability: 'How reliable is this kind of estimate?', reliabilityLine: (inside, likely, n) => `We tested this method on ${n.toLocaleString('en')} Greek products that have a published grade, hiding their numbers and taking each product out of its own comparison group. The published letter was inside the band in about ${inside} % of cases, and the “most likely” letter was exactly the published one in about ${likely} %.`,
       check: 'Get the exact grade from the label photo',
     },
@@ -116,9 +117,10 @@ const T = {
       proofImputed: (list, n, one) => `Υπολογίστηκε με τον επίσημο αλγόριθμο Nutri-Score 2023 από τους αριθμούς που υπάρχουν. ${one ? `Το στοιχείο που λείπει (${list}) δανείστηκε` : `Τα στοιχεία που λείπουν (${list}) δανείστηκαν`} από τα ${n} πιο παρόμοια προϊόντα, ένα κάθε φορά, και συνδυάστηκαν τα γράμματα που προέκυψαν.`,
       whyTitle: 'Γιατί είναι εκτίμηση',
       whyT: ['Η εγγραφή δεν έχει διατροφικούς αριθμούς, οπότε η εκτίμηση στηρίζεται μόνο σε παρόμοια προϊόντα.', 'Παρόμοια σημαίνει παρόμοιο όνομα (η ελληνική και η «greeklish» γραφή μετρούν ως ίδιες), ίδια μάρκα, ίδιος παραγωγός (το τμήμα της εταιρείας στο barcode) και ίδια οικογένεια προϊόντων. Όσο περισσότερο συμφωνούν μεταξύ τους, τόσο καλύτερη η εκτίμηση· η μπάρα παρακάτω δείχνει πώς κατανέμονται.'],
+      whyTC: ['Η εγγραφή δεν έχει χρήσιμους διατροφικούς αριθμούς, και το όνομα και η μάρκα της δεν ταιριάζουν με κάποιο κοντινό προϊόν.', 'Η εκτίμηση στηρίζεται σε προϊόντα με βαθμό που μοιράζονται τις κατηγορίες του στο Open Food Facts (οι πιο σπάνιες, πιο ειδικές κατηγορίες μετρούν περισσότερο). Δεν λέει τίποτα για τη συνταγή αυτού του συγκεκριμένου προϊόντος.'],
       whyTM: ['Η εγγραφή δεν έχει διατροφικούς αριθμούς ούτε χρήσιμο όνομα ή μάρκα.', 'Η εκτίμηση στηρίζεται σε προϊόντα με βαθμό από τον ίδιο παραγωγό (το τμήμα της εταιρείας στο barcode) και, όπου είναι γνωστή, την ίδια οικογένεια προϊόντων. Είναι πιο αδύναμη αντιστοίχιση από το όνομα, και τα ποσοστά αξιοπιστίας παρακάτω είναι ανάλογα χαμηλότερα.'],
       whyI: list => [`Η εγγραφή δεν δίνει: ${list}.`, 'Τα παρόμοια προϊόντα επιλέχθηκαν από το όνομα και τη μάρκα και από το πόσο κοντά είναι οι καταγεγραμμένοι αριθμοί τους σε αυτούς του προϊόντος.', 'Ο πίνακας Nutri-Score θεωρήθηκε από τα παρόμοια προϊόντα, επειδή η εγγραφή δεν έχει επιβεβαιωμένη κατηγορία.'],
-      dist: 'Πώς κατανέμονται τα παρόμοια προϊόντα', peers: 'Παρόμοια προϊόντα που χρησιμοποιήθηκαν', peerGrade: g => (g ? `Βαθμός ${g}` : 'χωρίς δημοσιευμένο βαθμό'), known: 'Αριθμοί στην εγγραφή', borrowed: 'δανεισμένο', notOnRecord: 'δεν υπάρχει',
+      dist: 'Πώς κατανέμονται τα παρόμοια προϊόντα', peers: 'Παρόμοια προϊόντα που χρησιμοποιήθηκαν', peerGrade: g => (g ? `Βαθμός ${g}` : 'χωρίς δημοσιευμένο βαθμό'), known: 'Αριθμοί στην εγγραφή', borrowed: 'δανεισμένο', borrowedRange: (lo, hi, u) => `δανεισμένο · ${lo}–${hi} ${u} στα παρόμοια προϊόντα`, borrowedNote: 'Η δανεισμένη τιμή είναι η μεσαία τιμή των παρόμοιων προϊόντων· το εύρος περιέχει το μεσαίο 80 % από αυτά. Μετρήθηκε σε 3.528 ελληνικά προϊόντα με βαθμό, κρύβοντας τους αριθμούς τους: η πραγματική τιμή ήταν μέσα στο εύρος στο 85 έως 89 % των περιπτώσεων (τυπικό σφάλμα: σάκχαρα 0,8 g, κορεσμένα 0,2 g, αλάτι 0,08 g ανά 100 g).', notOnRecord: 'δεν υπάρχει',
       reliability: 'Πόσο αξιόπιστη είναι αυτή η εκτίμηση;', reliabilityLine: (inside, likely, n) => `Δοκιμάσαμε τη μέθοδο σε ${n.toLocaleString('el')} ελληνικά προϊόντα με δημοσιευμένο βαθμό, κρύβοντας τους αριθμούς τους και βγάζοντας κάθε προϊόν από τη δική του ομάδα σύγκρισης. Το δημοσιευμένο γράμμα ήταν μέσα στη ζώνη σε περίπου ${inside} % των περιπτώσεων και το «πιθανότερο» γράμμα ήταν ακριβώς το δημοσιευμένο σε περίπου ${likely} %.`,
       check: 'Ο ακριβής βαθμός από φωτογραφία της ετικέτας',
     },
@@ -220,15 +222,17 @@ export function similarHTML(m, o = {}) {
   const pills = LETTERS.map(g => { const inB = letters.includes(g), isL = g === m.likely; return `<li class="fg85__pill g-${g} ${isL ? 'is-likely' : inB ? 'is-possible' : 'is-out'}"><b>${g}</b></li>`; }).join('');
   const dist = LETTERS.filter(g => (m.dist?.[g] || 0) > 0.004).map(g => `<i class="g-${g}" style="flex:${m.dist[g]}" title="${g} ${Math.round(m.dist[g] * 100)} %"><b>${m.dist[g] >= 0.08 ? `${g} ${Math.round(m.dist[g] * 100)}%` : ''}</b></i>`).join('');
   const listText = joinList((m.imputed || []).map(x => t.fields[x === 'saturatedFat' ? 'saturated_fat' : x === 'energy' ? 'energy' : x].toLowerCase()), L);
-  const why = imputed ? k.whyI(listText) : m.basis === 'maker' ? k.whyTM : k.whyT;
+  const why = imputed ? k.whyI(listText) : m.basis === 'maker' ? k.whyTM : m.basis === 'category' ? k.whyTC : k.whyT;
   const inp = m.inputs || {};
   const tiles = imputed ? NUTS.map(([key, id, unit]) => {
-    const borrowed = (m.imputed || []).some(x => IMPUTE_KEY[x] === key), v = inp[key];
+    const bk = (m.imputed || []).find(x => IMPUTE_KEY[x] === key), borrowed = Boolean(bk), v = inp[key], bv = bk ? m.borrowed?.[bk] : null;
     if (v == null && !borrowed) return '';
-    return `<li class="fg85__tile${borrowed ? ' is-unreported' : ''}"><span class="fg85__tl">${esc(t.fields[id])}</span><b class="fg85__tv">${borrowed ? esc(k.borrowed) : esc(`${fmt(v, L)} ${unit}`)}</b>${borrowed ? '<span class="fg85__bar is-unknown" aria-hidden="true"></span>' : ''}</li>`;
+    // 89: a borrowed value is shown with its range (the middle 80 % of the similar products), never as if it were on the label
+    const shown = bv ? `≈ ${fmt(bv.value, L)} ${unit}` : k.borrowed, sub = bv ? k.borrowedRange(fmt(bv.lo, L), fmt(bv.hi, L), unit) : '';
+    return `<li class="fg85__tile${borrowed ? ' is-unreported' : ''}"><span class="fg85__tl">${esc(t.fields[id])}</span><b class="fg85__tv">${borrowed ? esc(shown) : esc(`${fmt(v, L)} ${unit}`)}</b>${sub ? `<small class="fg85__tr">${esc(sub)}</small>` : ''}${borrowed ? '<span class="fg85__bar is-unknown" aria-hidden="true"></span>' : ''}</li>`;
   }).join('') : '';
   const peers = (m.peers || []).map(x => `<li><span>${esc(x.name || x.brand || x.code)}${x.brand && x.name ? ` <small>${esc(x.brand)}</small>` : ''}</span>${x.grade ? `<b class="fg85__pg g-${x.grade}">${x.grade}</b>` : `<em>${esc(k.peerGrade(''))}</em>`}</li>`).join('');
-  const oneMissing = imputed && (m.imputed || []).length === 1, rel = RELIABILITY.similar[oneMissing ? 'imputedOne' : m.mode === 'typical' && m.basis === 'maker' ? 'typicalMaker' : m.mode], when = o.modified ? new Intl.DateTimeFormat(L === 'el' ? 'el-GR' : 'en-GB', { dateStyle: 'medium' }).format(new Date(o.modified)) : '';
+  const oneMissing = imputed && (m.imputed || []).length === 1, rel = RELIABILITY.similar[oneMissing ? 'imputedOne' : m.mode === 'typical' && m.basis === 'maker' ? 'typicalMaker' : m.mode === 'typical' && m.basis === 'category' ? 'typicalCategory' : m.mode], when = o.modified ? new Intl.DateTimeFormat(L === 'el' ? 'el-GR' : 'en-GB', { dateStyle: 'medium' }).format(new Date(o.modified)) : '';
   return `<section class="fg85 fg85--sim" data-g="${seal}" aria-label="${esc(title)}">
     <header class="fg85__top"><span class="fg85__tag">${esc(k.tag)}</span><span class="fg85__chipmini is-est">${esc(k.chip)}</span><span class="fg85__method">${esc(t.method)}</span></header>
     <div class="fg85__hero">
@@ -241,7 +245,7 @@ export function similarHTML(m, o = {}) {
     ${tiles ? `<div class="fg85__facts-open"><h2 class="fg85__h">${esc(k.known)} <small>${esc(t.factsSub(m.kind === 'beverage' ? 'ml' : 'g'))}</small></h2><ul class="fg85__tiles">${tiles}</ul></div>` : ''}
     <div class="fg85__facts-open"><h2 class="fg85__h">${esc(k.dist)} <small>${m.n}</small></h2><div class="fg85__dist" role="img" aria-label="${esc(LETTERS.filter(g => m.dist?.[g] > 0.004).map(g => `${g} ${Math.round(m.dist[g] * 100)} %`).join(', '))}">${dist}</div></div>
     <details class="fg85__facts"><summary>${esc(k.peers)}</summary><ul class="fg85__peers">${peers}</ul></details>
-    <details class="fg85__facts"><summary>${esc(k.reliability)}</summary><p class="fg85__small">${esc(k.reliabilityLine(rel.inside, rel.likely, RELIABILITY.sample))}</p><p class="fg85__small">${esc(t.reliabilityNote)}</p></details>
+    <details class="fg85__facts"><summary>${esc(k.reliability)}</summary><p class="fg85__small">${esc(k.reliabilityLine(rel.inside, rel.likely, RELIABILITY.sample))}</p>${imputed && m.borrowed && Object.keys(m.borrowed).length ? `<p class="fg85__small">${esc(k.borrowedNote)}</p>` : ''}<p class="fg85__small">${esc(t.reliabilityNote)}</p></details>
     <footer class="fg85__foot"><p>${esc(t.sourceLine(o.code || '', when, o.snapshot))}</p><p>${esc(t.notOfficial)}</p>
       ${o.actions ? `<div class="fg85__acts"><label class="fg85__btn"><span>📷 ${esc(k.check)}</span><input type="file" accept="image/*" capture="environment" data-fr="file" hidden></label></div>` : ''}</footer>
   </section>`;

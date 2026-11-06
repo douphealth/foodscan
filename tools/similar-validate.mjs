@@ -55,8 +55,22 @@ export function validateOneMissing() {
   }
   return out;
 }
+/** 89: how close the BORROWED values are to the real ones: sugars, saturates and salt hidden on graded products, leave-one-out with twins removed.
+ *  For each: the share of products whose real value lies inside the range the card shows (middle 80 % of the similar products) and the median absolute error. */
+export function validateBorrowed() {
+  const dir = path.join(here, '../assets/greece-r20261030'), prep = S.prepare(JSON.parse(fs.readFileSync(B.fileFor(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'))).revision), 'utf8'))), out = {};
+  for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) {
+    const p = D.parseProduct({ status: 1, product: raw }, raw.code); if (!/^[A-E]$/.test(p.nutriScore || '') || !D.ns23Inputs(p) || !p.name) continue;
+    const sm = S.similarGrade({ ...p, nutrition: { ...p.nutrition, sugars: null, salt: null, saturatedFat: null, sodium: null }, categories: [], pnns: 'unknown' }, prep, { exclude: raw.code, noTwins: true });
+    if (!sm.ok) continue;
+    for (const k of ['sugars', 'saturatedFat', 'salt']) { const b = sm.borrowed[k], v = p.nutrition[k]; if (!b || v == null) continue; const r = out[k] ||= { n: 0, inside: 0, errors: [] }; r.n++; if (v >= b.lo && v <= b.hi) r.inside++; r.errors.push(Math.abs(b.value - v)); }
+  }
+  for (const r of Object.values(out)) { r.errors.sort((a, b) => a - b); r.medianError = r.errors[Math.floor(r.errors.length / 2)]; delete r.errors; }
+  return out;
+}
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const pct = (a, b) => (b ? (100 * a / b).toFixed(1) : '0') + ' %', res = validate();
+  for (const [k, r] of Object.entries(validateBorrowed())) console.log(`borrowed ${k.padEnd(13)} n ${r.n}: real value inside the shown range ${pct(r.inside, r.n)}; median error ${r.medianError.toFixed(2)} g`);
   for (const [k, r] of Object.entries(validateOneMissing())) console.log(`one missing: ${k.padEnd(10)} n ${r.n}: reach the similar step ${r.reached}, estimate ${r.shown}; inside ${pct(r.inside, r.shown)}; "likely" exact ${pct(r.likely, r.shown)}`);
   for (const [k, r] of Object.entries(res)) console.log(`${k.padEnd(26)} n ${r.n}: estimate for ${r.shown} (${pct(r.shown, r.n)}); published letter inside ${pct(r.inside, r.shown)}; "likely" exact ${pct(r.likely, r.shown)}; widths 1/2/3: ${r.width[1]}/${r.width[2]}/${r.width[3]}; inside by width ${pct(r.byWidthInside[1], r.width[1])} / ${pct(r.byWidthInside[2], r.width[2])} / ${pct(r.byWidthInside[3], r.width[3])}; no estimate: ${JSON.stringify(r.reasons)}`);
 }

@@ -148,6 +148,16 @@ globalThis.__fs85quick = quick; // read by prices/swaps-ui-v88.js, so the swaps 
 const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json';
 let peersPromise = null; // the similar-products index, fetched only when a product needs it
 const peers = S => peersPromise || (peersPromise = fetch(PEERS_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? S.prepare(j) : null)).catch(() => null));
+// 89: the last step before "no grade": products that share the record's Open Food Facts categories (prices/swaps-v88.mjs categoryGrade)
+let swapsPromise = null;
+const swapsIndex = W => swapsPromise || (swapsPromise = fetch('/assets/swaps-off-csv-2026-10-30.json').then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
+async function categoryEstimate(D, Q, p, body) {
+  const cats = body?.product?.categories_tags || []; if (!cats.length) return null;
+  const W = await import('./swaps-v88.mjs'), prep = await swapsIndex(W); if (!prep) return null;
+  const k = D.ns23Kinds(p), kind = k.kinds?.length ? k.kinds[0] : Q.inferKinds(p).kinds[0];
+  const r = W.categoryGrade({ code: p.barcode, name: p.name, brand: (body?.product?.brands || '').split(',')[0], categories: cats, kind }, prep);
+  return r.ok ? r : null;
+}
 const inputsOf = p => { const n = p?.nutrition || {}; return { kj: n.kj ?? (n.kcal != null ? Math.round(n.kcal * 4.184) : null), sugars: n.sugars ?? null, saturatedFat: n.saturatedFat ?? null, salt: n.salt ?? null, fibre: n.fiber ?? null, protein: n.protein ?? null, fat: n.fat ?? null, carbs: n.carbohydrates ?? null }; };
 async function loadQuick(code) {
   quick.set(code, { state: 'loading' });
@@ -170,6 +180,7 @@ async function loadQuick(code) {
         if (q2?.ok) entry = { ...entry, kind: 'quick', q: q2 };
         else { const sm = S.similarGrade(p, prep); if (sm.ok) entry = { ...entry, kind: 'similar', sim: { ...sm, inputs: inputsOf(p) } }; }
       }
+      if (entry.kind === 'none') { const cg = await categoryEstimate(D, Q, p, body); if (cg) entry = { ...entry, kind: 'similar', sim: { ...cg, inputs: inputsOf(p) } }; }
     }
     quick.set(code, entry);
   } catch { quick.set(code, { state: 'none', kind: 'none', q: { ok: false, reason: 'unavailable' } }); }

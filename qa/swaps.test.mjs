@@ -52,3 +52,17 @@ test('the Prices page uses the app design system: its tokens, light and dark, an
   const app = fs.readFileSync(new URL('../assets/app-V52SOTA1-v7540.css', import.meta.url), 'utf8');
   assert.ok(app.includes('--bg:#050F0A') || app.toUpperCase().includes('050F0A'), 'the tokens are the app\'s own');
 });
+
+test('89: a grade from products that share the record\'s categories; same table only; the printed figures never exceed the measurement', { timeout: 1200000 }, () => {
+  const U = globalThis.__U;
+  const r = V.validateCategory(data), pct = (a, b) => 100 * a / b;
+  assert.ok(r.n > 4000 && pct(r.shown, r.n) >= 60, `estimate for ${pct(r.shown, r.n).toFixed(1)} %`);
+  return import(new URL('../prices/grade-ui-v85.mjs', import.meta.url)).then(G => {
+    assert.ok(pct(r.inside, r.shown) >= G.RELIABILITY.similar.typicalCategory.inside, `inside printed ${G.RELIABILITY.similar.typicalCategory.inside}, measured ${pct(r.inside, r.shown).toFixed(1)}`);
+    assert.ok(pct(r.likely, r.shown) >= G.RELIABILITY.similar.typicalCategory.likely, `likely printed ${G.RELIABILITY.similar.typicalCategory.likely}, measured ${pct(r.likely, r.shown).toFixed(1)}`);
+    const yog = data.items.find(x => x.p.nutriScore && (x.raw.categories_tags || []).includes('en:greek-style-yogurts'));
+    const g = W.categoryGrade(V.targetOf(yog, { grade: null }), prep); assert.ok(g.ok, 'a Greek yogurt gets a category grade');
+    for (const p of g.peers) assert.ok(prep.rows.find(x => x.code === p.code).kind === V.targetOf(yog).kind, 'same Nutri-Score table');
+    for (const lang of ['en', 'el']) { const html = G.similarHTML(g, { lang }); assert.match(html, new RegExp(`${G.RELIABILITY.similar.typicalCategory.inside} %`)); assert.match(html, lang === 'en' ? /share its Open Food Facts categories/ : /κατηγορίες του στο Open Food Facts/); }
+  });
+});

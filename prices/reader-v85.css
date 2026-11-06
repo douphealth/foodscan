@@ -172,3 +172,6 @@
 .fg85__pg{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:9px;background:var(--pc);color:var(--pci);font:800 .95rem/1 var(--font-display,Georgia,serif)}
 
 .fg85__legend{margin:-6px 0 0;font-size:.72rem;line-height:1.4;color:color-mix(in srgb,var(--ink,#0C1B14) 62%,transparent)}
+
+/* 89: the range under a borrowed value */
+.fg85__tile .fg85__tr{display:block;margin-top:2px;font-size:.72rem;line-height:1.3;color:var(--ink3);font-weight:600}

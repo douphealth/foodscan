@@ -43,7 +43,14 @@ export function validate({ items, prep } = load(), opts = {}) {
   }
   return res;
 }
+/** 89: the category grade, leave-one-out on graded products with categories (their numbers play no part in it). */
+export function validateCategory({ items, prep } = load()) {
+  const r = { n: 0, shown: 0, inside: 0, likely: 0 };
+  for (const x of items) { const g = x.p.nutriScore; if (!/^[A-E]$/.test(g || '') || !(x.raw.categories_tags || []).length) continue; r.n++; const e = W.categoryGrade(targetOf(x, { grade: null }), prep); if (!e.ok) continue; r.shown++; if (e.letters.includes(g)) r.inside++; if (e.likely === g) r.likely++; }
+  return r;
+}
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const data = load(), pct = (a, b) => (b ? (100 * a / b).toFixed(1) : '0') + ' %';
+  { const c = validateCategory(data); console.log(`category grade: graded with categories ${c.n}: estimate ${pct(c.shown, c.n)}; inside ${pct(c.inside, c.shown)}; likely exact ${pct(c.likely, c.shown)}`); }
   for (const [k, r] of Object.entries(validate(data))) console.log(`${k.padEnd(12)} products ${r.n}: get a better swap ${pct(r.covered, r.n)}; top swap on the same shelf ${pct(r.top, r.covered)}; all shown swaps on the same shelf ${pct(r.all, r.shown)}; same aisle: top ${pct(r.topAisle, r.covered)}, all ${pct(r.allAisle, r.shown)}; average improvement ${(r.gain / Math.max(1, r.shown)).toFixed(2)} letters; labelled "same shelf": ${r.labelled}, of which on the shelf ${pct(r.labelledOk, r.labelled)}`);
 }
