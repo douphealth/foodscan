@@ -34,8 +34,8 @@ The 1,511 left have no usable numbers and nothing close by name, brand, maker, f
 - **Shop photos** (Bazaar, Lidl): not used; they belong to the shops and manufacturers, and the page's security policy allows only Open Food Facts images.
 - **Rodogal's price**: no source has it (observatory, Bazaar, Lidl, Open Prices, e-katanalotis), and no estimate is possible because the record has no pack size.
 
-## 5. Photos (follow-up)
-`tools/build-photos.mjs` asks Open Food Facts for every catalogue product without a front image and keeps a real photo of it (a front image of another language, then the first uploaded photo). A sample found one for about 12 % of the 3,380. The Open Food Facts search API was answering "busy" for most requests, so this release carries the index of a first run over 100 products (11 photos found); the full run over all 3,380 ships in 89.1. `prices/fill-v89.js` shows a photo only where the index has one and keeps the illustration otherwise, or if the photo does not load.
+## 5. Photos
+`tools/build-photos.mjs` asked Open Food Facts for every catalogue product without a front image (3,380; 3,250 asked, 3,239 answered; 130 could not be asked because the search API stayed busy) and keeps a real photo of it: a front image of another language (15), else the first uploaded photo (170). **185 products** get a photo instead of the illustration; the other 3,054 have no photo on Open Food Facts at all. A first uploaded photo is the product's own photo but can show its label rather than its front. `prices/fill-v89.js` shows a photo only where the index has one (lists, the product page, swap rows) and keeps the illustration otherwise, or if the photo does not load. Not checked in the sandbox (no access to the image host).
 
 ## Checked
 Real `_worker.js` locally as a Greek visitor (Chromium, Greek locale, Athens time zone): the search list, the Rodogal page (borrowed values, swaps: Fage Total Greek yogurts graded A). No page errors. 123 tests pass; `node build.mjs --check` OK. Not checked on the live site.
