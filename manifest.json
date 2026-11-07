@@ -1,0 +1,129 @@
+{
+ "version": 80,
+ "built": "2026-11-07T10:22:53.910Z",
+ "shards": 64,
+ "observatoryById": {
+  "shards": 64,
+  "products": 10344
+ },
+ "withCandidates": 1666,
+ "barcodes": 19526,
+ "withObservations": 8715,
+ "withEstimate": 11668,
+ "estimatesByClass": {
+  "A": 778,
+  "B": 2014,
+  "C": 2027,
+  "D": 1680,
+  "E": 5169
+ },
+ "sources": {
+  "posokanei": {
+   "snapshot": "2026-11-06",
+   "fetchedAt": "2026-11-06T17:15:37.021835+00:00",
+   "products": 1451,
+   "reference": 10344,
+   "date": "2026-11-06"
+  },
+  "bazaar": {
+   "snapshot": "2026-11-07",
+   "fetchedAt": "2026-11-07T10:11:34+00:00",
+   "products": 6198
+  },
+  "lidl": {
+   "snapshot": "2026-11-07",
+   "fetchedAt": "2026-11-07T10:22:44.431Z",
+   "products": 733
+  },
+  "ekatanalotis": {
+   "snapshot": "2026-06-16",
+   "products": 2701,
+   "historical": true
+  }
+ },
+ "estimator": {
+  "referenceItems": 13118,
+  "classes": {
+   "A": {
+    "n": 971,
+    "usable": true,
+    "lo": -0.254,
+    "hi": 0.353,
+    "medianAbsPctError": 11.6,
+    "within25pct": 74,
+    "within50pct": 91
+   },
+   "B": {
+    "n": 1874,
+    "usable": true,
+    "lo": -0.315,
+    "hi": 0.433,
+    "medianAbsPctError": 12.2,
+    "within25pct": 69,
+    "within50pct": 87
+   },
+   "C": {
+    "n": 852,
+    "usable": true,
+    "lo": -0.448,
+    "hi": 0.569,
+    "medianAbsPctError": 18.4,
+    "within25pct": 60,
+    "within50pct": 80
+   },
+   "D": {
+    "n": 437,
+    "usable": true,
+    "lo": -0.432,
+    "hi": 0.919,
+    "medianAbsPctError": 24.5,
+    "within25pct": 50,
+    "within50pct": 69
+   },
+   "E": {
+    "n": 1500,
+    "usable": true,
+    "lo": -0.703,
+    "hi": 0.703,
+    "medianAbsPctError": 29.2,
+    "within25pct": 45,
+    "within50pct": 71
+   }
+  },
+  "shownClasses": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "E"
+  ],
+  "holdout": {
+   "A": {
+    "fit": 512,
+    "test": 459,
+    "coverage80": 80
+   },
+   "B": {
+    "fit": 911,
+    "test": 963,
+    "coverage80": 82
+   },
+   "C": {
+    "fit": 435,
+    "test": 417,
+    "coverage80": 85
+   },
+   "D": {
+    "fit": 209,
+    "test": 228,
+    "coverage80": 75
+   },
+   "E": {
+    "fit": 750,
+    "test": 750,
+    "coverage80": 80
+   }
+  },
+  "truthEvaluated": 4134
+ }
+}

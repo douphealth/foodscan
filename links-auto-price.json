@@ -1,0 +1,76 @@
+{
+ "built": "2026-11-07",
+ "snapshot": "2026-11-06",
+ "added": 0,
+ "stats": {
+  "bazaar": {
+   "shop": 6198,
+   "considered": 3859,
+   "candidates": 17
+  },
+  "lidl": {
+   "shop": 733,
+   "considered": 1,
+   "candidates": 0
+  }
+ },
+ "links": [],
+ "refused": [
+  {
+   "ean": "5201127013101",
+   "why": "several_barcodes_same_product"
+  },
+  {
+   "ean": "5208086439812",
+   "why": "several_barcodes_same_product"
+  },
+  {
+   "ean": "5202663192114",
+   "why": "several_products_same_price",
+   "options": 2
+  },
+  {
+   "ean": "5208086440016",
+   "why": "product_already_linked"
+  },
+  {
+   "ean": "5208086425723",
+   "why": "product_already_linked"
+  },
+  {
+   "ean": "5063270101827",
+   "why": "product_already_linked"
+  },
+  {
+   "ean": "5201340800632",
+   "why": "product_already_linked"
+  },
+  {
+   "ean": "5208069003245",
+   "why": "product_already_linked"
+  },
+  {
+   "ean": "5208086440252",
+   "why": "several_barcodes_same_product"
+  },
+  {
+   "ean": "5201946900354",
+   "why": "several_products_same_price",
+   "options": 2
+  },
+  {
+   "ean": "5202663195955",
+   "why": "several_products_same_price",
+   "options": 2
+  },
+  {
+   "ean": "5201193106189",
+   "why": "several_products_same_price",
+   "options": 2
+  },
+  {
+   "ean": "5201127013095",
+   "why": "several_barcodes_same_product"
+  }
+ ]
+}
