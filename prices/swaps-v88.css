@@ -36,3 +36,14 @@
 @media(min-width:900px){.fs88{padding:24px 24px 18px}.fs88__list{grid-template-columns:1fr 1fr}}
 @media(max-width:360px){.fs88__item{grid-template-columns:48px minmax(0,1fr) auto;gap:10px}.fs88__ph{width:48px;height:48px}.fs88__grade{width:40px;height:46px;font-size:1.3rem}}
 @media(prefers-reduced-motion:reduce){.fs88__item{transition:none}}
+
+/* 90: the price line in lists and swap rows (prices/list-prices-v90.js) */
+.fs90-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:1px 8px;margin-top:4px;min-width:0;font-size:.76rem;line-height:1.3}
+.fs90-price b{font:800 .98rem/1.1 var(--font-display);letter-spacing:-.01em;color:var(--brand);font-variant-numeric:tabular-nums}
+.fs90-price small{color:var(--ink3);font-size:.74rem;white-space:normal;overflow-wrap:anywhere}
+.fs90-price.is-older b{color:var(--ink2)}
+.fs90-price i{font-style:normal;font-weight:700;font-size:.7rem;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.fs90-price i.is-cheaper{background:var(--good-bg);color:var(--good)}
+.fs90-price i.is-dearer{background:var(--warn-bg);color:var(--warn)}
+.fs88__item.fs90-win{border-color:color-mix(in srgb,var(--brand) 55%,var(--line));box-shadow:0 12px 26px -20px color-mix(in srgb,var(--brand) 80%,transparent)}
+.prow__text .fs90-price{margin-top:3px}
