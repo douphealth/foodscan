@@ -83,3 +83,12 @@ export function fakeD1() {
     run: async () => { st.run(...p); return { success: true }; },
     all: async () => ({ results: st.all(...p).map(r => ({ ...r })) }) }) }; } };
 }
+
+/** 90: GET /api/prices/peek for several barcodes, with the same fake network as compare(). */
+export async function peek(codes, { items = [], market, env = makeEnv(), extra = [] } = {}) {
+  const worker = await loadWorker();
+  const fake = fakeOpenPrices(items, {});
+  const qs = new URLSearchParams({ codes: codes.join(','), ...(market ? { market } : {}) });
+  const request = new Request(`https://food-scan.test/api/prices/peek?${qs}`, { headers: { 'CF-Connecting-IP': '203.0.113.' + (ipN++ % 250 + 1) } });
+  return withNetwork([...fake.handlers, ...extra], async () => { const res = await worker.fetch(request, env, { waitUntil() {} }); return { res, body: await res.json(), calls: fake.calls }; });
+}

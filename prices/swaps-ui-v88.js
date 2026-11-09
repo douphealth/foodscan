@@ -13,7 +13,7 @@ const T = {
     best: 'This product has no grade on record, so nothing can be compared with it. These are the best-graded products on the same shelf.',
     inferred: 'This record has no category: the shelf was taken from products with similar names. Check that a swap is the same kind of product.',
     already: 'Nothing on this shelf has a better grade: this product is already graded A.', none: g => `No product with a better grade than ${g} was found on this shelf in the Greek catalogue.`,
-    published: 'published grade', calculated: 'calculated by FoodScan', gain: n => (n === 1 ? '1 grade better' : `${n} grades better`), sameShelf: 'same shelf', sameAisle: 'same aisle', named: 'similar name',
+    published: 'published grade', calculated: 'calculated by FoodScan', calcShort: 'calculated', gain: n => (n === 1 ? '1 grade better' : `${n} grades better`), sameShelf: 'same shelf', sameAisle: 'same aisle', named: 'similar name',
     howTitle: 'How swaps are chosen', how: n => `From ${n.toLocaleString('en')} products of the Greek Open Food Facts catalogue that have a published Nutri-Score, or one FoodScan calculated from their own complete numbers. A swap must use the same Nutri-Score table (a drink is never offered for a food), share the product's category tags or, without them, its name and product family, and have a strictly better grade.`,
     rel: (a, s, ai, si, n) => `Measured on ${n.toLocaleString('en')} graded Greek products: the swaps shown were in the same aisle in about ${a} % of cases (on the same narrow shelf in ${s} %). When the product had no category and the shelf had to be inferred: ${ai} % (${si} %).`,
     check: 'Grades compare nutrition per 100 g or 100 ml. Check the pack, ingredients and allergens before switching.', source: 'Open Food Facts (ODbL), Greek catalogue, 30 Oct 2026',
@@ -24,7 +24,7 @@ const T = {
     best: 'Αυτό το προϊόν δεν έχει καταγεγραμμένο βαθμό, οπότε δεν μπορεί να συγκριθεί. Αυτά είναι τα προϊόντα με τον καλύτερο βαθμό στο ίδιο ράφι.',
     inferred: 'Η εγγραφή δεν έχει κατηγορία: το ράφι προέκυψε από προϊόντα με παρόμοιο όνομα. Ελέγξτε ότι η επιλογή είναι το ίδιο είδος προϊόντος.',
     already: 'Τίποτα σε αυτό το ράφι δεν έχει καλύτερο βαθμό: το προϊόν έχει ήδη A.', none: g => `Δεν βρέθηκε προϊόν με καλύτερο βαθμό από ${g} σε αυτό το ράφι του ελληνικού καταλόγου.`,
-    published: 'δημοσιευμένος βαθμός', calculated: 'υπολογισμός FoodScan', gain: n => (n === 1 ? '1 βαθμίδα καλύτερο' : `${n} βαθμίδες καλύτερο`), sameShelf: 'ίδιο ράφι', sameAisle: 'ίδιος διάδρομος', named: 'παρόμοιο όνομα',
+    published: 'δημοσιευμένος βαθμός', calculated: 'υπολογισμός FoodScan', calcShort: 'υπολογισμός', gain: n => (n === 1 ? '1 βαθμίδα καλύτερο' : `${n} βαθμίδες καλύτερο`), sameShelf: 'ίδιο ράφι', sameAisle: 'ίδιος διάδρομος', named: 'παρόμοιο όνομα',
     howTitle: 'Πώς επιλέγονται', how: n => `Από ${n.toLocaleString('el')} προϊόντα του ελληνικού καταλόγου του Open Food Facts με δημοσιευμένο Nutri-Score ή με βαθμό που υπολόγισε το FoodScan από τους δικούς τους πλήρεις αριθμούς. Μια επιλογή πρέπει να έχει τον ίδιο πίνακα Nutri-Score (ποτέ ρόφημα αντί για τρόφιμο), να μοιράζεται τις κατηγορίες του προϊόντος ή, χωρίς αυτές, το όνομα και την οικογένειά του, και να έχει αυστηρά καλύτερο βαθμό.`,
     rel: (a, s, ai, si, n) => `Μετρήθηκε σε ${n.toLocaleString('el')} ελληνικά προϊόντα με βαθμό: οι επιλογές που εμφανίστηκαν ήταν στον ίδιο διάδρομο σε περίπου ${a} % των περιπτώσεων (στο ίδιο στενό ράφι σε ${s} %). Όταν το προϊόν δεν είχε κατηγορία και το ράφι συμπεράνθηκε: ${ai} % (${si} %).`,
     check: 'Οι βαθμοί συγκρίνουν τη διατροφή ανά 100 g ή 100 ml. Ελέγξτε τη συσκευασία, τα συστατικά και τα αλλεργιογόνα πριν αλλάξετε.', source: 'Open Food Facts (ODbL), ελληνικός κατάλογος, 30 Οκτ 2026',
@@ -71,10 +71,11 @@ function html(entry) {
   const empty = !res.ok ? `<p class="fs88__empty">${esc(res.reason === 'already-best' ? tx('already') : tx('none', res.against || ''))}</p>` : '';
   const items = res.ok ? res.swaps.map(({ row, tier }) => {
     const img = W.imageOf(row), gain = res.against ? W.RANK[res.against] - W.RANK[row.grade] : 0;
+    const tags = [gain > 0 ? `<em class="is-gain">${esc(tx('gain', gain))}</em>` : '', tier === 'shelf' ? `<em>${esc(tx('sameShelf'))}</em>` : tier === 'aisle' ? `<em>${esc(tx('sameAisle'))}</em>` : ''].join('');
     return `<li><a class="fs88__item" href="#/p/${esc(row.code)}">
       <span class="fs88__ph">${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">` : ''}<i aria-hidden="true">${LEAF}</i></span>
-      <span class="fs88__txt"><b>${esc(row.name)}</b><small>${esc([row.brand, row.how === 'p' ? tx('published') : tx('calculated')].filter(Boolean).join(' · '))}</small>${gain > 0 || tier !== 'inferred' ? `<em>${esc([gain > 0 ? tx('gain', gain) : '', tier === 'shelf' ? tx('sameShelf') : tier === 'aisle' ? tx('sameAisle') : ''].filter(Boolean).join(' · '))}</em>` : ''}</span>
-      <span class="fs88__grade g-${esc(row.grade)}" aria-label="Nutri-Score ${esc(row.grade)}">${esc(row.grade)}</span></a></li>`;
+      <span class="fs88__txt"><b class="fs88__name">${esc(row.name)}</b>${row.brand ? `<small class="fs88__brand">${esc(row.brand)}</small>` : ''}${tags ? `<span class="fs88__tags">${tags}</span>` : ''}</span>
+      <span class="fs88__grade g-${esc(row.grade)}" role="img" aria-label="Nutri-Score ${esc(row.grade)}, ${esc(row.how === 'p' ? tx('published') : tx('calculated'))}"><b>${esc(row.grade)}</b><small>${esc(row.how === 'p' ? 'Nutri-Score' : tx('calcShort'))}</small></span></a></li>`;
   }).join('') : '';
   return `<header class="fs88__head"><span class="fs88__eyebrow">${LEAF}${esc(tx('eyebrow'))}</span><h2>${esc(tx('title'))}</h2><p>${esc(lead)}</p>${res.inferredShelf ? `<p class="fs88__warn">${esc(tx('inferred'))}</p>` : ''}</header>
     ${items ? `<ol class="fs88__list">${items}</ol>` : empty}

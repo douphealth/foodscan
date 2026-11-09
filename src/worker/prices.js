@@ -1198,6 +1198,43 @@ async function fsPriceWebOffers(env, code, scope, meta, fresh) {
   return {status:r?.status||'unavailable', items, checkedAt:r?.checkedAt, cached:r?.cached};
 }
 
+/* 90: prices for LISTS (search, categories, healthier swaps). GET /api/prices/peek?codes=a,b,c (at most FS_PEEK_MAX barcodes, the subrequest budget of a
+ * Worker on the free plan) answers each barcode from the DAILY data only: the Open Prices snapshot (no live delta), the Greek observatory and web-shop seeds (no
+ * live re-read of the shop page), e-katanalotis history. Every price goes through the same payload builder as the product page (fsPriceBuildPayload: pack
+ * checks, outlier guard, freshness tiers), so a list row can never show a price the product page would not rank. The product page keeps the full live check. */
+const FS_PEEK_MAX = 5;
+async function fsOpSnapshotOffers(code, scope, env, request) {
+  const snap = await fsOpShard(request, env, code);
+  if (!snap || Date.now() - Date.parse(snap.cutoff) >= FS_OP_MAX_AGE) return {status:'unavailable', items:[]};
+  const codes = [...new Set([String(code).trim(), String(code).replace(/^0+/, ''), String(code).padStart(13, '0')])].filter(c => /^\d{8,14}$/.test(c));
+  const items = fsOpItems(snap, codes).map(i => fsPriceNormalizeOpen(i, code, scope)).filter(Boolean);
+  return {status:items.length ? 'ok_with_data' : 'ok_empty', items, via:'snapshot', snapshotCutoff:snap.cutoff};
+}
+async function fsPricePeekOne(request, env, code, scope) {
+  const none = {items:[], providers:{}, product:null, pack:null}, greek = scope.market === 'GR';
+  const [meta, open, official] = await Promise.all([
+    fsPriceLocalCatalogueMeta(request, env, code).catch(() => null),
+    fsOpSnapshotOffers(code, scope, env, request).catch(() => ({status:'unavailable', items:[]})),
+    greek ? fsGrSeedOffers(request, {...env, FS_SHOP_LIVE:'0'}, code).catch(() => none) : Promise.resolve(none),
+  ]);
+  const p = fsPriceBuildPayload({code, scope, meta, open, licensed:{status:'disabled', items:[]}, official});
+  const pick = o => o ? {price:o.price, currency:o.currency, retailer:o.retailer || '', date:o.date, tier:o.tier, unitPrice:o.unitPrice ?? null, unitBasis:o.unitBasis ?? null, sale:Boolean(o.discountType)} : null;
+  const best = p.offers.find(o => o.id === p.summary.bestOfferId) || null, latest = best ? null : p.offers.find(o => o.id === p.summary.latestOfferId) || null;
+  return {code, status:p.status, currency:p.currency, best:pick(best), latest:pick(latest), current:p.summary.currentOffers, retailers:p.summary.retailers, typical:p.summary.typical?.price ?? p.summary.typical ?? null};
+}
+async function fsPricePeek(request, env, ctx, url) {
+  const codes = [...new Set(String(url.searchParams.get('codes') || '').split(',').map(c => c.trim()).filter(Boolean))];
+  const scope = fsPriceScope(url, request);
+  if (!codes.length || codes.length > FS_PEEK_MAX || !codes.every(fsPriceValidBarcode) || !scope || scope.nearby) return fsPriceJson({error:'invalid_query', message:`Provide 1 to ${FS_PEEK_MAX} valid barcodes and an optional two-letter market.`}, 400);
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const key = new Request(url.origin + '/prices/cache/peek/v' + FS_PRICE_VERSION + '/' + scope.market + '/' + codes.map(fsPriceKey).sort().join('-'));
+  if (cache) { try { const hit = await cache.match(key); if (hit) return hit; } catch {} }
+  if (!fsPriceCanFetch(request.headers.get('CF-Connecting-IP') || 'unknown')) return fsPriceJson({error:'rate_limited', message:'Please retry shortly.'}, 429, {'Retry-After':'60'});
+  const items = await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope).catch(() => ({code:c, status:'temporarily_unavailable'}))));
+  const out = fsPriceJson({version:FS_PRICE_VERSION, market:scope.market, source:'daily data (Open Prices snapshot, observatory, web-shop seeds); the product page re-checks live', items}, 200, {'Cache-Control':'public, max-age=0, s-maxage=600'});
+  if (cache && items.every(i => i.status !== 'temporarily_unavailable')) { try { const copy = out.clone(); ctx?.waitUntil?.(cache.put(key, new Response(copy.body, {status:200, headers:{...Object.fromEntries(copy.headers), 'Cache-Control':'public, max-age=600'}})).catch(() => {})); } catch {} }
+  return out;
+}
 async function fsPricesRoute(request,env,ctx) {
   const url=new URL(request.url);
   const publicPath=url.pathname.startsWith('/prices/service/') ? url.pathname.slice('/prices/service/'.length) :
@@ -1219,6 +1256,7 @@ async function fsPricesRoute(request,env,ctx) {
       policy:'evidence_only: no estimated, benchmark or multiplier prices; missing prices are reported as not available',currentDays:FS_PRICE_CURRENT_DAYS,
       sourceLicenses:{openPrices:FS_PRICE_LICENSES['op:'],observatory:FS_GR_SOURCES.posokanei.license,ekatanalotis:FS_GR_SOURCES.ekatanalotis.license,bazaar:FS_GR_SOURCES.bazaar.license,lidl:FS_GR_SOURCES.lidl.license,kritikos:FS_GR_SOURCES.kritikos.license,licensedFeeds:'per feed (license_ref on every row)'}});
   }
+  if(publicPath==='peek')return fsPricePeek(request,env,ctx,url);
   if(publicPath!=='compare')return fsPriceJson({error:'not_found'},404);
   const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url, request);
   if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN, an optional two-letter market (country) and an optional latitude, longitude and radius (1–50 km).'},400);
