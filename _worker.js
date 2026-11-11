@@ -4001,13 +4001,16 @@ async function fsWebclawSearch(env, q, signal) {
     if (!picks.some(p => p.url === url)) picks.push({ url, title: String(it.title || "") });
   }
   const pages = [];
-  await Promise.all(picks.slice(0, Math.max(1, Math.min(5, Number(env.FS_WEBCLAW_SCRAPES) || 3))).map(async p => {
+  const chosen = picks.slice(0, Math.max(1, Math.min(5, Number(env.FS_WEBCLAW_SCRAPES) || 3)));
+  const scrape = async p => {
     try {
       const doc = await fsWebclaw(env, "/scrape", { url: p.url, formats: ["markdown"] }, signal);
       const text = fsWebPlain(doc?.markdown || doc?.data?.markdown || "").slice(0, 20000);
       if (text && !FS_WEB_INJECTION.test(text)) pages.push({ url: p.url, title: String(doc?.metadata?.title || p.title), site: String(doc?.metadata?.site_name || ""), text });
     } catch {}
-  }));
+  };
+  if (env.FS_WEBCLAW_SERIAL) for (const p of chosen) await scrape(p); // the batch: one request at a time per lookup (webclaw answers "busy" to bursts)
+  else await Promise.all(chosen.map(scrape)); // a shopper waiting: in parallel
   return pages;
 }
 /** The euro amounts of a text with their positions; per-kg/litre/100 g prices and struck-through ones are left out. */
