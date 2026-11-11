@@ -105,3 +105,14 @@ export const peekPrices = (code, market = detectMarket().code, cheap = false) =>
 /** Forget the device copy of one barcode (used before a forced refresh). */
 export const forgetPrices = code => { code = String(code || ''); for (const k of [...memory.keys()]) if (k === code || /^[0-9]+/.test(k) && k.replace(/[~@#!].*$/, '') === code) memory.delete(k);
   try { for (let i = (store?.length || 0) - 1; i >= 0; i--) { const k = store.key(i); if (k && k.startsWith(KEY) && k.slice(KEY.length).replace(/[~@#!].*$/, '') === code) store.removeItem(k); } } catch {} };
+
+/** 91: shares a "This is it" (vote 1), its undo (vote 0) or "Not this product" (vote -1) with the server, so that once two independent
+ *  shoppers confirm the same observatory product, its daily chain prices show for everyone. Resolves to the server's answer
+ *  ({status:'shared'|'pending', confirmations, needed} or {error}); never throws. The choice on this device works either way. */
+export async function shareConfirmation(code, pk, vote) {
+  try {
+    const res = await fetch('/api/prices/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ barcode: String(code), pk: String(pk), vote }) });
+    const body = await res.json().catch(() => ({}));
+    return res.ok ? body : { error: body?.error || 'unavailable', status: res.status };
+  } catch { return { error: 'unavailable' }; }
+}

@@ -903,7 +903,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   const estimate = null;
   // 82: same-brand observatory products the shopper may confirm as this one (only while this barcode has no CURRENT price;
   // an old price, e.g. e-katanalotis from June, is still shown first, with its age)
-  const candidates = !offers.some(o => o.tier === 'current') && !official.confirmed ? (official.candidates || []).slice(0, 4) : [];
+  const candidates = !offers.some(o => o.tier === 'current') && !official.confirmed && !official.community ? (official.candidates || []).slice(0, 4) : [];
   const status = offers.length || others.length ? 'observations_available' : !active.length || down === active.length ? 'temporarily_unavailable' : down ? 'incomplete' : 'no_data';
   return {
     version:FS_PRICE_VERSION, barcode:code, country:home, currency:guard.currency, scope:scope.nearby?'nearby':(greekMarket?'greece':'market'), checkedAt:new Date(now).toISOString(),
@@ -913,7 +913,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       (sample.productName ? {name:sample.productName, brand:'', quantity:sample.productQuantity||'', nutriScore:null, image:'', source:'open_food_facts_via_open_prices'} : null),
     productName: meta ? [meta.name, meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? meta.brand : '', meta.quantity].filter(Boolean).join(' · ') : (sample.productName || official.estimateName || ''),
     pack, packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
-    offers, elsewhere:others, estimate, related, candidates, confirmed:official.confirmed || null, data:official.estimateMeta || null, providers,
+    offers, elsewhere:others, estimate, related, candidates, confirmed:official.confirmed || null, community:official.community || null, data:official.estimateMeta || null, providers,
     providerSummary:{active:active.length, unavailable:down, disabled:Object.values(providers).length-active.length},
     summary:{bestOfferId:best?.id||null, lowestCurrentPrice:best?.price??null, currentOffers:eligible.length,
       retailers:new Set(eligible.map(o=>o.retailer)).size, stores:new Set(eligible.map(o=>o.storeId)).size, perChain:Object.values(perChain).sort((a,b)=>a.price-b.price),
@@ -1088,6 +1088,72 @@ async function fsObsConfirmed(request, env, code, id, now=Date.now()) {
   const pack = Array.isArray(p.q) && (p.q[0] === 'kg' || p.q[0] === 'l') && p.q[1] > 0.005 && p.q[1] <= 50 ? {amount:Math.round(p.q[1]*10000)/10000, unit:p.q[0], source:'posokanei'} : null;
   return {id, name:fsPriceText(p.n || '', 120), items, pack, found:true};
 }
+/* 91: SHARED shopper confirmations. A confirmation used to stay on the shopper's device (?pk=). Now each "This is it" is also a vote
+ * (POST /api/prices/confirm, stored in FOODSCAN_PRICES_DB). A barcode is linked to an observatory product for EVERYONE when:
+ *  - the product is one of the candidates FoodScan itself offered for that barcode (same brand, unlinked, from the daily build),
+ *  - the barcode has no observatory link of its own, and the observatory pack size matches the label (when both are known),
+ *  - at least FS_CONFIRM_MIN (default 2, at most 10) different voters confirmed it; a voter is a salted hash of the network (/24 IPv4,
+ *    /48 IPv6), so one household counts once; each voter has at most FS_CONFIRM_DAILY votes a day,
+ *  - disputes ("Not this product") stay under half of the confirmations, and no other product of that barcode has as many confirmations.
+ * The linked product's own dated chain prices then appear for that barcode on the product page and in lists, labelled
+ * match:'community-confirmed', and go through every check of the payload (a pack-size mismatch never ranks). */
+const FS_CONFIRM_DAILY = 30;
+const fsConfirmMin = env => Math.max(2, Math.min(10, Math.round(Number(env?.FS_CONFIRM_MIN)) || 2));
+async function fsVoter(request, env) {
+  const ip = String(request.headers.get('CF-Connecting-IP') || '');
+  const net = ip.includes(':') ? ip.split(':').slice(0, 3).join(':') : ip.split('.').slice(0, 3).join('.');
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(env?.FS_CONFIRM_SALT || 'foodscan-confirm-v91') + '|' + net));
+  return [...new Uint8Array(d)].slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+/** Active shared links of these barcodes: Map(key14 -> {pk_id, confirmations}). One query. */
+async function fsCommunityLinks(env, codes) {
+  const db = env?.FOODSCAN_PRICES_DB, keys = [...new Set(codes.map(fsPriceKey))], out = new Map();
+  if (!db || !keys.length) return out;
+  try { const r = await db.prepare(`SELECT ean, pk_id, confirmations FROM foodscan_obs_links WHERE status='active' AND ean IN (${keys.map(() => '?').join(',')})`).bind(...keys).all();
+    for (const x of r.results || []) if (fsObsId(x.pk_id)) out.set(x.ean, {pk_id:x.pk_id, confirmations:Number(x.confirmations) || 0}); } catch {}
+  return out;
+}
+async function fsCommunityOffers(request, env, code, link) {
+  const c = await fsObsConfirmed(request, env, code, link.pk_id);
+  return {...c, items:c.items.map(o => ({...o, match:'community-confirmed'})), confirmations:link.confirmations};
+}
+async function fsPriceConfirm(request, env) {
+  if (request.method !== 'POST') return fsPriceJson({error:'method_not_allowed'}, 405, {Allow:'POST'});
+  const db = env?.FOODSCAN_PRICES_DB;
+  if (!db) return fsPriceJson({error:'not_configured', message:'Shared confirmations need the FOODSCAN_PRICES_DB database (see SETUP.md). Your choice still works on this device.'}, 503);
+  let body = null; try { body = await request.json(); } catch {}
+  const code = String(body?.barcode || ''), pk = fsObsId(body?.pk), vote = [1, 0, -1].includes(body?.vote) ? body.vote : null;
+  if (!fsPriceValidBarcode(code) || !pk || vote === null) return fsPriceJson({error:'invalid_query', message:'Send {barcode, pk, vote: 1 | 0 | -1}.'}, 400);
+  const key = fsPriceKey(code), voter = await fsVoter(request, env), now = Date.now();
+  try {
+    const used = await db.prepare('SELECT COUNT(*) AS n FROM foodscan_obs_votes WHERE voter=? AND created_at>?').bind(voter, now - 864e5).first();
+    if ((Number(used?.n) || 0) >= FS_CONFIRM_DAILY && vote !== 0) return fsPriceJson({error:'rate_limited', message:'Too many confirmations today from this network.'}, 429, {'Retry-After':'3600'});
+    const seed = await fsGrSeed(request, env, 'posokanei', code).catch(() => null);
+    if (seed?.products?.[key] !== undefined && seed?.products?.[key] !== null) return fsPriceJson({error:'already_linked', message:'This barcode already has an observatory link of its own.'}, 409);
+    const current = await db.prepare("SELECT pk_id FROM foodscan_obs_links WHERE ean=? AND status='active'").bind(key).first();
+    if (vote === 1) {
+      const est = await fsEstimateFor(request, env, code).catch(() => null), cand = (est?.candidates || []).find(c => c.id === pk);
+      if (!cand) return fsPriceJson({error:'not_a_candidate', message:'Only a product FoodScan offered for this barcode can be confirmed.'}, 422);
+      // the label size: the catalogue's, else the size written in the barcode's own record name (e.g. "... 24/330G"); with neither, no vote is shared
+      const meta = await fsPriceLocalCatalogueMeta(request, env, code).catch(() => null), label = fsPricePack(meta?.quantity, meta?.productAmount, meta?.productAmountUnit) || fsPricePack(est?.name || '');
+      if (!label || !cand.pack) return fsPriceJson({error:'pack_unknown', message:'The pack size of this barcode or of that product is not known, so the choice stays on this device.'}, 422);
+      if ((label.unit !== cand.pack.unit || Math.abs(label.amount - cand.pack.amount) / label.amount > 0.05)) return fsPriceJson({error:'pack_mismatch', message:'That product is sold in another pack size than this barcode.'}, 422);
+    } else if (vote === -1 && current?.pk_id !== pk) {
+      const est = await fsEstimateFor(request, env, code).catch(() => null);
+      if (!(est?.candidates || []).some(c => c.id === pk)) return fsPriceJson({error:'not_a_candidate', message:'Only a product shown for this barcode can be disputed.'}, 422);
+    }
+    if (vote === 0) await db.prepare('DELETE FROM foodscan_obs_votes WHERE ean=? AND pk_id=? AND voter=?').bind(key, pk, voter).run();
+    else await db.prepare('INSERT INTO foodscan_obs_votes(ean, pk_id, voter, vote, created_at) VALUES (?,?,?,?,?) ON CONFLICT(ean, pk_id, voter) DO UPDATE SET vote=excluded.vote, created_at=excluded.created_at').bind(key, pk, voter, vote, now).run();
+    const rows = ((await db.prepare('SELECT pk_id, SUM(CASE WHEN vote=1 THEN 1 ELSE 0 END) AS yes, SUM(CASE WHEN vote=-1 THEN 1 ELSE 0 END) AS no FROM foodscan_obs_votes WHERE ean=? GROUP BY pk_id').bind(key).all()).results || [])
+      .map(r => ({pk_id:r.pk_id, yes:Number(r.yes) || 0, no:Number(r.no) || 0})).sort((a, b) => b.yes - a.yes);
+    const min = fsConfirmMin(env), best = rows[0] || null, tie = best && rows.filter(r => r.yes === best.yes).length > 1;
+    const active = Boolean(best && best.yes >= min && best.no * 2 < best.yes && !tie);
+    if (active) await db.prepare("INSERT INTO foodscan_obs_links(ean, pk_id, confirmations, disputes, status, updated_at) VALUES (?,?,?,?,'active',?) ON CONFLICT(ean) DO UPDATE SET pk_id=excluded.pk_id, confirmations=excluded.confirmations, disputes=excluded.disputes, status='active', updated_at=excluded.updated_at").bind(key, best.pk_id, best.yes, best.no, now).run();
+    else await db.prepare("UPDATE foodscan_obs_links SET status='inactive', updated_at=? WHERE ean=?").bind(now, key).run();
+    const mine = rows.find(r => r.pk_id === pk) || {yes:0, no:0};
+    return fsPriceJson({barcode:code, pk, status:active && best.pk_id === pk ? 'shared' : 'pending', confirmations:mine.yes, disputes:mine.no, needed:min});
+  } catch { return fsPriceJson({error:'temporarily_unavailable', message:'Please try again shortly.'}, 503); }
+}
 /** The four source seeds (observatory, e-katanalotis, Bazaar, Lidl) are SHARDED (see tools/lib/shard-seeds.mjs): the manifest is ~2 KB, a
  *  lookup reads one ~9 KB shard per source. That is ~1 ms of parsing instead of ~18 ms for the monolithic files, which is more than the
  *  Workers Free plan's ~10 ms CPU budget on a cold start. This loads the MANIFEST: the bundled one, or a NEWER remote one that kept at
@@ -1210,13 +1276,15 @@ async function fsOpSnapshotOffers(code, scope, env, request) {
   const items = fsOpItems(snap, codes).map(i => fsPriceNormalizeOpen(i, code, scope)).filter(Boolean);
   return {status:items.length ? 'ok_with_data' : 'ok_empty', items, via:'snapshot', snapshotCutoff:snap.cutoff};
 }
-async function fsPricePeekOne(request, env, code, scope) {
+async function fsPricePeekOne(request, env, code, scope, links = new Map()) {
   const none = {items:[], providers:{}, product:null, pack:null}, greek = scope.market === 'GR';
   const [meta, open, official] = await Promise.all([
     fsPriceLocalCatalogueMeta(request, env, code).catch(() => null),
     fsOpSnapshotOffers(code, scope, env, request).catch(() => ({status:'unavailable', items:[]})),
     greek ? fsGrSeedOffers(request, {...env, FS_SHOP_LIVE:'0'}, code).catch(() => none) : Promise.resolve(none),
   ]);
+  const link = greek && !official.providers?.posokanei?.linked ? links.get(fsPriceKey(code)) : null;
+  if (link) { const c = await fsCommunityOffers(request, env, code, link).catch(() => null); if (c?.found) { official.items.push(...c.items); if (c.pack && !official.pack) official.pack = c.pack; official.community = {id:link.pk_id, name:c.name, confirmations:link.confirmations, offers:c.items.length}; } }
   const p = fsPriceBuildPayload({code, scope, meta, open, licensed:{status:'disabled', items:[]}, official});
   const pick = o => o ? {price:o.price, currency:o.currency, retailer:o.retailer || '', date:o.date, tier:o.tier, unitPrice:o.unitPrice ?? null, unitBasis:o.unitBasis ?? null, sale:Boolean(o.discountType)} : null;
   const best = p.offers.find(o => o.id === p.summary.bestOfferId) || null, latest = best ? null : p.offers.find(o => o.id === p.summary.latestOfferId) || null;
@@ -1230,7 +1298,8 @@ async function fsPricePeek(request, env, ctx, url) {
   const key = new Request(url.origin + '/prices/cache/peek/v' + FS_PRICE_VERSION + '/' + scope.market + '/' + codes.map(fsPriceKey).sort().join('-'));
   if (cache) { try { const hit = await cache.match(key); if (hit) return hit; } catch {} }
   if (!fsPriceCanFetch(request.headers.get('CF-Connecting-IP') || 'unknown')) return fsPriceJson({error:'rate_limited', message:'Please retry shortly.'}, 429, {'Retry-After':'60'});
-  const items = await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope).catch(() => ({code:c, status:'temporarily_unavailable'}))));
+  const links = scope.market === 'GR' ? await fsCommunityLinks(env, codes) : new Map();
+  const items = await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope, links).catch(() => ({code:c, status:'temporarily_unavailable'}))));
   const out = fsPriceJson({version:FS_PRICE_VERSION, market:scope.market, source:'daily data (Open Prices snapshot, observatory, web-shop seeds); the product page re-checks live', items}, 200, {'Cache-Control':'public, max-age=0, s-maxage=600'});
   if (cache && items.every(i => i.status !== 'temporarily_unavailable')) { try { const copy = out.clone(); ctx?.waitUntil?.(cache.put(key, new Response(copy.body, {status:200, headers:{...Object.fromEntries(copy.headers), 'Cache-Control':'public, max-age=600'}})).catch(() => {})); } catch {} }
   return out;
@@ -1242,7 +1311,7 @@ async function fsPricesRoute(request,env,ctx) {
   if(publicPath===null)return null;
   if(!fsPriceSameOrigin(request))return fsPriceJson({error:'origin_not_allowed'},403);
   if(url.pathname==='/api/prices/admin/import')return fsPriceAdminImport(request,env);
-  const canPost=publicPath==='compare';
+  const canPost=publicPath==='compare'||publicPath==='confirm';
   if(!['GET','HEAD',...(canPost?['POST']:[])].includes(request.method))return fsPriceJson({error:'method_not_allowed'},405,{Allow:canPost?'GET, HEAD, POST':'GET, HEAD'});
   if(request.method==='HEAD')return new Response(null,{status:200,headers:{'Cache-Control':'no-store','X-FoodScan-Version':FS_PRICE_VERSION}});
   if(publicPath==='health')return fsPriceHealth(request,env);
@@ -1257,6 +1326,7 @@ async function fsPricesRoute(request,env,ctx) {
       sourceLicenses:{openPrices:FS_PRICE_LICENSES['op:'],observatory:FS_GR_SOURCES.posokanei.license,ekatanalotis:FS_GR_SOURCES.ekatanalotis.license,bazaar:FS_GR_SOURCES.bazaar.license,lidl:FS_GR_SOURCES.lidl.license,kritikos:FS_GR_SOURCES.kritikos.license,licensedFeeds:'per feed (license_ref on every row)'}});
   }
   if(publicPath==='peek')return fsPricePeek(request,env,ctx,url);
+  if(publicPath==='confirm')return fsPriceConfirm(request,env);
   if(publicPath!=='compare')return fsPriceJson({error:'not_found'},404);
   const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url, request);
   if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN, an optional two-letter market (country) and an optional latitude, longitude and radius (1–50 km).'},400);
@@ -1285,6 +1355,12 @@ async function fsPricesRoute(request,env,ctx) {
     const c=await fsObsConfirmed(request, env, code, pkId).catch(()=>null);
     if(c){official.items.push(...c.items);if(c.items.length)official.linkMatch='user-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;}
     official.confirmed={id:pkId,name:c?.name||'',offers:c?.items.length||0,status:!c?'unavailable':!c.found?'not_found':c.items.length?'ok':'no_prices'};
+  }
+  // 91: a link shared by shoppers (2+ independent confirmations), when this barcode has no observatory link of its own and no choice on this device
+  if(greekMarket&&!official.providers?.posokanei?.linked&&!official.confirmed){
+    const link=(await fsCommunityLinks(env,[code])).get(fsPriceKey(code));
+    if(link){const c=await fsCommunityOffers(request,env,code,link).catch(()=>null);
+      if(c?.found){official.items.push(...c.items);if(c.items.length)official.linkMatch='community-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;official.community={id:link.pk_id,name:c.name,confirmations:link.confirmations,offers:c.items.length};}}
   }
   let web = {status:'disabled',items:[]}, payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
   // 84: the web search costs money, so it runs only when the cheap sources left this barcode without a CURRENT price in the shopper's market (or the shopper

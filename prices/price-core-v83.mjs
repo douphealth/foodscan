@@ -99,7 +99,7 @@ export function checkOffer(o, pack, now = Date.now()) {
   const out = {
     ...o, id, price:Math.round(price * 100) / 100, currency, basis, date, ageDays:age, freshness, countryCode, sourceKind:kind,
     storeName:store, retailer:text(o.retailer, 100) || store, source, city:text(o.city, 60),
-    match:['reviewed', 'auto-exact', 'barcode', 'user-confirmed'].includes(o.match) ? o.match : null,
+    match:['reviewed', 'auto-exact', 'barcode', 'user-confirmed', 'community-confirmed'].includes(o.match) ? o.match : null,
     sourceURL:httpsURL(o.sourceURL), proofURL:httpsURL(o.proofURL) || null, evidenceURL:httpsURL(o.evidenceURL) || null,
     // 78: personal notes never rank; community (Open Prices) prices rank only with a proof; a suspect observatory link never ranks.
     rankingEligible:o.rankingEligible !== false && kind !== 'personal' && !id.startsWith('note:') && countryCode === HOME && currency === CURRENCY && !o.suspect && !o.otherCurrency && freshness === 'current' && basis === 'item' && !conditional
@@ -136,11 +136,14 @@ export function checkPayload(p, now = Date.now()) {
     .filter(x => x.id && x.name);
   const c = p.confirmed && typeof p.confirmed === 'object' && /^[0-9a-f]{32}$/.test(String(p.confirmed.id || '')) ? p.confirmed : null;
   const confirmed = c ? {id:String(c.id), name:text(c.name, 120), offers:Math.max(0, Math.round(num(c.offers) || 0)), status:['ok', 'no_prices', 'not_found', 'unavailable'].includes(c.status) ? c.status : 'unavailable'} : null;
+  // 91: a link shared by shoppers (2+ independent confirmations)
+  const cm = p.community && typeof p.community === 'object' && /^[0-9a-f]{32}$/.test(String(p.community.id || '')) ? p.community : null;
+  const community = cm ? {id:String(cm.id), name:text(cm.name, 120), confirmations:Math.max(0, Math.min(999, Math.round(num(cm.confirmations) || 0))), offers:Math.max(0, Math.round(num(cm.offers) || 0))} : null;
   // 83: the typical price of this barcode in this market (median of at least 3 stores' unconditional prices, last 90 days), re-checked here.
   const ty = p.summary?.typical, typical = ty && num(ty.price) > 0 && num(ty.low) > 0 && num(ty.high) >= num(ty.low) && Math.round(num(ty.n) || 0) >= 3 && /^[A-Z]{3}$/.test(String(ty.currency || ''))
     ? {price:num(ty.price), low:num(ty.low), high:num(ty.high), n:Math.round(num(ty.n)), retailers:Math.round(num(ty.retailers) || 0), windowDays:Math.round(num(ty.windowDays) || 90), currency:ty.currency, newest:isoDate(ty.newest)} : null;
   const market = {code:home, currency:CURRENCY, source:['choice', 'network', 'default'].includes(p.market?.source) ? p.market.source : 'default'};
-  return summarize({barcode, home, currency:CURRENCY, market, typical, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, related, candidates, confirmed, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
+  return summarize({barcode, home, currency:CURRENCY, market, typical, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, related, candidates, confirmed, community, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
     status:offers.length || elsewhere.length ? 'observations_available' : estimate ? 'estimate_only' : status === 'observations_available' || status === 'estimate_only' ? 'no_data' : status,
     checkedAt:text(p.checkedAt, 40), transport:text(p.transport, 40)});
 }

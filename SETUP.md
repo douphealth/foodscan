@@ -4,7 +4,8 @@ Nothing here is required: FoodScan runs without any database. Each step switches
 
 | Binding / secret | Needed for | Table definitions |
 |---|---|---|
-| `FOODSCAN_PRICES_DB` (D1) + `FIRECRAWL_API_KEY` + `ANTHROPIC_API_KEY` | **web price search** (current shop prices for any barcode, in the shopper's country) | `d1-schema/prices_db.sql` |
+| `FOODSCAN_PRICES_DB` (D1) | **shared shopper confirmations** (91): two independent "This is it" confirmations link a barcode to an observatory product, and its daily chain prices show for everyone | `d1-schema/prices_db.sql` |
+| the same `FOODSCAN_PRICES_DB` + `FIRECRAWL_API_KEY` + `ANTHROPIC_API_KEY` | **web price search** (current shop prices for any barcode, in the shopper's country) | `d1-schema/prices_db.sql` |
 | `FOOD_DB` (D1) | shared product cache and search index on the server (faster repeat scans, gentler on Open Food Facts) | `d1-schema/food_db.sql` |
 | `FOODSCAN_PUBLIC_DB` (D1) + `FOODSCAN_PUBLIC_PAGES_ENABLED=1` | public product pages Google can index | `d1-schema/public_db.sql` |
 
@@ -19,17 +20,20 @@ The table definitions are tested on real SQLite against the exact statements the
 **Workers & Pages → your project → Settings → Bindings → Add → D1 database.** Variable name exactly `FOODSCAN_PRICES_DB` (or `FOOD_DB`, `FOODSCAN_PUBLIC_DB`), choose the database. Add it for **Production** (and Preview if you test there).
 Bind `FOOD_DB` only after `food_db.sql` has been run: binding it switches the server product cache on at once.
 
-## 3. Web price search: two secrets
+## 3. Shared confirmations (needs only `FOODSCAN_PRICES_DB`)
+On as soon as the database is bound (step 2) and `prices_db.sql` has been run (it creates `foodscan_obs_votes` and `foodscan_obs_links`). Recommended: **Settings → Variables and Secrets → Add** a *Secret* `FS_CONFIRM_SALT` with a long random string (it salts the hash that tells voters apart; no IP address is ever stored). Optional plain variable `FS_CONFIRM_MIN` (confirmations needed, default 2, 2 to 10). Check: `POST /api/prices/confirm` answers 422 or 400 instead of 503 `not_configured`.
+
+## 4. Web price search: two secrets
 **Settings → Variables and Secrets → Add** (type *Secret*):
 - `FIRECRAWL_API_KEY`: your Firecrawl key (finds and reads shop pages).
 - `ANTHROPIC_API_KEY`: your Anthropic API key (Claude reads the page text).
 Optional (plain text): `FS_WEB_PRICES_MODEL` (default `claude-opus-5-5`; `claude-haiku-5-5` is about 40 times cheaper and, because every price is verified by code, loses recall rather than accuracy), `FS_WEB_DAILY_LIMIT` (new lookups per UTC day, default 300).
 
-## 4. Redeploy, then check
+## 5. Redeploy, then check
 Bindings and secrets apply to the **next deployment**: Deployments → the latest → **Retry deployment**. Then:
 ```bash
 curl -s https://YOUR-SITE/api/prices/status | grep -o '"webSearch":"[^"]*"'
-node verify-deploy.mjs https://YOUR-SITE 90.0.0
+node verify-deploy.mjs https://YOUR-SITE 91.0.0
 ```
 
 ## What the web search does, and what it costs

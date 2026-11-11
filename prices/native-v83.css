@@ -285,3 +285,6 @@ article.gradecard.snip>*{min-width:0}
 .fp83-live a{font-size:.8rem;font-weight:750;color:#8ef0b6;text-decoration:underline;text-underline-offset:3px;min-height:24px}
 .fp83-live a:focus-visible{outline:2px solid #8ef0b6;outline-offset:3px;border-radius:4px}
 .fp83-live small{font-size:.7rem;line-height:1.35;color:rgba(255,255,255,.62)}
+/* 91: shared confirmations */
+.fp82-shared{margin:6px 0 0;padding:7px 10px;border-radius:12px;font-size:.74rem;line-height:1.4;color:var(--ink2,#36463D);background:color-mix(in srgb,var(--ink,#0D1F16) 6%,transparent)}
+.fp91-comm{background:color-mix(in srgb,#8ef0b6 22%,transparent)}
