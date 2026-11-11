@@ -1264,6 +1264,20 @@ async function fsPriceWebOffers(env, code, scope, meta, fresh) {
   return {status:r?.status||'unavailable', items, checkedAt:r?.checkedAt, cached:r?.cached};
 }
 
+/* 93: web-shop prices found AHEAD of any scan (price-refresh/tools/webclaw-prefill.mjs: webclaw + the worker's own price rules, for every catalogue
+ * product with no current price in the Greek sources). 100 shards by the last two digits of the barcode: bundled with the site (assets/gr-web-v93/)
+ * and refreshed daily on the prices-data branch (web/); the newer copy wins. Each price is offered to the payload exactly like a live web price. */
+const FS_WEBPRE_ROOT = '/assets/gr-web-v93/';
+const fsWebPreShard = (request, env, code) => { const id = fsPriceKey(code).slice(-2); return fsV80Cached(new URL(request.url).origin + '|web-' + id, () =>
+  fsV80Read(request, env, FS_WEBPRE_ROOT + id + '.json', 'web/' + id + '.json', d => d && d.schema === 1 && d.products && typeof d.products === 'object', d => Date.parse(d.built))); };
+async function fsWebPrefill(request, env, code) {
+  const shard = await fsWebPreShard(request, env, code).catch(() => null), e = shard?.products?.[fsPriceKey(code)];
+  if (!e || !Array.isArray(e.o) || !e.o.length) return null;
+  const items = e.o.filter(o => o && Number(o.p) > 0 && /^https:\/\//.test(String(o.u || ''))).slice(0, 8).map(o => ({retailer:fsPriceText(o.r, 80), price:Math.round(Number(o.p) * 100) / 100, currency:'EUR', url:String(o.u), inStock:true, match:'barcode',
+    productTitle:fsPriceText(o.n, 140), packSize:fsPriceText(o.k, 40), checkedAt:String(o.c || e.t || ''), countryCode:'GR', countryEvidence:'', evidenceVersion:2}));
+  return items.length ? {status:'ok_with_data', items, checkedAt:String(e.t || ''), cached:true, prefilled:true} : null;
+}
+const fsWebPreOffers = (pre, code, scope, meta) => fsPriceWebOffers({FS_WEB_PRICES:{lookup:async () => pre}}, code, scope, meta, false);
 /* 90: prices for LISTS (search, categories, healthier swaps). GET /api/prices/peek?codes=a,b,c (at most FS_PEEK_MAX barcodes, the subrequest budget of a
  * Worker on the free plan) answers each barcode from the DAILY data only: the Open Prices snapshot (no live delta), the Greek observatory and web-shop seeds (no
  * live re-read of the shop page), e-katanalotis history. Every price goes through the same payload builder as the product page (fsPriceBuildPayload: pack
@@ -1285,7 +1299,9 @@ async function fsPricePeekOne(request, env, code, scope, links = new Map()) {
   ]);
   const link = greek && !official.providers?.posokanei?.linked ? links.get(fsPriceKey(code)) : null;
   if (link) { const c = await fsCommunityOffers(request, env, code, link).catch(() => null); if (c?.found) { official.items.push(...c.items); if (c.pack && !official.pack) official.pack = c.pack; official.community = {id:link.pk_id, name:c.name, confirmations:link.confirmations, offers:c.items.length}; } }
-  const p = fsPriceBuildPayload({code, scope, meta, open, licensed:{status:'disabled', items:[]}, official});
+  const pre = greek ? await fsWebPrefill(request, env, code).catch(() => null) : null; // 93
+  const web = pre ? await fsWebPreOffers(pre, code, scope, meta).catch(() => ({status:'disabled', items:[]})) : {status:'disabled', items:[]};
+  const p = fsPriceBuildPayload({code, scope, meta, open, licensed:{status:'disabled', items:[]}, official, web});
   const pick = o => o ? {price:o.price, currency:o.currency, retailer:o.retailer || '', date:o.date, tier:o.tier, unitPrice:o.unitPrice ?? null, unitBasis:o.unitBasis ?? null, sale:Boolean(o.discountType)} : null;
   const best = p.offers.find(o => o.id === p.summary.bestOfferId) || null, latest = best ? null : p.offers.find(o => o.id === p.summary.latestOfferId) || null;
   return {code, status:p.status, currency:p.currency, best:pick(best), latest:pick(latest), current:p.summary.currentOffers, retailers:p.summary.retailers, typical:p.summary.typical?.price ?? p.summary.typical ?? null};
@@ -1362,12 +1378,15 @@ async function fsPricesRoute(request,env,ctx) {
     if(link){const c=await fsCommunityOffers(request,env,code,link).catch(()=>null);
       if(c?.found){official.items.push(...c.items);if(c.items.length)official.linkMatch='community-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;official.community={id:link.pk_id,name:c.name,confirmations:link.confirmations,offers:c.items.length};}}
   }
-  let web = {status:'disabled',items:[]}, payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
+  const pre = greekMarket ? await fsWebPrefill(request, env, code).catch(()=>null) : null; // 93
+  let web = pre ? await fsWebPreOffers(pre, code, scope, meta).catch(()=>({status:'disabled',items:[]})) : {status:'disabled',items:[]}, payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
+  const preWeb = pre ? web : null;
   // 84: the web search costs money, so it runs only when the cheap sources left this barcode without a CURRENT price in the shopper's market (or the shopper
   // asked again). deep=1 is the app's follow-up to a search that was still running: it waits for the whole search inside its own request.
   const webSvc = url.searchParams.get('web') === '0' ? null : fsWebService(env, ctx, url.searchParams.get('deep') === '1'); // web=0: a chip, never the paid search
   if (webSvc && payload.summary.currentOffers === 0) {
     web = await fsPriceWebOffers({FS_WEB_PRICES:webSvc}, code, scope, meta, forceFresh).catch(()=>({status:'unavailable',items:[]}));
+    if (preWeb && !(web.items||[]).length) web = preWeb; // 93: a live search that finds nothing never hides the prices found ahead
     payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
   }
   // 78: an answer with any provider down is never cached (the next scan asks again). Complete answers are kept 10 minutes. 84: nor while the web search is still running.

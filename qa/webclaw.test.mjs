@@ -37,15 +37,20 @@ test('WEBCLAW_API_KEY alone switches the search on (no Firecrawl, no Anthropic);
   assert.equal(W.fsWebConfigured({ FOODSCAN_PRICES_DB: {}, FIRECRAWL_API_KEY: 'x' }), false);
   const db = fakeD1(); db.exec(read('d1-schema/prices_db.sql'));
   const env = makeEnv({ FOODSCAN_PRICE_DATA_URL: 'off', FOODSCAN_PRICES_DB: db, WEBCLAW_API_KEY: 'test-key' });
-  const calls = [];
-  const webclaw = [/^https:\/\/api\.webclaw\.io\/v1\/search/, (url, init) => { calls.push(JSON.parse(init.body)); assert.equal(init.headers.Authorization, 'Bearer test-key'); return json({ results: [
-    { url: 'https://cheap-example.com.cy/lays/5201024005438', metadata: { title: 'Lays' }, markdown: "# LAY'S CHORIZO & ONION 95gr\n5201024005438\n1,10€" },
-    { url: 'https://b2b.maker-example.gr/lays', metadata: { title: 'Lays' }, markdown: "# LAY'S CHORIZO & ONION 95gr\n5201024005438\n0,90€" },
-    { url: 'https://www.kiosk-example.gr/p/3605', metadata: { title: "LAY'S CHORIZO & ONION 95gr", site_name: 'Kiosk Example' }, markdown: "# LAY'S CHORIZO & ONION 95gr\n- **Model:** 5201024005438\n1,80€\nΧωρίς ΦΠΑ: 1,80€" },
-  ] }); }];
+  const calls = [], scraped = [];
+  const pages = { 'https://www.kiosk-example.gr/p/3605': "# LAY'S CHORIZO & ONION 95gr\n- **Model:** 5201024005438\n1,80€\nΧωρίς ΦΠΑ: 1,80€" };
+  const webclaw = [/^https:\/\/api\.webclaw\.io\/v1\/(search|scrape)/, (url, init) => { const body = JSON.parse(init.body); assert.equal(init.headers.Authorization, 'Bearer test-key');
+    if (url.endsWith('/scrape')) { scraped.push(body.url); return json({ url: body.url, metadata: { title: "LAY'S CHORIZO & ONION 95gr", site_name: 'Kiosk Example' }, markdown: pages[body.url] || '' }); }
+    calls.push(body); return json({ results: [
+      { url: 'https://cheap-example.com.cy/lays/5201024005438', title: 'Lays', snippet: '5201024005438 €1.10' },
+      { url: 'https://b2b.maker-example.gr/lays', title: 'Lays', snippet: 'Barcode 5201024005438' },
+      { url: 'https://other-example.gr/snacks', title: 'Snacks', snippet: 'chips and crisps' },
+      { url: 'https://www.kiosk-example.gr/p/3605', title: "LAY'S CHORIZO & ONION 95gr", snippet: 'Model: 5201024005438. 1,80€' },
+    ] }); }];
   const blockedModel = [/api\.(anthropic|firecrawl)\./, () => { throw new Error('no model and no Firecrawl may be called'); }];
   const r = await compare('5201024005438', { market: 'GR', env, extra: [webclaw, blockedModel], deep: true });
-  assert.equal(calls.length, 1, 'one search'); assert.equal(calls[0].query, '5201024005438'); assert.equal(calls[0].country, 'gr');
+  assert.equal(calls.length, 1, 'one search'); assert.equal(calls[0].query, '5201024005438'); assert.equal(calls[0].country, 'gr'); assert.equal(calls[0].scrape, false, 'the search itself scrapes nothing');
+  assert.deepEqual(scraped, ['https://www.kiosk-example.gr/p/3605'], 'only the Greek shop whose snippet carries the barcode is scraped (93: no credit spent on the rest)');
   const web = r.body.offers.filter(o => String(o.id).startsWith('ws:'));
   assert.equal(web.length, 1, JSON.stringify(r.body.providers.webSearch)); assert.equal(web[0].price, 1.8);
   assert.ok(!r.body.offers.some(o => o.price === 1.1 || o.price === 0.9), 'the Cyprus shop and the B2B site never count');

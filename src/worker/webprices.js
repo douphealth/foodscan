@@ -219,18 +219,28 @@ async function fsWebclaw(env, path, body, signal) {
   return r.json();
 }
 const fsWebPlain = md => String(md || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[ \t]+/g, " ").replace(/ /g, " ");
-/** One webclaw search for the barcode; returns the pages that can be read, in the shape fsWebVerifyOffers expects. */
+/** 93: credits are spent only where a price is likely. Step 1: one webclaw search for the barcode WITHOUT scraping (the cheapest call); the result
+ *  snippets show whether a page carries the barcode. Step 2: only results of a shop of the shopper's country whose snippet, title or address contains
+ *  THIS barcode (and that are not trade, comparison or nutrition sites) are scraped, at most FS_WEBCLAW_SCRAPES (default 3). A product that no page
+ *  carries costs one search and nothing more. Returns the pages that can be read, in the shape fsWebVerifyOffers expects. */
 async function fsWebclawSearch(env, q, signal) {
-  const lang = FS_WEB_LANG[q.market] || "en", code = q.code.replace(/^0+/, "");
-  const data = await fsWebclaw(env, "/search", { query: code, country: q.market.toLowerCase(), lang, num_results: Math.max(3, Math.min(10, Number(env.FS_WEBCLAW_RESULTS) || 8)), scrape: true, formats: ["markdown"] }, signal);
-  const pages = [];
+  const lang = FS_WEB_LANG[q.market] || "en", code = q.code.replace(/^0+/, ""), has = new RegExp(`(^|\\D)0*${code}(\\D|$)`);
+  const data = await fsWebclaw(env, "/search", { query: code, country: q.market.toLowerCase(), lang, num_results: Math.max(3, Math.min(10, Number(env.FS_WEBCLAW_RESULTS) || 10)), scrape: false }, signal);
+  const picks = [];
   for (const it of Array.isArray(data?.results) ? data.results : []) {
     let url = String(it?.url || ""); try { const u = new URL(url); for (const k of [...u.searchParams.keys()]) if (/^(srsltid|utm_|gclid|fbclid)/.test(k)) u.searchParams.delete(k); url = u.toString(); } catch { continue; }
-    if (!/^https:\/\//.test(url) || FS_WEB_BLOCK.test(url) || FS_WEBCLAW_BLOCK.test(url) || fsWebDomainCountry(url) !== q.market || !it.markdown) continue;
-    const text = fsWebPlain(it.markdown).slice(0, 20000);
-    if (FS_WEB_INJECTION.test(text)) continue;
-    pages.push({ url, title: String(it.metadata?.title || it.title || ""), site: String(it.metadata?.site_name || ""), text });
+    if (!/^https:\/\//.test(url) || FS_WEB_BLOCK.test(url) || FS_WEBCLAW_BLOCK.test(url) || fsWebDomainCountry(url) !== q.market) continue;
+    if (!has.test(`${it.snippet || ""} ${it.title || ""} ${url}`)) continue; // no sign of this barcode: not worth a credit
+    if (!picks.some(p => p.url === url)) picks.push({ url, title: String(it.title || "") });
   }
+  const pages = [];
+  await Promise.all(picks.slice(0, Math.max(1, Math.min(5, Number(env.FS_WEBCLAW_SCRAPES) || 3))).map(async p => {
+    try {
+      const doc = await fsWebclaw(env, "/scrape", { url: p.url, formats: ["markdown"] }, signal);
+      const text = fsWebPlain(doc?.markdown || doc?.data?.markdown || "").slice(0, 20000);
+      if (text && !FS_WEB_INJECTION.test(text)) pages.push({ url: p.url, title: String(doc?.metadata?.title || p.title), site: String(doc?.metadata?.site_name || ""), text });
+    } catch {}
+  }));
   return pages;
 }
 /** The euro amounts of a text with their positions; per-kg/litre/100 g prices and struck-through ones are left out. */
