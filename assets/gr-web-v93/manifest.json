@@ -1,0 +1,11 @@
+{
+ "schema": 1,
+ "built": "2026-11-11T20:19:32.292Z",
+ "source": "webclaw search + FoodScan price rules (src/worker/webprices.js)",
+ "catalogue": 12137,
+ "pricedElsewhere": 7365,
+ "tracked": 100,
+ "withPrice": 15,
+ "due": 10002,
+ "note": "Bundled with 93.0.0: first 100 catalogue products looked up on 11 Nov 2026; later runs come from the daily job (prices-data web/)."
+}
