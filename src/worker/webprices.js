@@ -212,8 +212,10 @@ Answer with ONE JSON object and nothing else: {"offers":[{"url":string,"retailer
  * A page that says the item is sold out is dropped by the verifier (inStock false). */
 const FS_WEBCLAW_BLOCK = /(^|[./])b2b\.|skroutz\.|bestprice\.|shopflix\.|kotsovolos\.|public\.gr|openfoodfacts|e-katanalotis|posokanei/i;
 async function fsWebclaw(env, path, body, signal) {
+  // one slow shop page must not stall a lookup: each request has its own limit (default 20 s) on top of the caller's
+  const own = AbortSignal.timeout(Number(env.FS_WEBCLAW_TIMEOUT_MS) || 20000), both = signal && typeof AbortSignal.any === "function" ? AbortSignal.any([signal, own]) : signal || own;
   const r = await fetch(`${env.WEBCLAW_BASE || "https://api.webclaw.io/v1"}${path}`, {
-    method: "POST", signal, headers: { Authorization: `Bearer ${env.WEBCLAW_API_KEY}`, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body),
+    method: "POST", signal: both, headers: { Authorization: `Bearer ${env.WEBCLAW_API_KEY}`, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`webclaw_${r.status}`);
   return r.json();

@@ -31,6 +31,11 @@ On as soon as the database is bound (step 2) and `prices_db.sql` has been run (i
 - Credits: answers are kept 3 days (7 days when nothing was found); at most `FS_WEB_DAILY_LIMIT` new lookups a day (default **20** with webclaw). Raise it only if your webclaw plan has the credits.
 - Measured on 11 Nov 2026 (`RELEASE-92.0.0.md`): 8 prices accepted, 0 wrong; a price for 25 % of products that had none (5 of 20).
 
+## 4a. Web-shop prices found ahead of any scan (93): one GitHub secret
+The daily GitHub job (`.github/workflows/refresh-prices.yml`) looks up every catalogue product that has no current price in the Greek sources, with the same webclaw search and the same price rules, and publishes the verified prices to the `prices-data` branch (`web/`), which the site reads (a copy is also bundled with the site in `assets/gr-web-v93/`).
+- GitHub → the repository → **Settings → Secrets and variables → Actions → New repository secret**: name `WEBCLAW_API_KEY`, value your `wc_…` key. Without it the job keeps the previous prices.
+- Optional repository **variable** `WEBCLAW_DAILY_LOOKUPS` (default 1500). A lookup with no shop page costs about 1–2 credits, one with a price about 3–5; found prices are re-checked after 6 days, products with nothing found after 45 days; the job stops before fewer than 2,000 credits remain.
+
 ## 4b. Web price search with Firecrawl and Claude: two secrets (instead of 4)
 **Settings → Variables and Secrets → Add** (type *Secret*):
 - `FIRECRAWL_API_KEY`: your Firecrawl key (finds and reads shop pages).
@@ -41,7 +46,7 @@ Optional (plain text): `FS_WEB_PRICES_MODEL` (default `claude-opus-5-5`; `claude
 Bindings and secrets apply to the **next deployment**: Deployments → the latest → **Retry deployment**. Then:
 ```bash
 curl -s https://YOUR-SITE/api/prices/status | grep -o '"webSearch":"[^"]*"'
-node verify-deploy.mjs https://YOUR-SITE 92.0.0
+node verify-deploy.mjs https://YOUR-SITE 93.0.0
 ```
 
 ## What the web search does, and what it costs

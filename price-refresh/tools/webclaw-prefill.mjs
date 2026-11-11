@@ -74,7 +74,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const before = await usage(key), room = before ? Math.floor((Number(before.credits_remaining) - 2000) / 8) : max; // keep a reserve of 2,000 credits
   const todo = due.slice(0, Math.max(0, Math.min(max, room)));
   const R = loadRules(), env = { WEBCLAW_API_KEY: key, FS_WEBCLAW_RESULTS: process.env.FS_WEBCLAW_RESULTS || '10', FS_WEBCLAW_SERIAL: '1' };
-  let ran = 0, found = 0, failed = 0, busy = 0, stop = '';
+  let ran = 0, found = 0, failed = 0, busy = 0, stop = ''; const started = Date.now();
   const work = async item => {
     if (stop) return;
     const q = { code: item.k, market: 'GR', currencies: ['EUR'], name: String(item.p.product_name || ''), brand: String(item.p.brands || '').split(',')[0], quantity: String(item.p.quantity || '') };
@@ -87,7 +87,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       const offers = R.fsWebVerifyOffers(pages.map(p => R.fsWebFromPage(q, p)).filter(Boolean), pages, q);
       state.set(item.k, { t: new Date().toISOString(), o: offers.map(compact) }); ran++; if (offers.length) found++;
     } catch (e) { failed++; const m = String(e.message || e); if (failed <= 3) console.error(`web prefill: ${item.k} failed: ${m.slice(0, 160)}`); if (/webclaw_(401|402|403|429)/.test(m)) stop = m; }
-    if ((ran + failed) % 50 === 0) { finish({ ran, found, failed, busy, partial: true }); }
+    const done = ran + failed;
+    if (done % 25 === 0) console.error(`web prefill: ${done}/${todo.length} looked up, ${found} prices, ${busy} busy retries, ${((Date.now() - started) / 1000 / done).toFixed(1)} s per lookup`);
+    if (done % 50 === 0) { finish({ ran, found, failed, busy, partial: true }); }
   };
   for (let i = 0; i < todo.length && !stop; i += parallel) await Promise.all(todo.slice(i, i + parallel).map(work));
   const after = await usage(key);
