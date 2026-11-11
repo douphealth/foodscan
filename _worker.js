@@ -1703,8 +1703,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "91.0.0";
-var BUILD = "9100-shared-confirmations";
+var VERSION = "92.0.0";
+var BUILD = "9200-webclaw-code-prices";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -3689,7 +3689,7 @@ async function fsPricesRoute(request,env,ctx) {
       try{const r=await fetch('https://prices.openfoodfacts.org/api/v1/status',{headers:{'Accept':'application/json','User-Agent':`FoodScan/${FS_PRICE_VERSION} (https://food-scan.gearuptofit.com)`},signal:AbortSignal.timeout(4000)});probe=r.ok?'responding':'http_'+r.status;}
       catch{probe='network_unavailable';}
     }
-    return fsPriceJson({version:FS_PRICE_VERSION,route:'ready',endpoint:url.pathname,serverSideProxy:true,sources:{webSearch:(env?.FS_WEB_PRICES||fsWebConfigured(env))?'on (FIRECRAWL_API_KEY, ANTHROPIC_API_KEY and FOODSCAN_PRICES_DB present)':'off (needs the secrets FIRECRAWL_API_KEY and ANTHROPIC_API_KEY and the D1 binding FOODSCAN_PRICES_DB)',openPrices:'public_api',licensedFeeds:env?.FOODSCAN_PRICES_DB?'configured':'not_configured',observatory:'seed+d1',ekatanalotis:'seed_historical',retailerWeb:'seed+d1 (bazaar-online.gr, lidl.gr, kritikos-sm.gr + live product-page check)'},health:'/api/prices/health',probe,
+    return fsPriceJson({version:FS_PRICE_VERSION,route:'ready',endpoint:url.pathname,serverSideProxy:true,sources:{webSearch:(env?.FS_WEB_PRICES||fsWebConfigured(env))?(env?.WEBCLAW_API_KEY?'on (webclaw, prices read by code; WEBCLAW_API_KEY and FOODSCAN_PRICES_DB present)':'on (FIRECRAWL_API_KEY, ANTHROPIC_API_KEY and FOODSCAN_PRICES_DB present)'):'off (needs the D1 binding FOODSCAN_PRICES_DB and the secret WEBCLAW_API_KEY, or FIRECRAWL_API_KEY with ANTHROPIC_API_KEY)',openPrices:'public_api',licensedFeeds:env?.FOODSCAN_PRICES_DB?'configured':'not_configured',observatory:'seed+d1',ekatanalotis:'seed_historical',retailerWeb:'seed+d1 (bazaar-online.gr, lidl.gr, kritikos-sm.gr + live product-page check)'},health:'/api/prices/health',probe,
       policy:'evidence_only: no estimated, benchmark or multiplier prices; missing prices are reported as not available',currentDays:FS_PRICE_CURRENT_DAYS,
       sourceLicenses:{openPrices:FS_PRICE_LICENSES['op:'],observatory:FS_GR_SOURCES.posokanei.license,ekatanalotis:FS_GR_SOURCES.ekatanalotis.license,bazaar:FS_GR_SOURCES.bazaar.license,lidl:FS_GR_SOURCES.lidl.license,kritikos:FS_GR_SOURCES.kritikos.license,licensedFeeds:'per feed (license_ref on every row)'}});
   }
@@ -3767,7 +3767,8 @@ const FS_WEB_BLOCK = /(openfoodfacts|wikipedia|facebook|instagram|youtube|tiktok
 // real guard (a price must be on the page), this keeps hostile text away from the model in the first place.
 const FS_WEB_INJECTION = /(?:ignore|disregard|forget)\s+(?:all\s+|any\s+|the\s+)?(?:previous|above|prior|earlier)|system\s+prompt|new\s+instructions|you\s+are\s+(?:now\s+)?(?:an?\s+)?(?:ai|assistant|language\s+model)|report\s+the\s+price\s+as|(?:^|\n)\s*(?:assistant|system)\s*:/i;
 const fsWebInflight = new Map();
-const fsWebConfigured = env => Boolean(env?.FIRECRAWL_API_KEY && env?.ANTHROPIC_API_KEY && env?.FOODSCAN_PRICES_DB);
+const fsWebConfigured = env => Boolean(env?.FOODSCAN_PRICES_DB && (env?.WEBCLAW_API_KEY || (env?.FIRECRAWL_API_KEY && env?.ANTHROPIC_API_KEY)));
+const fsWebUsesWebclaw = env => Boolean(env?.WEBCLAW_API_KEY);
 const fsWebCountryName = market => { try { return new Intl.DisplayNames(["en"], { type: "region" }).of(market) || market; } catch { return market; } };
 
 /** A foreign country domain is not a local shop just because search returned it. */
@@ -3947,13 +3948,76 @@ Answer with ONE JSON object and nothing else: {"offers":[{"url":string,"retailer
   return offers;
 }
 
+/* ===== 92: webclaw, with no AI model =====
+ * When WEBCLAW_API_KEY is set (and it wins over Firecrawl + Anthropic), one lookup is ONE webclaw search for the barcode itself in the shopper's country
+ * (POST /v1/search, results scraped by webclaw), and the price is read from each page by plain code, not by a model. A page counts only if:
+ *  - its domain is of the shopper's country (".gr" for Greece; a generic .com/.net page is never used here), it is not a trade/B2B, comparison or
+ *    nutrition site, and it is not hostile text;
+ *  - THIS barcode is printed on it, and its product heading names a pack size that equals the label's (when the label size is known);
+ *  - exactly one current price is attached to the product (the first euro amount after the heading, or right after the barcode); per-kg/litre prices,
+ *    struck-through old prices and other products' prices further down are ignored; two different candidates make it ambiguous and it is skipped.
+ * Then fsWebVerifyOffers checks it again exactly like a model's answer (price on the page, title and pack on the page, barcode on the page, country).
+ * A page that says the item is sold out is dropped by the verifier (inStock false). */
+const FS_WEBCLAW_BLOCK = /(^|[./])b2b\.|skroutz\.|bestprice\.|shopflix\.|kotsovolos\.|public\.gr|openfoodfacts|e-katanalotis|posokanei/i;
+async function fsWebclaw(env, path, body, signal) {
+  const r = await fetch(`${env.WEBCLAW_BASE || "https://api.webclaw.io/v1"}${path}`, {
+    method: "POST", signal, headers: { Authorization: `Bearer ${env.WEBCLAW_API_KEY}`, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`webclaw_${r.status}`);
+  return r.json();
+}
+const fsWebPlain = md => String(md || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[ \t]+/g, " ").replace(/ /g, " ");
+/** One webclaw search for the barcode; returns the pages that can be read, in the shape fsWebVerifyOffers expects. */
+async function fsWebclawSearch(env, q, signal) {
+  const lang = FS_WEB_LANG[q.market] || "en", code = q.code.replace(/^0+/, "");
+  const data = await fsWebclaw(env, "/search", { query: code, country: q.market.toLowerCase(), lang, num_results: Math.max(3, Math.min(10, Number(env.FS_WEBCLAW_RESULTS) || 8)), scrape: true, formats: ["markdown"] }, signal);
+  const pages = [];
+  for (const it of Array.isArray(data?.results) ? data.results : []) {
+    let url = String(it?.url || ""); try { const u = new URL(url); for (const k of [...u.searchParams.keys()]) if (/^(srsltid|utm_|gclid|fbclid)/.test(k)) u.searchParams.delete(k); url = u.toString(); } catch { continue; }
+    if (!/^https:\/\//.test(url) || FS_WEB_BLOCK.test(url) || FS_WEBCLAW_BLOCK.test(url) || fsWebDomainCountry(url) !== q.market || !it.markdown) continue;
+    const text = fsWebPlain(it.markdown).slice(0, 20000);
+    if (FS_WEB_INJECTION.test(text)) continue;
+    pages.push({ url, title: String(it.metadata?.title || it.title || ""), site: String(it.metadata?.site_name || ""), text });
+  }
+  return pages;
+}
+/** The euro amounts of a text with their positions; per-kg/litre/100 g prices and struck-through ones are left out. */
+function fsWebEuroAmounts(text) {
+  const out = [];
+  for (const m of text.matchAll(/(?:€\s*(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})|(\d{1,3}(?:[.,]\d{3})*[.,]\d{2})\s*(?:€|EUR\b))/g)) {
+    const raw = m[1] || m[2], after = text.slice(m.index + m[0].length, m.index + m[0].length + 22), before = text.slice(Math.max(0, m.index - 14), m.index);
+    if (/^\s*(?:\/|ανά|per\b|το\s+κιλ|\/\s*(?:kg|κιλ|lt|l\b|λίτρ|100))/i.test(after) || /(?:ανά|per)\s*(?:κιλ[όο]|kg|λίτρο|lt|100\s*g)?\s*:?\s*$/i.test(before) || (/~~\s*$/.test(before) && /^\s*~~/.test(after))) continue; // struck through: inside ~~ ~~
+    const v = Number(raw.replace(/[.,](?=\d{3}(?:[.,]|$))/g, "").replace(",", "."));
+    if (v > 0.05 && v < 1000) out.push({ v: Math.round(v * 100) / 100, at: m.index });
+  }
+  return out;
+}
+/** A page -> at most one offer in the model's answer format (so the same verifier checks it), or null. */
+function fsWebFromPage(q, page, why = {}) {
+  const code = q.code.replace(/^0+/, ""), text = page.text, at = text.search(new RegExp(`(^|\\D)0*${code}(\\D|$)`));
+  if (at < 0) { why.reason = 'barcode_not_on_page'; return null; }
+  const head = text.match(/^#{1,2}\s+(.{3,160})$/m), title = (head ? head[1] : page.title).trim();
+  if (!title || !text.includes(title)) { why.reason = 'no_title'; return null; }
+  const packMatch = title.match(/(\d+(?:[.,]\d+)?\s*(?:x|×)\s*\d+(?:[.,]\d+)?\s*(?:kg|gr|g|ml|cl|lt|l)\b|\d+(?:[.,]\d+)?\s*(?:kg|gr|g|ml|cl|lt|l)\b)/i);
+  const pack = packMatch ? packMatch[1] : "";
+  if (!pack || !fsWebPackKey(pack)) { why.reason = 'no_pack_in_title'; why.title = title; return null; }
+  const amounts = fsWebEuroAmounts(text), from = head ? text.indexOf(head[0]) : at;
+  const near = amounts.filter(a => (a.at > from && a.at - from < 700) || (a.at > at && a.at - at < 300));
+  const first = near.sort((x, y) => x.at - y.at)[0];
+  if (!first) { why.reason = 'no_price_near_product'; return null; }
+  const competing = near.filter(a => a.v !== first.v && a.at - first.at < 60 && !/χωρίς\s*φπα/i.test(text.slice(first.at, a.at)));
+  if (competing.length) { why.reason = 'ambiguous_price'; why.prices = [first.v, ...competing.map(a => a.v)]; return null; } // two different prices side by side: ambiguous (unless one is the "without VAT" twin)
+  const soldOut = /(εξαντλήθηκε|μη\s+διαθέσιμο|εκτός\s+αποθέματος|out\s+of\s+stock|sold\s+out)/i.test(text.slice(Math.max(0, from), from + 1500));
+  const host = new URL(page.url).hostname.replace(/^www\./, "");
+  return { url: page.url, retailer: page.site || host, price: first.v, currency: "EUR", inStock: !soldOut, match: "barcode", productTitle: title, packSize: pack, countryCode: q.market, countryEvidence: "" };
+}
 async function fsWebEnsureSchema(db) {
   await db.prepare("CREATE TABLE IF NOT EXISTS foodscan_web_prices(barcode TEXT NOT NULL, market TEXT NOT NULL, status TEXT NOT NULL, payload TEXT NOT NULL, checked_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(barcode, market))").bind().run();
   await db.prepare("CREATE TABLE IF NOT EXISTS foodscan_web_budget(day TEXT PRIMARY KEY, n INTEGER NOT NULL)").bind().run();
 }
 /** One new (uncached) lookup costs money: at most FS_WEB_DAILY_LIMIT per UTC day, counted atomically in D1. */
 async function fsWebSpend(env) {
-  const limit = Math.max(0, Number(env.FS_WEB_DAILY_LIMIT ?? 300));
+  const limit = Math.max(0, Number(env.FS_WEB_DAILY_LIMIT ?? (fsWebUsesWebclaw(env) ? 20 : 300))); // 92: webclaw credits are scarce: 20 new lookups a day unless set
   const row = await env.FOODSCAN_PRICES_DB.prepare("INSERT INTO foodscan_web_budget(day,n) VALUES(?,1) ON CONFLICT(day) DO UPDATE SET n=n+1 WHERE n < ? RETURNING n").bind(new Date().toISOString().slice(0, 10), limit).first();
   return Boolean(row);
 }
@@ -3962,10 +4026,11 @@ async function fsWebRun(env, q) {
   let result, ttl;
   try {
     if (!await fsWebSpend(env)) return { status: "unavailable", items: [], reason: "budget", checkedAt: new Date().toISOString() }; // not cached: tomorrow's budget answers
-    const pages = await fsWebSearch(env, q, ctl.signal);
-    const offers = pages.length ? fsWebVerifyOffers(await fsWebExtract(env, q, pages, ctl.signal), pages, q) : [];
+    let offers;
+    if (fsWebUsesWebclaw(env)) { const pages = await fsWebclawSearch(env, q, ctl.signal); offers = fsWebVerifyOffers(pages.map(p => fsWebFromPage(q, p)).filter(Boolean), pages, q); } // 92: no model
+    else { const pages = await fsWebSearch(env, q, ctl.signal); offers = pages.length ? fsWebVerifyOffers(await fsWebExtract(env, q, pages, ctl.signal), pages, q) : []; }
     result = { status: offers.length ? "ok_with_data" : "ok_empty", items: offers, checkedAt: new Date().toISOString() };
-    ttl = offers.length ? FS_WEB_TTL_OK : FS_WEB_TTL_EMPTY;
+    ttl = fsWebUsesWebclaw(env) ? (offers.length ? 3 * 24 * 3600e3 : 7 * 24 * 3600e3) : offers.length ? FS_WEB_TTL_OK : FS_WEB_TTL_EMPTY; // 92: shop prices change slowly; credits are scarce
   } catch (e) {
     console.error(JSON.stringify({ app: "FoodScan", error: "web_price_lookup_failed", code: q.code, market: q.market, message: String(e?.message || e).slice(0, 120) }));
     result = { status: "unavailable", items: [], checkedAt: new Date().toISOString() };
