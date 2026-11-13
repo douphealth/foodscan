@@ -78,10 +78,12 @@ export async function compare(code, { items = [], market, country, nearby, opts 
 import { DatabaseSync } from 'node:sqlite';
 export function fakeD1() {
   const db = new DatabaseSync(':memory:');
-  return { raw: db, exec: sql => db.exec(sql), prepare(sql) { const st = db.prepare(sql); return { bind: (...p) => ({
+  // like D1: run/first/all work after bind(...) and, for statements without parameters, directly
+  const bound = (st, p) => ({
     first: async () => { const r = st.get(...p); return r === undefined ? null : { ...r }; },
     run: async () => { st.run(...p); return { success: true }; },
-    all: async () => ({ results: st.all(...p).map(r => ({ ...r })) }) }) }; } };
+    all: async () => ({ results: st.all(...p).map(r => ({ ...r })) }) });
+  return { raw: db, exec: sql => db.exec(sql), prepare(sql) { const st = db.prepare(sql); return { bind: (...p) => bound(st, p), ...bound(st, []) }; } };
 }
 
 /** 90: GET /api/prices/peek for several barcodes, with the same fake network as compare(). */

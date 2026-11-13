@@ -132,11 +132,15 @@ function paint(sec, code, w) {
   else if (view === 'reading') sec.innerHTML = `<div class="fr85__head"><span class="fr85__eyebrow">${esc(tx('eyebrow'))}</span></div><div class="fr85__wait" role="status"><i class="fr85__spin" aria-hidden="true"></i><span>${esc(st.status || tx('reading'))}</span></div>`;
   else if (view === 'review') { sec.innerHTML = formHTML(code, st); refreshLive(sec, code); }
   else sec.innerHTML = idleHTML({ ...st, code });
+  applyStyles(sec);
 }
+/** 94: the site's Content-Security-Policy (style-src 'self') drops style="" written in HTML, so the gauge ticks and bars carry data-fs-style
+ *  and get it here through the CSSOM, which the policy allows. Only the computed position and width values of grade-ui-v85.mjs reach it. */
+function applyStyles(root) { root?.querySelectorAll?.('[data-fs-style]').forEach(n => { n.style.cssText = n.dataset.fsStyle; n.removeAttribute('data-fs-style'); }); }
 async function refreshLive(sec, code) {
   const st = state.get(code); if (!st || st.phase !== 'review') return;
   const { reader } = await load(), r = gradeNow(st, reader), box = sec.querySelector('[data-fr="live"]'), save = sec.querySelector('[data-fr="save"]');
-  if (box) box.innerHTML = st.kind === 'water' ? resultHTML({ ok: true, kind: 'water' }) : resultHTML(r);
+  if (box) { box.innerHTML = st.kind === 'water' ? resultHTML({ ok: true, kind: 'water' }) : resultHTML(r); applyStyles(box); }
   if (save) save.disabled = !(r.ok && st.confirmed);
   st.result = r;
 }

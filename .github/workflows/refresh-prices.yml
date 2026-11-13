@@ -65,6 +65,14 @@ jobs:
         # the Greek data above must publish even if Open Prices is unreachable on the first run (no previous snapshot to keep)
         continue-on-error: true
 
+      - name: Web-shop prices via webclaw (barcode search, prices read by code; keeps the previous ones without the WEBCLAW_API_KEY secret)
+        env:
+          WEBCLAW_API_KEY: ${{ secrets.WEBCLAW_API_KEY }}
+          WEBCLAW_DAILY_LOOKUPS: ${{ vars.WEBCLAW_DAILY_LOOKUPS || '1500' }}
+        run: node tools/webclaw-prefill.mjs --catalogue ../assets/greece-r20261030 --seeds out/seeds --prev prev/web --out out/web --parallel 3
+        continue-on-error: true
+        timeout-minutes: 150
+
       - name: Publish to prices-data
         run: |
           cd out

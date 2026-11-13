@@ -17,3 +17,39 @@ CREATE TABLE IF NOT EXISTS foodscan_pk_links(ean TEXT NOT NULL, pk_id TEXT NOT N
 -- 84: AI web price search (created on first use by the worker too; listed here so one run of this file sets the database up completely)
 CREATE TABLE IF NOT EXISTS foodscan_web_prices(barcode TEXT NOT NULL, market TEXT NOT NULL, status TEXT NOT NULL, payload TEXT NOT NULL, checked_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, PRIMARY KEY(barcode, market));
 CREATE TABLE IF NOT EXISTS foodscan_web_budget(day TEXT PRIMARY KEY, n INTEGER NOT NULL);
+
+-- 91: shared shopper confirmations. The observatory (posokanei.gov.gr) prices ~10,000 products in about ten chains but publishes no barcodes.
+-- When shoppers holding a pack confirm that a barcode is one of the observatory products FoodScan offered for it ("This is it"), each vote is
+-- kept here, one per voter (a salted hash of the voter's network, so one household counts once). A barcode is linked for everyone when at
+-- least FS_CONFIRM_MIN (default 2) independent voters confirm the same product, disputes stay under half of the confirmations, and no other
+-- product has as many votes. Safe to run twice.
+CREATE TABLE IF NOT EXISTS foodscan_obs_votes (
+  ean TEXT NOT NULL,                 -- 14-digit barcode
+  pk_id TEXT NOT NULL,               -- observatory product id (32 hex)
+  voter TEXT NOT NULL,               -- salted SHA-256 of the voter's /24 (IPv4) or /48 (IPv6) network; never the address
+  vote INTEGER NOT NULL,             -- 1 this is it, -1 not this product
+  created_at INTEGER NOT NULL,       -- ms
+  PRIMARY KEY (ean, pk_id, voter)
+);
+CREATE INDEX IF NOT EXISTS foodscan_obs_votes_voter ON foodscan_obs_votes(voter, created_at);
+CREATE TABLE IF NOT EXISTS foodscan_obs_links (
+  ean TEXT PRIMARY KEY,
+  pk_id TEXT NOT NULL,
+  confirmations INTEGER NOT NULL,
+  disputes INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL,              -- active | inactive
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS foodscan_obs_links_status ON foodscan_obs_links(status, ean);
+
+-- FoodScan 94: scan outcomes. Daily counts per barcode and outcome; no address, device id or time of day is stored.
+CREATE TABLE IF NOT EXISTS foodscan_scan_daily (
+  day TEXT NOT NULL,
+  barcode TEXT NOT NULL,
+  grade TEXT NOT NULL CHECK (grade IN ('source','estimated','exempt','none')),
+  price TEXT NOT NULL CHECK (price IN ('current','older','estimate','none')),
+  photo INTEGER NOT NULL CHECK (photo IN (0,1)),
+  n INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (day, barcode, grade, price, photo)
+);
+CREATE INDEX IF NOT EXISTS foodscan_scan_daily_day ON foodscan_scan_daily (day);
