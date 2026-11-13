@@ -1,0 +1,186 @@
+[
+ {
+  "code": "7622300444181",
+  "name": "Oreo",
+  "family": "biscuit",
+  "grade": "E",
+  "expected": [
+   {
+    "code": "8410376047011",
+    "grade": "C"
+   },
+   {
+    "code": "7622210833099",
+    "grade": "C"
+   },
+   {
+    "code": "5201004028280",
+    "grade": "B"
+   }
+  ]
+ },
+ {
+  "code": "5201485009044",
+  "name": "Brioche Toast",
+  "family": "bread",
+  "grade": "D",
+  "expected": [
+   {
+    "code": "5201673001058",
+    "grade": "B"
+   },
+   {
+    "code": "5203064009230",
+    "grade": "A"
+   },
+   {
+    "code": "4000446001728",
+    "grade": "A"
+   }
+  ]
+ },
+ {
+  "code": "5212026600606",
+  "name": "Amadeus cake",
+  "family": "cake",
+  "grade": "E",
+  "expected": [
+   {
+    "code": "8411037892490",
+    "grade": "C"
+   },
+   {
+    "code": "5214002156251",
+    "grade": "B"
+   },
+   {
+    "code": "5201383505334",
+    "grade": "D"
+   }
+  ]
+ },
+ {
+  "code": "5200100942452",
+  "name": "Cornflakes Proteino with dark chocolate",
+  "family": "cereal",
+  "grade": "D",
+  "expected": [
+   {
+    "code": "4335619007680",
+    "grade": "A"
+   },
+   {
+    "code": "5900020043481",
+    "grade": "A"
+   },
+   {
+    "code": "5900617039262",
+    "grade": "A"
+   }
+  ]
+ },
+ {
+  "code": "5200379800156",
+  "name": "Kalathaki",
+  "family": "cheese",
+  "grade": "D",
+  "expected": [
+   {
+    "code": "2697841002447",
+    "grade": "C"
+   }
+  ]
+ },
+ {
+  "code": "4056489762683",
+  "name": "Dark Chocolate",
+  "family": "chocolate",
+  "grade": "E",
+  "expected": [
+   {
+    "code": "20815882",
+    "grade": "D"
+   },
+   {
+    "code": "5949065042363",
+    "grade": "D"
+   },
+   {
+    "code": "5201002004798",
+    "grade": "D"
+   }
+  ]
+ },
+ {
+  "code": "5201156130817",
+  "name": "Lipton green ice tea",
+  "family": "coffee-tea",
+  "grade": "B",
+  "expected": [
+   {
+    "code": "5201946901245",
+    "grade": "A"
+   }
+  ]
+ },
+ {
+  "code": "5202234611860",
+  "name": "Στραγγιστό & αγαπημένο",
+  "family": "dessert",
+  "grade": "B",
+  "expected": [
+   {
+    "code": "5201054001240",
+    "grade": "A"
+   },
+   {
+    "code": "5201083351460",
+    "grade": "A"
+   },
+   {
+    "code": "5202082002247",
+    "grade": "A"
+   }
+  ]
+ },
+ {
+  "code": "8004030770041",
+  "name": "Tuna",
+  "family": "fish",
+  "grade": "C",
+  "expected": [
+   {
+    "code": "4335619082601",
+    "grade": "A"
+   },
+   {
+    "code": "4056489254683",
+    "grade": "A"
+   },
+   {
+    "code": "5202336136018",
+    "grade": "A"
+   }
+  ]
+ },
+ {
+  "code": "5203278064162",
+  "name": "Φυσικός χυμός πορτοκάλι από συμπυκνωμένο χυμό πορτοκαλιών Πελοποννήσου",
+  "family": "juice",
+  "grade": "E",
+  "expected": [
+   {
+    "code": "3800014283584",
+    "grade": "C"
+   },
+   {
+    "code": "7315120006126",
+    "grade": "D"
+   },
+   {
+    "code": "5200250410092",
+    "grade": "D"
+   }
+  ]
+ }
+]

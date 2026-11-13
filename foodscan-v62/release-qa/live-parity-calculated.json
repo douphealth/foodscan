@@ -1,0 +1,384 @@
+{
+ "capturedAt": "2026-10-30T08:58:11.864Z",
+ "catalogueRevision": "off-csv-2026-10-29",
+ "domain": "src/domain.mjs",
+ "summary": {
+  "sampled": 16,
+  "readLive": 16,
+  "notReadable": 0,
+  "sameShownGrade": 14,
+  "differentShownGrade": 2,
+  "recordChangedSinceExport": 0,
+  "nutritionIdentical": 14,
+  "stillListedForGreece": 16,
+  "gradedInCatalogue": 16,
+  "gradedAndSameGrade": 14,
+  "gradedButDifferentLetters": []
+ },
+ "rows": [
+  {
+   "code": "5203278064421",
+   "name": "oat bars with darkchocolate, honey and peanut buttet",
+   "family": "bar",
+   "catalogue": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1793196466
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1793196466,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": false,
+   "nutritionSame": false,
+   "diff": {
+    "catalogue": "D/estimated",
+    "live": "-/missing",
+    "nutritionSame": false,
+    "changedSince": false
+   }
+  },
+  {
+   "code": "5012501057037",
+   "name": "κακαο",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1793195749
+   },
+   "live": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1793195749,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201127049414",
+   "name": "break white",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1786472882
+   },
+   "live": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1786472882,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201002002503",
+   "name": "Cacao",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1785652621
+   },
+   "live": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1785652621,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "4335619298293",
+   "name": "Cocoa Drink",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1793196138
+   },
+   "live": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1793196138,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5204217904174",
+   "name": "Cacao",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": "A",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1734207550
+   },
+   "live": {
+    "grade": "A",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1734207550,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "7622210249227",
+   "name": "Drinking chocolate",
+   "family": "chocolate",
+   "catalogue": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1774772263
+   },
+   "live": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1774772263,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "4056489750307",
+   "name": "Instant noodles chicken flavour",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1793196129
+   },
+   "live": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1793196129,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5206674101042",
+   "name": "Oriental express noodles vegan prawn flavour",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1792868597
+   },
+   "live": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1792868597,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5206674101059",
+   "name": "oriental express noodles κοτοπουλο",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1774641022
+   },
+   "live": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1774641022,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "7613036679992",
+   "name": "Do NOT add English, Barcode is NOT sold in English-speaking countries",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1793196389
+   },
+   "live": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1793196389,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "7613036679978",
+   "name": "Noodle Cup Duck Taste with Black Pepper & Paprika",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1788196951
+   },
+   "live": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1788196951,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5997523315511",
+   "name": "Soba Wok Style",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1793196112
+   },
+   "live": {
+    "grade": "D",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1793196112,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5201219488794",
+   "name": "Beef noodles",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1777117117
+   },
+   "live": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1777117117,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5206674101004",
+   "name": "instant noodles with Oriental Vegetables flavour",
+   "family": "pasta",
+   "catalogue": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1771009371
+   },
+   "live": {
+    "grade": "E",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "modified": 1771009371,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": true,
+   "nutritionSame": true
+  },
+  {
+   "code": "5000169235973",
+   "name": "Natural Strained Greek Yogurt",
+   "family": "yogurt",
+   "catalogue": {
+    "grade": "C",
+    "status": "estimated",
+    "method": "2023-calculated",
+    "sourceGrade": "unknown",
+    "modified": 1772480422
+   },
+   "live": {
+    "grade": null,
+    "status": "missing",
+    "method": null,
+    "modified": 1772480422,
+    "greece": true
+   },
+   "changedSince": false,
+   "sameShownGrade": false,
+   "nutritionSame": false,
+   "diff": {
+    "catalogue": "C/estimated",
+    "live": "-/missing",
+    "nutritionSame": false,
+    "changedSince": false
+   }
+  }
+ ]
+}

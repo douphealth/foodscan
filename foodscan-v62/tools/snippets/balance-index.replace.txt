@@ -1,0 +1,1 @@
+<small>${avg===null?e("Incomplete label"):e("Not a health score")}</small>
