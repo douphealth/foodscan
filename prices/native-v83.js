@@ -415,7 +415,24 @@ document.fonts?.ready?.then(() => { try { fitVerdict(); } catch {} });
 let timer = 0;
 /** A long product name is clamped to three lines and a smaller size, so it stays inside the grade card. */
 function longNames() { document.querySelectorAll('#view .hero__name h1').forEach(h => { const long = h.textContent.trim().length > 26; if (h.classList.contains('fs80-long') !== long) { h.classList.toggle('fs80-long', long); if (long) h.title = h.textContent.trim(); } }); }
-function paint() { timer = 0; addPricesLink(); want(productCode()); compareCodes()?.forEach(c => want(c)); paintProduct(); paintChoices(); paintCompare(); try { tidy(); fitVerdict(); longNames(); } catch {} }
+/** 94: once per product per visit, what the product page could show (grade tier, price tier, photo) is counted by the server, without any id
+ *  (POST /api/prices/outcome, daily counts only; skipped under Do Not Track / Global Privacy Control). It tells the owner which opened products miss what. */
+const reported = new Set();
+function reportOutcome(code) {
+  if (!code || reported.has(code)) return;
+  if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) { reported.add(code); return; }
+  const r = results.get(code), qk = globalThis.__fs85quick?.get(code), hero = document.querySelector('#view article.hero');
+  if (!r || r.status === 'temporarily_unavailable' || !hero || !hero.textContent.includes(code)) return;
+  const gc = hero.querySelector('.gradecard'), shown = /^[A-E]$/i.test(gc?.dataset.grade || ''); // the app's own grade card: the grade reader is never started for it
+  if (!shown && (!qk || qk.state === 'loading')) return;
+  const pending = hero.querySelector('img'); if (pending && !pending.complete) { pending.addEventListener('load', () => reportOutcome(code), {once:true}); pending.addEventListener('error', () => setTimeout(() => reportOutcome(code), 50), {once:true}); return; }
+  reported.add(code);
+  const grade = shown || qk?.q?.reason === 'app-has-grade' ? 'source' : qk.kind === 'quick' || qk.kind === 'similar' ? 'estimated' : qk.kind === 'exempt' ? 'exempt' : 'none';
+  const price = r.best ? 'current' : r.latest ? 'older' : r.estimate ? 'estimate' : 'none';
+  const img = hero.querySelector('img'), photo = Boolean(img && img.complete && img.naturalWidth > 0); // a failed photo is replaced by an illustration
+  try { fetch('/api/prices/outcome', {method:'POST', keepalive:true, headers:{'Content-Type':'application/json'}, body:JSON.stringify({barcode:code, grade, price, photo})}).catch(() => {}); } catch {}
+}
+function paint() { timer = 0; addPricesLink(); const pc = productCode(); want(pc); compareCodes()?.forEach(c => want(c)); paintProduct(); paintChoices(); paintCompare(); try { tidy(); fitVerdict(); longNames(); } catch {} try { reportOutcome(pc); } catch {} }
 function schedule() { if (!timer) timer = setTimeout(paint, 60); }
 // 78: arriving at a product straight from the scanner is a rescan: ask every source again (device and edge copies skipped).
 let lastRoute = route();
@@ -453,7 +470,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-93.0.0';
+export const BUILD = 'foodscan-94.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

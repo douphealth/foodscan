@@ -15,7 +15,7 @@ export const isoDate = s => {
   return Number.isFinite(ms) && new Date(ms).toISOString().slice(0, 10) === d ? d : null;
 };
 /** Today in Greece (Europe/Athens) as YYYY-MM-DD: observation dates are Greek calendar days. */
-export const todayAthens = (now = Date.now()) => { try { return new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/Athens', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date(now)); } catch { return new Date(now + 2 * 3600000).toISOString().slice(0, 10); } };
+export const todayAthens = (now = Date.now()) => { try { const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', {timeZone:'Europe/Athens', year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(new Date(now)).map(x => [x.type, x.value])); return `${p.year}-${p.month}-${p.day}`; } catch { return new Date(now + 2 * 3600000).toISOString().slice(0, 10); } };
 /** 78: signed age in days, never clamped. A future date is negative and checkOffer drops it. */
 export const ageDays = (date, now = Date.now()) => { const d = isoDate(date); return d ? Math.round((Date.parse(todayAthens(now) + 'T00:00:00Z') - Date.parse(d + 'T00:00:00Z')) / DAY) : null; };
 export const freshnessOf = age => age === null ? null : age <= CURRENT_DAYS ? 'current' : age <= OLDER_DAYS ? 'older' : 'historical';

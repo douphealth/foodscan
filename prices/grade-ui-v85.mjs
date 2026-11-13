@@ -158,8 +158,8 @@ export function gradeHTML(m, o = {}) {
   const pills = LETTERS.map(g => { const inB = letters.includes(g), isL = g === head && (likely || letters.length === 1); return `<li class="fg85__pill g-${g} ${isL ? 'is-likely' : inB ? 'is-possible' : 'is-out'}"><b>${g}</b></li>`; }).join('');
   // gauge
   const pos = m.score != null && m.ladder ? gaugePosition(m.score, m.ladder) : null, from = idx(first) / 5, to = (idx(last) + 1) / 5;
-  const ticks = m.ladder ? LETTERS.slice(1).map((g, i) => { const lo = m.ladder[g]?.[0]; return lo == null ? '' : `<span style="left:${((i + 1) / 5) * 100}%">${lo}</span>`; }).join('') : '';
-  const gauge = m.ladder ? `<div class="fg85__gauge" aria-hidden="true"><div class="fg85__track">${LETTERS.map(g => `<i class="g-${g} ${letters.includes(g) ? '' : 'is-out'}"></i>`).join('')}${band ? `<span class="fg85__band" style="left:${from * 100}%;width:${(to - from) * 100}%"></span>` : ''}${pos != null ? `<span class="fg85__mark${pos < 0.16 ? ' is-l' : pos > 0.84 ? ' is-r' : ''}" style="left:${pos * 100}%"><em>${esc(t.gaugeMark(m.score))}</em></span>` : ''}</div><div class="fg85__ticks">${ticks}</div></div>` : '';
+  const ticks = m.ladder ? LETTERS.slice(1).map((g, i) => { const lo = m.ladder[g]?.[0]; return lo == null ? '' : `<span data-fs-style="left:${((i + 1) / 5) * 100}%">${lo}</span>`; }).join('') : '';
+  const gauge = m.ladder ? `<div class="fg85__gauge" aria-hidden="true"><div class="fg85__track">${LETTERS.map(g => `<i class="g-${g} ${letters.includes(g) ? '' : 'is-out'}"></i>`).join('')}${band ? `<span class="fg85__band" data-fs-style="left:${from * 100}%;width:${(to - from) * 100}%"></span>` : ''}${pos != null ? `<span class="fg85__mark${pos < 0.16 ? ' is-l' : pos > 0.84 ? ' is-r' : ''}" data-fs-style="left:${pos * 100}%"><em>${esc(t.gaugeMark(m.score))}</em></span>` : ''}</div><div class="fg85__ticks">${ticks}</div></div>` : '';
   // what could change it
   const moveLines = (m.movers || []).map(x => t.moveLine(t.moves[x.key](x.value, x.becomes), x.becomes));
   // reasons
@@ -181,7 +181,7 @@ export function gradeHTML(m, o = {}) {
     const unr = reportedKey[part.id] === false || isBound;
     const frac = part.max ? Math.min(1, part.points / part.max) : 0, val = unr ? t.notReported : part.id === 'fruits_vegetables_legumes' && inp.fvlText ? inp.fvlText : `${fmt(part.value, L)} ${part.unit}`;
     const counted = part.id === 'proteins' && d && !d.countProteins && m.kind !== 'cheese' && m.kind !== 'beverage' && m.kind !== 'water' ? t.notCounted(11) : '';
-    const bar = unr ? '<span class="fg85__bar is-unknown" aria-hidden="true"></span>' : `<span class="fg85__bar ${side}" style="--f:${frac}" aria-hidden="true"><i></i></span>`;
+    const bar = unr ? '<span class="fg85__bar is-unknown" aria-hidden="true"></span>' : `<span class="fg85__bar ${side}" data-fs-style="--f:${frac}" aria-hidden="true"><i></i></span>`;
     return `<li class="fg85__tile ${side}${unr ? ' is-unreported' : ''}${part.id === 'fruits_vegetables_legumes' ? ' is-wide' : ''}"><span class="fg85__tl">${esc(t.fields[part.id] || part.id)}</span><b class="fg85__tv">${esc(val)}</b>${bar}<span class="fg85__tp">${unr ? esc(isBound ? t.assumedAtMost(fmt(m.bound.max, L)) : t.assumed0) : `${part.points}<small> / ${part.max} ${esc(t.pts)}</small>`}</span>${counted ? `<small class="fg85__note">${esc(counted)}</small>` : ''}</li>`;
   };
   const negRows = d ? d.negative.map(p => tile(p, 'neg')).join('') : '', posRows = d ? d.positive.map(p => tile(p, 'pos')).join('') : '';
@@ -220,7 +220,7 @@ export function similarHTML(m, o = {}) {
   const L = o.lang === 'el' ? 'el' : 'en', t = T[L], k = t.sim, imputed = m.mode === 'imputed', letters = m.letters, band = letters.length > 1, first = letters[0], last = letters.at(-1), seal = m.likely;
   const title = imputed ? k.imputed(m.likely) : !band ? k.typicalOne(first) : letters.length === 2 ? k.typicalBand(first, last) : k.typicalWide(first, last);
   const pills = LETTERS.map(g => { const inB = letters.includes(g), isL = g === m.likely; return `<li class="fg85__pill g-${g} ${isL ? 'is-likely' : inB ? 'is-possible' : 'is-out'}"><b>${g}</b></li>`; }).join('');
-  const dist = LETTERS.filter(g => (m.dist?.[g] || 0) > 0.004).map(g => `<i class="g-${g}" style="flex:${m.dist[g]}" title="${g} ${Math.round(m.dist[g] * 100)} %"><b>${m.dist[g] >= 0.08 ? `${g} ${Math.round(m.dist[g] * 100)}%` : ''}</b></i>`).join('');
+  const dist = LETTERS.filter(g => (m.dist?.[g] || 0) > 0.004).map(g => `<i class="g-${g}" data-fs-style="flex:${m.dist[g]}" title="${g} ${Math.round(m.dist[g] * 100)} %"><b>${m.dist[g] >= 0.08 ? `${g} ${Math.round(m.dist[g] * 100)}%` : ''}</b></i>`).join('');
   const listText = joinList((m.imputed || []).map(x => t.fields[x === 'saturatedFat' ? 'saturated_fat' : x === 'energy' ? 'energy' : x].toLowerCase()), L);
   const why = imputed ? k.whyI(listText) : m.basis === 'maker' ? k.whyTM : m.basis === 'category' ? k.whyTC : k.whyT;
   const inp = m.inputs || {};

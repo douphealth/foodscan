@@ -1703,8 +1703,8 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "93.0.0";
-var BUILD = "9300-web-prices-ahead";
+var VERSION = "94.0.0";
+var BUILD = "9400-launch-checks";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
 var VIRAL_EVENTS = /* @__PURE__ */ new Set(["product_share_started", "product_share_handoff", "product_link_copied", "shared_product_opened", "shared_scan_cta_clicked", "shared_scan_completed", "shared_product_reshared", "public_shared_open", "public_shared_scan_cta", "public_shared_report_open", "public_challenge_open", "public_challenge_referral_scan_cta"]);
@@ -2447,7 +2447,7 @@ function fsPriceISO(s) {
 }
 /** Today's date in Greece (Europe/Athens), YYYY-MM-DD. Greek observations are dated in local Greek days. */
 function fsPriceToday(now = Date.now()) {
-  try { return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Athens',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now)); }
+  try { const p = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Athens',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(now)).map(x => [x.type, x.value])); return `${p.year}-${p.month}-${p.day}`; }
   catch { return new Date(now + 2*3600000).toISOString().slice(0,10); }
 }
 /** Age in whole calendar days. 78: a future date is never clamped to "today": it gives a NEGATIVE age and every caller rejects it.
@@ -2491,6 +2491,15 @@ function fsPriceScope(url, request) {
  * Greece and elsewhere are kept apart: an observation outside Greece is never shown as a Greek shelf price. */
 const FS_PRICE_CURRENT_DAYS = 7, FS_PRICE_OLDER_DAYS = 90;
 const FS_PRICE_RESTRICTED_PROMOS = ['LOYALTY_PROGRAM','QUANTITY','PICK_IT_YOURSELF','EXPIRES_SOON','SECOND_HAND'];
+/** 94: a shop's product page, not its home, search, cart or account page (those prove nothing about one product). */
+function fsPriceProductPage(url) {
+  let u; try { u = new URL(String(url||'')); } catch { return false; }
+  if (u.protocol !== 'https:') return false;
+  const p = u.pathname.replace(/\/+$/, '');
+  if (!p && !u.search) return false;
+  if (/^\/(?:el|en|gr|home|index\.(?:html?|php))?$/i.test(p) && !/(?:product_id|sku|id|code|gtin)=/i.test(u.search)) return false;
+  return !/^\/(?:search|cart|checkout|login|account|contact|about|terms|privacy)$/i.test(p);
+}
 function fsPriceFreshness(age) { return age <= FS_PRICE_CURRENT_DAYS ? 'current' : age <= FS_PRICE_OLDER_DAYS ? 'older' : 'historical'; }
 /** Country of an Open Prices location, from its own address fields only. A Greek-language shop name is not evidence
  *  of Greece: Σκλαβενίτης, Lidl and others trade in Cyprus too (Open Prices has Λεμεσός observations). */
@@ -2726,6 +2735,14 @@ function fsPriceSameOrigin(request) {
   const url=new URL(request.url), origin=request.headers.get('Origin');
   if(origin&&origin!==url.origin)return false;
   return request.headers.get('Sec-Fetch-Site')!=='cross-site';
+}
+/** Constant-time check of "Authorization: Bearer <FOODSCAN_PRICES_ADMIN_TOKEN>" (at least 32 characters). */
+async function fsPriceAdminOk(request, env) {
+  const secret = String(env?.FOODSCAN_PRICES_ADMIN_TOKEN || ''); if (secret.length < 32) return false;
+  const bearer = request.headers.get('Authorization') || '', given = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+  const d = async v => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
+  const [a, b] = await Promise.all([d(given), d(secret)]); let x = 0; for (let i = 0; i < a.length; i++) x |= a[i] ^ b[i];
+  return Boolean(given) && x === 0;
 }
 async function fsPriceAdminImport(request,env) {
   if(request.method!=='POST')return fsPriceJson({error:'method_not_allowed'},405,{Allow:'POST'});
@@ -3602,7 +3619,6 @@ async function fsPriceWebOffers(env, code, scope, meta, fresh) {
   if (!env?.FS_WEB_PRICES) return {status:'disabled',items:[]};
   const market = scope.market || FS_MARKET_DEFAULT;
   const r = await env.FS_WEB_PRICES.lookup({code:fsPriceKey(code), market, name:meta?.name||'', brand:meta?.brand||'', quantity:meta?.quantity||'', currencies:fsMarketCurrencies(market)||[], fresh});
-  const today = fsPriceToday(Date.now());
   // Pack size: each shop page's own size is checked against the label (fsPriceBuildPayload marks a different size "other size").
   // Without a label size, name matches are trusted only when every shop reports the same size (else: "size unconfirmed").
   const label = fsPricePack(meta?.quantity, meta?.productAmount, meta?.productAmountUnit);
@@ -3613,7 +3629,9 @@ async function fsPriceWebOffers(env, code, scope, meta, fresh) {
     const shopPack = packs[i];
     const host = (() => { try { return new URL(o.url).hostname.replace(/^www\./,''); } catch { return ''; } })();
     const chain = FS_PRICE_CHAINS.find(c => c[2].test(o.retailer) || c[2].test(host));
-    const date = String(o.checkedAt||'').slice(0,10) || today, age = fsPriceAge(date) ?? 0;
+    // 94: no date, a future date or a shop's home/search page is no evidence: the price is dropped (it was dated "today" before).
+    const date = fsPriceISO(String(o.checkedAt||'').slice(0,10)), age = date ? fsPriceAge(date) : null;
+    if (!date || age === null || age < 0 || !fsPriceProductPage(o.url)) return null;
     const sameSize = label && shopPack && label.unit === shopPack.unit && Math.abs(label.amount - shopPack.amount) / label.amount <= 0.05;
     // Only verified local barcode or exact brand+name+pack evidence can rank; close names never do.
     const strong = Boolean(o.countryCode === market && (o.match === 'barcode' || (o.match === 'exact' && sameSize)));
@@ -3628,7 +3646,7 @@ async function fsPriceWebOffers(env, code, scope, meta, fresh) {
       match:o.match, webTitle:o.productTitle||'', webPack:o.packSize||'', fetchedAt:o.checkedAt||null, origin:'web',
       ...(shopPack ? {shopPack} : {}), ...(unconfirmed ? {packUnconfirmed:true} : {}),
     };
-  });
+  }).filter(Boolean);
   return {status:r?.status||'unavailable', items, checkedAt:r?.checkedAt, cached:r?.cached};
 }
 
@@ -3688,6 +3706,41 @@ async function fsPricePeek(request, env, ctx, url) {
   if (cache && items.every(i => i.status !== 'temporarily_unavailable')) { try { const copy = out.clone(); ctx?.waitUntil?.(cache.put(key, new Response(copy.body, {status:200, headers:{...Object.fromEntries(copy.headers), 'Cache-Control':'public, max-age=600'}})).catch(() => {})); } catch {} }
   return out;
 }
+/* ===== FoodScan 94: scan outcomes — which products shoppers open, and what FoodScan could show for them =====
+ * POST {barcode, grade, price, photo} from the product page, once per product per visit. Stored as DAILY COUNTS per barcode and outcome in
+ * FOODSCAN_PRICES_DB: no address, device id, cookie or time of day is kept. Skipped under Do Not Track / Global Privacy Control and for
+ * requests from other sites. GET (Bearer FOODSCAN_PRICES_ADMIN_TOKEN) lists the most-opened products with what each was missing. */
+const FS_OUTCOME_GRADE = new Set(['source', 'estimated', 'exempt', 'none']), FS_OUTCOME_PRICE = new Set(['current', 'older', 'estimate', 'none']);
+const fsOutcomeBudget = new Map();
+async function fsPriceOutcome(request, env, url) {
+  const db = env?.FOODSCAN_PRICES_DB, done = (extra = {}) => fsPriceJson({ok:true, ...extra}, 202);
+  if (request.method === 'GET') {
+    if (!(await fsPriceAdminOk(request, env))) return fsPriceJson({error:'unauthorized'}, 401);
+    if (!db) return fsPriceJson({error:'not_configured'}, 503);
+    const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30)), since = fsPriceToday(Date.now() - days * 864e5);
+    const rows = (await db.prepare(`SELECT barcode, SUM(n) AS opens, SUM(CASE WHEN grade='none' THEN n ELSE 0 END) AS no_grade,
+      SUM(CASE WHEN grade='estimated' THEN n ELSE 0 END) AS est_grade, SUM(CASE WHEN price='none' THEN n ELSE 0 END) AS no_price,
+      SUM(CASE WHEN price IN ('older','estimate') THEN n ELSE 0 END) AS weak_price, SUM(CASE WHEN photo=0 THEN n ELSE 0 END) AS no_photo
+      FROM foodscan_scan_daily WHERE day >= ? GROUP BY barcode ORDER BY opens DESC LIMIT 500`).bind(since).all()).results || [];
+    const total = rows.reduce((t, r) => t + Number(r.opens || 0), 0);
+    return fsPriceJson({since, days, products:rows.length, opens:total, rows}, 200, {'Cache-Control':'no-store'});
+  }
+  if (request.method !== 'POST') return fsPriceJson({error:'method_not_allowed'}, 405, {Allow:'GET, POST'});
+  if (request.headers.get('Sec-GPC') === '1' || /^(?:1|yes)$/i.test(request.headers.get('DNT') || '')) return done({recorded:false, reason:'do_not_track'});
+  try { const from = request.headers.get('Origin') || request.headers.get('Referer') || ''; if (!from || new URL(from).origin !== url.origin) return done({recorded:false, reason:'other_site'}); } catch { return done({recorded:false, reason:'other_site'}); }
+  if (!db) return done({recorded:false, reason:'not_configured'});
+  let body = null; try { const text = await request.text(); if (text.length > 600) throw 0; body = JSON.parse(text); } catch { return fsPriceJson({error:'invalid_json'}, 400); }
+  const code = String(body?.barcode || ''), grade = String(body?.grade || ''), price = String(body?.price || ''), photo = body?.photo === true ? 1 : body?.photo === false ? 0 : null;
+  if (!fsPriceValidBarcode(code) || !FS_OUTCOME_GRADE.has(grade) || !FS_OUTCOME_PRICE.has(price) || photo === null) return fsPriceJson({error:'invalid_query', message:'Send {barcode, grade: source|estimated|exempt|none, price: current|older|estimate|none, photo: true|false}.'}, 400);
+  const now = Date.now(), ip = request.headers.get('CF-Connecting-IP') || '', recent = (fsOutcomeBudget.get(ip) || []).filter(t => t > now - 6e4);
+  if (recent.length >= 30) return done({recorded:false, reason:'rate_limited'});
+  recent.push(now); fsOutcomeBudget.set(ip, recent); if (fsOutcomeBudget.size > 4096) fsOutcomeBudget.clear();
+  try {
+    await db.prepare(`INSERT INTO foodscan_scan_daily (day, barcode, grade, price, photo, n) VALUES (?, ?, ?, ?, ?, 1)
+      ON CONFLICT(day, barcode, grade, price, photo) DO UPDATE SET n = n + 1`).bind(fsPriceToday(now), fsPriceKey(code), grade, price, photo).run();
+  } catch { return done({recorded:false, reason:'database_error'}); }
+  return done({recorded:true});
+}
 async function fsPricesRoute(request,env,ctx) {
   const url=new URL(request.url);
   const publicPath=url.pathname.startsWith('/prices/service/') ? url.pathname.slice('/prices/service/'.length) :
@@ -3695,7 +3748,7 @@ async function fsPricesRoute(request,env,ctx) {
   if(publicPath===null)return null;
   if(!fsPriceSameOrigin(request))return fsPriceJson({error:'origin_not_allowed'},403);
   if(url.pathname==='/api/prices/admin/import')return fsPriceAdminImport(request,env);
-  const canPost=publicPath==='compare'||publicPath==='confirm';
+  const canPost=publicPath==='compare'||publicPath==='confirm'||publicPath==='outcome';
   if(!['GET','HEAD',...(canPost?['POST']:[])].includes(request.method))return fsPriceJson({error:'method_not_allowed'},405,{Allow:canPost?'GET, HEAD, POST':'GET, HEAD'});
   if(request.method==='HEAD')return new Response(null,{status:200,headers:{'Cache-Control':'no-store','X-FoodScan-Version':FS_PRICE_VERSION}});
   if(publicPath==='health')return fsPriceHealth(request,env);
@@ -3711,6 +3764,7 @@ async function fsPricesRoute(request,env,ctx) {
   }
   if(publicPath==='peek')return fsPricePeek(request,env,ctx,url);
   if(publicPath==='confirm')return fsPriceConfirm(request,env);
+  if(publicPath==='outcome')return fsPriceOutcome(request,env,url);
   if(publicPath!=='compare')return fsPriceJson({error:'not_found'},404);
   const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url, request);
   if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN, an optional two-letter market (country) and an optional latitude, longitude and radius (1–50 km).'},400);

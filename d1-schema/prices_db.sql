@@ -41,3 +41,15 @@ CREATE TABLE IF NOT EXISTS foodscan_obs_links (
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS foodscan_obs_links_status ON foodscan_obs_links(status, ean);
+
+-- FoodScan 94: scan outcomes. Daily counts per barcode and outcome; no address, device id or time of day is stored.
+CREATE TABLE IF NOT EXISTS foodscan_scan_daily (
+  day TEXT NOT NULL,
+  barcode TEXT NOT NULL,
+  grade TEXT NOT NULL CHECK (grade IN ('source','estimated','exempt','none')),
+  price TEXT NOT NULL CHECK (price IN ('current','older','estimate','none')),
+  photo INTEGER NOT NULL CHECK (photo IN (0,1)),
+  n INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (day, barcode, grade, price, photo)
+);
+CREATE INDEX IF NOT EXISTS foodscan_scan_daily_day ON foodscan_scan_daily (day);

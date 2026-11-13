@@ -24,6 +24,14 @@ Bind `FOOD_DB` only after `food_db.sql` has been run: binding it switches the se
 ## 3. Shared confirmations (needs only `FOODSCAN_PRICES_DB`)
 On as soon as the database is bound (step 2) and `prices_db.sql` has been run (it creates `foodscan_obs_votes` and `foodscan_obs_links`). Recommended: **Settings → Variables and Secrets → Add** a *Secret* `FS_CONFIRM_SALT` with a long random string (it salts the hash that tells voters apart; no IP address is ever stored). Optional plain variable `FS_CONFIRM_MIN` (confirmations needed, default 2, 2 to 10). Check: `POST /api/prices/confirm` answers 422 or 400 instead of 503 `not_configured`.
 
+## 3a. Scan outcomes (94): which opened products miss a grade, a price or a photo
+On as soon as `FOODSCAN_PRICES_DB` is bound and `prices_db.sql` has been run again (it adds `foodscan_scan_daily`; running it twice is safe). The product page sends, once per product per visit, the grade tier, price tier and whether a photo showed; the server keeps **daily counts per barcode** only (no address, device id, cookie or time of day) and skips Do Not Track / Global Privacy Control and requests from other sites.
+To read them, add a *Secret* `FOODSCAN_PRICES_ADMIN_TOKEN` (at least 32 random characters; the same token protects `/api/prices/admin/import`) and run:
+```bash
+curl -s -H "Authorization: Bearer $FOODSCAN_PRICES_ADMIN_TOKEN" "https://YOUR-SITE/api/prices/outcome?days=30"
+```
+It lists up to 500 barcodes by opens, with `no_grade`, `est_grade`, `no_price`, `weak_price` (older or estimate only) and `no_photo` counts: fix the most-opened gaps first.
+
 ## 4. Web price search with webclaw (one secret, no AI)
 **Settings → Variables and Secrets → Add** (type *Secret*): `WEBCLAW_API_KEY` = your webclaw key (the `wc_…` key from the webclaw dashboard; never in the code or a file in the repository). That is all: with it, the web search uses webclaw and reads prices by code; Firecrawl and Anthropic are not used even if their keys exist.
 - When it runs: only for a barcode with **no current price** from the free sources, in the shopper's country. One lookup = one webclaw search for the barcode (up to `FS_WEBCLAW_RESULTS`, default 8, result pages scraped by webclaw).
@@ -46,7 +54,7 @@ Optional (plain text): `FS_WEB_PRICES_MODEL` (default `claude-opus-5-5`; `claude
 Bindings and secrets apply to the **next deployment**: Deployments → the latest → **Retry deployment**. Then:
 ```bash
 curl -s https://YOUR-SITE/api/prices/status | grep -o '"webSearch":"[^"]*"'
-node verify-deploy.mjs https://YOUR-SITE 93.0.0
+node verify-deploy.mjs https://YOUR-SITE 94.0.0
 ```
 
 ## What the web search does, and what it costs
