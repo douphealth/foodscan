@@ -130,7 +130,8 @@ function fsPriceProductPage(url) {
   const p = u.pathname.replace(/\/+$/, '');
   if (!p && !u.search) return false;
   if (/^\/(?:el|en|gr|home|index\.(?:html?|php))?$/i.test(p) && !/(?:product_id|sku|id|code|gtin)=/i.test(u.search)) return false;
-  return !/^\/(?:search|cart|checkout|login|account|contact|about|terms|privacy)$/i.test(p);
+  if (/(?:^|[?&])(?:q|s|search|query|keyword)=/i.test(u.search) && !/(?:product_id|sku|id|code|gtin)=/i.test(u.search)) return false;
+  return !/(?:^|\/(?:el|en|gr))\/(?:search|catalogsearch|cart|checkout|login|account|contact|about|terms|privacy)(?:\/|$)/i.test(p);
 }
 function fsPriceFreshness(age) { return age <= FS_PRICE_CURRENT_DAYS ? 'current' : age <= FS_PRICE_OLDER_DAYS ? 'older' : 'historical'; }
 /** Country of an Open Prices location, from its own address fields only. A Greek-language shop name is not evidence
@@ -544,7 +545,7 @@ async function fsPriceOffRecord(code) {
 }
 /** 78: product identity, quantity and grade come ONLY from here: the bundled catalogue, then Open Food Facts.
  *  (v77 read them from a hardcoded price index first, which mislabelled e.g. 5202336082308.) */
-async function fsPriceLocalCatalogueMeta(request, env, code) {
+async function fsPriceLocalCatalogueMeta(request, env, code, localOnly = false) {
   const key = fsPriceKey(code);
   try {
     const m = await fs60Manifest(request, env, true);
@@ -554,12 +555,13 @@ async function fsPriceLocalCatalogueMeta(request, env, code) {
       const data = await fs61Rows(request, env, m, [index.codes[key]]);
       const p = data.products.find(x => String(x.code).padStart(14, '0') === key);
       if (p) { const cat = {...fsPricePickMeta(p), source:'catalogue'};
-        // The bundled catalogue sometimes omits the pack size; the validated Open Food Facts record may complete it.
-        if (!cat.quantity && !cat.productAmount) { const off = await fsPriceOffRecord(code).catch(()=>null);
+        // The bundled catalogue sometimes omits the pack size; the validated Open Food Facts record may complete it (skipped on list peeks so lists stay fast and local).
+        if (!localOnly && !cat.quantity && !cat.productAmount) { const off = await fsPriceOffRecord(code).catch(()=>null);
           if (off && (off.quantity || off.productAmount)) Object.assign(cat, {quantity:off.quantity, productAmount:off.productAmount, productAmountUnit:off.productAmountUnit, quantitySource:'open_food_facts'}); }
         return cat; }
     }
   } catch {}
+  if (localOnly) return null;
   try { return await fsPriceOffRecord(code); } catch { return null; }
 }
 
@@ -1311,7 +1313,7 @@ async function fsOpSnapshotOffers(code, scope, env, request) {
 async function fsPricePeekOne(request, env, code, scope, links = new Map()) {
   const none = {items:[], providers:{}, product:null, pack:null}, greek = scope.market === 'GR';
   const [meta, open, official] = await Promise.all([
-    fsPriceLocalCatalogueMeta(request, env, code).catch(() => null),
+    fsPriceLocalCatalogueMeta(request, env, code, true).catch(() => null),
     fsOpSnapshotOffers(code, scope, env, request).catch(() => ({status:'unavailable', items:[]})),
     greek ? fsGrSeedOffers(request, {...env, FS_SHOP_LIVE:'0'}, code).catch(() => none) : Promise.resolve(none),
   ]);
@@ -1343,19 +1345,36 @@ async function fsPricePeek(request, env, ctx, url) {
  * FOODSCAN_PRICES_DB: no address, device id, cookie or time of day is kept. Skipped under Do Not Track / Global Privacy Control and for
  * requests from other sites. GET (Bearer FOODSCAN_PRICES_ADMIN_TOKEN) lists the most-opened products with what each was missing. */
 const FS_OUTCOME_GRADE = new Set(['source', 'estimated', 'exempt', 'none']), FS_OUTCOME_PRICE = new Set(['current', 'older', 'estimate', 'none']);
-const fsOutcomeBudget = new Map();
+const fsOutcomeBudget = new Map(), fsOutcomeReady = new WeakMap();
+async function fsOutcomeEnsureSchema(db) {
+  if (!db) return;
+  if (!fsOutcomeReady.has(db)) {
+    const p = db.prepare(`CREATE TABLE IF NOT EXISTS foodscan_scan_daily (
+      day TEXT NOT NULL, barcode TEXT NOT NULL, grade TEXT NOT NULL, price TEXT NOT NULL, photo INTEGER NOT NULL, n INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (day, barcode, grade, price, photo)
+    )`).run().catch(() => { fsOutcomeReady.delete(db); });
+    fsOutcomeReady.set(db, p);
+  }
+  await fsOutcomeReady.get(db);
+}
 async function fsPriceOutcome(request, env, url) {
   const db = env?.FOODSCAN_PRICES_DB, done = (extra = {}) => fsPriceJson({ok:true, ...extra}, 202);
   if (request.method === 'GET') {
     if (!(await fsPriceAdminOk(request, env))) return fsPriceJson({error:'unauthorized'}, 401);
     if (!db) return fsPriceJson({error:'not_configured'}, 503);
+    await fsOutcomeEnsureSchema(db);
     const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30)), since = fsPriceToday(Date.now() - days * 864e5);
-    const rows = (await db.prepare(`SELECT barcode, SUM(n) AS opens, SUM(CASE WHEN grade='none' THEN n ELSE 0 END) AS no_grade,
-      SUM(CASE WHEN grade='estimated' THEN n ELSE 0 END) AS est_grade, SUM(CASE WHEN price='none' THEN n ELSE 0 END) AS no_price,
-      SUM(CASE WHEN price IN ('older','estimate') THEN n ELSE 0 END) AS weak_price, SUM(CASE WHEN photo=0 THEN n ELSE 0 END) AS no_photo
-      FROM foodscan_scan_daily WHERE day >= ? GROUP BY barcode ORDER BY opens DESC LIMIT 500`).bind(since).all()).results || [];
-    const total = rows.reduce((t, r) => t + Number(r.opens || 0), 0);
-    return fsPriceJson({since, days, products:rows.length, opens:total, rows}, 200, {'Cache-Control':'no-store'});
+    const [rowsRes, totalsRow] = await Promise.all([
+      db.prepare(`SELECT barcode, SUM(n) AS opens, SUM(CASE WHEN grade='none' THEN n ELSE 0 END) AS no_grade,
+        SUM(CASE WHEN grade='estimated' THEN n ELSE 0 END) AS est_grade, SUM(CASE WHEN price='none' THEN n ELSE 0 END) AS no_price,
+        SUM(CASE WHEN price IN ('older','estimate') THEN n ELSE 0 END) AS weak_price, SUM(CASE WHEN photo=0 THEN n ELSE 0 END) AS no_photo
+        FROM foodscan_scan_daily WHERE day >= ? GROUP BY barcode ORDER BY opens DESC LIMIT 500`).bind(since).all(),
+      db.prepare(`SELECT COUNT(DISTINCT barcode) AS products, COALESCE(SUM(n), 0) AS opens FROM foodscan_scan_daily WHERE day >= ?`).bind(since).first().catch(() => null),
+    ]);
+    const rows = rowsRes?.results || [];
+    const total = totalsRow && Number(totalsRow.opens) >= 0 ? Number(totalsRow.opens) : rows.reduce((t, r) => t + Number(r.opens || 0), 0);
+    const prodCount = totalsRow && Number(totalsRow.products) >= 0 ? Number(totalsRow.products) : rows.length;
+    return fsPriceJson({since, days, products:prodCount, opens:total, rows}, 200, {'Cache-Control':'no-store'});
   }
   if (request.method !== 'POST') return fsPriceJson({error:'method_not_allowed'}, 405, {Allow:'GET, POST'});
   if (request.headers.get('Sec-GPC') === '1' || /^(?:1|yes)$/i.test(request.headers.get('DNT') || '')) return done({recorded:false, reason:'do_not_track'});
@@ -1368,6 +1387,7 @@ async function fsPriceOutcome(request, env, url) {
   if (recent.length >= 30) return done({recorded:false, reason:'rate_limited'});
   recent.push(now); fsOutcomeBudget.set(ip, recent); if (fsOutcomeBudget.size > 4096) fsOutcomeBudget.clear();
   try {
+    await fsOutcomeEnsureSchema(db);
     await db.prepare(`INSERT INTO foodscan_scan_daily (day, barcode, grade, price, photo, n) VALUES (?, ?, ?, ?, ?, 1)
       ON CONFLICT(day, barcode, grade, price, photo) DO UPDATE SET n = n + 1`).bind(fsPriceToday(now), fsPriceKey(code), grade, price, photo).run();
   } catch { return done({recorded:false, reason:'database_error'}); }

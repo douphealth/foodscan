@@ -422,12 +422,13 @@ function reportOutcome(code) {
   if (!code || reported.has(code)) return;
   if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) { reported.add(code); return; }
   const r = results.get(code), qk = globalThis.__fs85quick?.get(code), hero = document.querySelector('#view article.hero');
-  if (!r || r.status === 'temporarily_unavailable' || !hero || !hero.textContent.includes(code)) return;
+  if (!r || r.status === 'temporarily_unavailable' || (r.webPending && !r.best && !r.latest) || !hero || !hero.textContent.includes(code)) return;
   const gc = hero.querySelector('.gradecard'), shown = /^[A-E]$/i.test(gc?.dataset.grade || ''); // the app's own grade card: the grade reader is never started for it
-  if (!shown && (!qk || qk.state === 'loading')) return;
+  const hasSavedLabel = Boolean(hero.querySelector('.fr85 .fg85--label'));
+  if (!shown && !hasSavedLabel && (!qk || qk.state === 'loading')) return;
   const pending = hero.querySelector('img'); if (pending && !pending.complete) { pending.addEventListener('load', () => reportOutcome(code), {once:true}); pending.addEventListener('error', () => setTimeout(() => reportOutcome(code), 50), {once:true}); return; }
   reported.add(code);
-  const grade = shown || qk?.q?.reason === 'app-has-grade' ? 'source' : qk.kind === 'quick' || qk.kind === 'similar' ? 'estimated' : qk.kind === 'exempt' ? 'exempt' : 'none';
+  const grade = shown || qk?.q?.reason === 'app-has-grade' ? 'source' : (hasSavedLabel || qk?.kind === 'quick' || qk?.kind === 'similar') ? 'estimated' : qk?.kind === 'exempt' ? 'exempt' : 'none';
   const price = r.best ? 'current' : r.latest ? 'older' : r.estimate ? 'estimate' : 'none';
   const img = hero.querySelector('img'), photo = Boolean(img && img.complete && img.naturalWidth > 0); // a failed photo is replaced by an illustration
   try { fetch('/api/prices/outcome', {method:'POST', keepalive:true, headers:{'Content-Type':'application/json'}, body:JSON.stringify({barcode:code, grade, price, photo})}).catch(() => {}); } catch {}
@@ -470,7 +471,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-94.0.0';
+export const BUILD = 'foodscan-95.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');
