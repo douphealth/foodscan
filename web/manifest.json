@@ -1,0 +1,12 @@
+{
+ "schema": 1,
+ "built": "2026-11-14T10:50:03.297Z",
+ "source": "webclaw search + FoodScan price rules (src/worker/webprices.js)",
+ "catalogue": 12137,
+ "pricedElsewhere": 7426,
+ "tracked": 0,
+ "withPrice": 0,
+ "due": 10046,
+ "ran": 0,
+ "reason": "no_key"
+}

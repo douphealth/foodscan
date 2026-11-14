@@ -1,0 +1,294 @@
+{
+ "snapshot": "2026-11-13",
+ "rule": "price < 0.6 x median of >= 2 other chains",
+ "rows": [
+  {
+   "ean": "5201262221799",
+   "name": "ΜΠΑΡΜΠΑ ΣΤΑΘΗΣ Φασολάκια Στρογγυλά 420g",
+   "chain": "sklavenitis",
+   "price": 1.52,
+   "median_other_chains": 3.04,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5063270101865",
+   "name": "LIPTON Ice Tea Σκόνη Ροδάκινο 125g",
+   "chain": "marketin",
+   "price": 0.99,
+   "median_other_chains": 1.8,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8445290970985",
+   "name": "CHEERIOS Δημητριακά Ολικής Άλεσης Με Μέλι 330g",
+   "chain": "mymarket",
+   "price": 2.19,
+   "median_other_chains": 3.74,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8445290970985",
+   "name": "CHEERIOS Δημητριακά Ολικής Άλεσης Με Μέλι 330g",
+   "chain": "ab",
+   "price": 2.24,
+   "median_other_chains": 3.74,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201219489326",
+   "name": "ΛΟΥΜΙΔΗΣ Καφές Ελληνικός Έκαστος Φουντούκι 90g",
+   "chain": "sklavenitis",
+   "price": 1.48,
+   "median_other_chains": 2.98,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201109005544",
+   "name": "ΑΡΚΑΔΙ Απορρυπαντικό Πιάτων Υγρό Περγαμόντο & Γκρέιπφρουτ Ανταλλακτικό Vegan 900ml",
+   "chain": "chalkiadakis",
+   "price": 2.33,
+   "median_other_chains": 4.25,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8000300264388",
+   "name": "CRUNCH Σοκολάτα Γάλακτος Χωρίς Γλουτένη 100g",
+   "chain": "sklavenitis",
+   "price": 1.18,
+   "median_other_chains": 2.36,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8076809578363",
+   "name": "BARILLA Integrale Λιγκουίνι Ολικής Άλεσης 500g",
+   "chain": "galaxias",
+   "price": 1.03,
+   "median_other_chains": 1.93,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8410076600479",
+   "name": "NATURE VALLEY Crunchy Μπάρες Δημητριακών με Βρώμη & Μαύρη Σοκολάτα 5x42g",
+   "chain": "chalkiadakis",
+   "price": 1.5,
+   "median_other_chains": 3.74,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "7622210249401",
+   "name": "CADBURY'S  Ρόφημα Σοκολάτας 500g",
+   "chain": "galaxias",
+   "price": 5.28,
+   "median_other_chains": 9.18,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201262221775",
+   "name": "ΜΠΑΡΜΠΑ ΣΤΑΘΗΣ Αρακάς 420g",
+   "chain": "sklavenitis",
+   "price": 1.64,
+   "median_other_chains": 3.28,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5202535073237",
+   "name": "ALFA Το Δικό μας Καταίφι Κατεψυγμένο 450gr",
+   "chain": "chalkiadakis",
+   "price": 2.99,
+   "median_other_chains": 4.99,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201008418520",
+   "name": "CHAMPION Κρουασάν με γέμιση Πραλίνας Φουντουκιού 70g",
+   "chain": "ab",
+   "price": 0.36,
+   "median_other_chains": 0.66,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8000990117872",
+   "name": "LIPTON Ice Tea Σκόνη Λεμόνι 125g",
+   "chain": "marketin",
+   "price": 0.99,
+   "median_other_chains": 1.8,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201109006930",
+   "name": "AROMATICS Αφρόλουτρο Luminous Argan Oil Vegan 600ml",
+   "chain": "sklavenitis",
+   "price": 2.6,
+   "median_other_chains": 5.27,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201109006930",
+   "name": "AROMATICS Αφρόλουτρο Luminous Argan Oil Vegan 600ml",
+   "chain": "galaxias",
+   "price": 2.63,
+   "median_other_chains": 5.27,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201109006930",
+   "name": "AROMATICS Αφρόλουτρο Luminous Argan Oil Vegan 600ml",
+   "chain": "chalkiadakis",
+   "price": 2.9,
+   "median_other_chains": 5.27,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201109006930",
+   "name": "AROMATICS Αφρόλουτρο Luminous Argan Oil Vegan 600ml",
+   "chain": "mymarket",
+   "price": 2.9,
+   "median_other_chains": 5.27,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201946910650",
+   "name": "ΒΙΚΟΣ Πορτοκαλάδα χωρίς Ανθρακικό 6x330ml",
+   "chain": "galaxias",
+   "price": 1.13,
+   "median_other_chains": 2.48,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5010394133852",
+   "name": "PEDIGREE Biscrok Μπισκότα Σκύλων Multi Mix 500g",
+   "chain": "chalkiadakis",
+   "price": 2.32,
+   "median_other_chains": 3.88,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201219489319",
+   "name": "Λουμίδης Παπαγάλος Έκαστος Καφές με γεύση Βανίλια 90γρ",
+   "chain": "sklavenitis",
+   "price": 1.48,
+   "median_other_chains": 2.98,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "3045320012149",
+   "name": "BONNE MAMAN Μαρμελάδα Φράουλα 370gr",
+   "chain": "sklavenitis",
+   "price": 2.69,
+   "median_other_chains": 4.54,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201262221782",
+   "name": "ΜΠΑΡΜΠΑ ΣΤΑΘΗΣ Φασολάκια Πλατιά 420g",
+   "chain": "sklavenitis",
+   "price": 1.69,
+   "median_other_chains": 3.38,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "8410076600790",
+   "name": "NATURE VALLEY Crunchy Μπάρες Δημητριακών με Βρώμη & Μέλι 5x42g",
+   "chain": "chalkiadakis",
+   "price": 1.5,
+   "median_other_chains": 3.74,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201010103063",
+   "name": "MISKO Σπαγγέτι Νο6 500gr",
+   "chain": "ab",
+   "price": 0.69,
+   "median_other_chains": 1.18,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201010103063",
+   "name": "MISKO Σπαγγέτι Νο6 500gr",
+   "chain": "sklavenitis",
+   "price": 0.69,
+   "median_other_chains": 1.18,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201946900118",
+   "name": "ΒΙΚΟΣ Πορτοκαλάδα Αναψυκτικό 1,5lt",
+   "chain": "bazaar",
+   "price": 0.95,
+   "median_other_chains": 1.7,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201010103100",
+   "name": "MISKO Σπαγγετίνη Νο10 500g",
+   "chain": "ab",
+   "price": 0.69,
+   "median_other_chains": 1.18,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201010103100",
+   "name": "MISKO Σπαγγετίνη Νο10 500g",
+   "chain": "sklavenitis",
+   "price": 0.69,
+   "median_other_chains": 1.18,
+   "discount": true,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "5201219487063",
+   "name": "NESCAFE Classic Καφές Στιγμιαίος σε Στικς 120x2g",
+   "chain": "synka",
+   "price": 0.21,
+   "median_other_chains": 19.82,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "7613287880963",
+   "name": "NESCAFE Gold Καφές Στιγμιαίος 95g",
+   "chain": "ab",
+   "price": 3.98,
+   "median_other_chains": 6.75,
+   "discount": false,
+   "date": "2026-11-13"
+  },
+  {
+   "ean": "4005500534600",
+   "name": "CRUNCH Σοκολάτα Λευκή Χωρίς γλουτένη 100g",
+   "chain": "sklavenitis",
+   "price": 1.18,
+   "median_other_chains": 2.36,
+   "discount": true,
+   "date": "2026-11-13"
+  }
+ ]
+}
