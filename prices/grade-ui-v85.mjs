@@ -6,7 +6,7 @@ import { esc } from './price-core-v83.mjs';
 
 /** Percent of graded Greek products (categories hidden) for which the published letter was inside the shown band, and for which the "most likely" letter equalled it. */
 export const RELIABILITY = { inside: { high: 96, medium: 93, low: 76 }, likely: { high: 94, medium: 89, low: 63 }, sample: 4103,
-  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 }, typicalMaker: { inside: 87, likely: 56 }, typicalCategory: { inside: 91, likely: 57 } } };
+  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 }, typicalMaker: { inside: 87, likely: 56 }, typicalCategory: { inside: 90, likely: 56 } } };
 
 const T = {
   en: {

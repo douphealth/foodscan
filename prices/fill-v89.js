@@ -26,8 +26,8 @@ export function photoURL(code, file) {
 export function chipOf(v) {
   if (!v) return null; const [letters, likely, tier] = String(v).split('|');
   if (tier === 'x') return { tier, letter: '', band: '' };
-  const letter = likely || letters[0]; if (!/^[A-E]$/.test(letter || '')) return null;
-  return { tier, letter, band: letters.length > 1 ? `${letters[0]}–${letters.at(-1)}` : '' };
+  const letter = (/^[A-E]$/.test(likely || '') ? likely : (letters || '')[0]); if (!/^[A-E]$/.test(letter || '')) return null;
+  return { tier, letter, band: letters && letters.length > 1 ? `${letters[0]}–${letters.at(-1)}` : '' };
 }
 const codeOf = a => (a.getAttribute('href') || '').match(/#\/p\/(\d{8,14})/)?.[1] || null;
 
