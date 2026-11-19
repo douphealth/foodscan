@@ -1,0 +1,2875 @@
+{
+ "note": "Same 128 real Greece-catalogue products, food API unreachable for both runs, through the shipped recommendation modules in Chromium.",
+ "v61": {
+  "bases": 128,
+  "status": {
+   "compare": 51,
+   "none": 8,
+   "better": 11,
+   "nutrition": 49,
+   "top": 5,
+   "category": 4
+  },
+  "withHigherGrade": 11,
+  "withPeers": 5,
+  "withNutrition": 64,
+  "withCompare": 116,
+  "nothing": 12,
+  "errors": 0,
+  "mismatches": [],
+  "latency": {
+   "p50": 44,
+   "p95": 206,
+   "max": 431
+  }
+ },
+ "v62": {
+  "bases": 128,
+  "status": {
+   "compare": 51,
+   "none": 18,
+   "better": 38,
+   "nutrition": 12,
+   "top": 5,
+   "category": 4
+  },
+  "withHigherGrade": 38,
+  "withPeers": 10,
+  "withNutrition": 51,
+  "withCompare": 111,
+  "nothing": 17,
+  "errors": 0,
+  "mismatches": [],
+  "latency": {
+   "p50": 49,
+   "p95": 228,
+   "max": 517
+  }
+ },
+ "rows": [
+  {
+   "code": "5203927863061",
+   "name": "Hungry not protein bar - Digestive",
+   "family": "bar",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5900020030405",
+   "name": "NESTLE LION Barres de Céréales 6x25g",
+   "family": "bar",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201008423753",
+   "name": "Serenata choco bar peanut",
+   "family": "bar",
+   "grade": "E",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200252162951",
+   "name": "Energy bar",
+   "family": "bar",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "7622300444181",
+   "name": "Oreo",
+   "family": "biscuit",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Soft bakes strawberry 3099 (C)",
+    "Chickpea cakes with dark shocolate and raspberry pieces (C)",
+    "Multigrain - Wholegrain Biscuits (C)"
+   ]
+  },
+  {
+   "code": "5201008420516",
+   "name": "Serenata twin dark",
+   "family": "biscuit",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Multigrain - Wholegrain Biscuits (C)",
+    "Chocolate cream sandwich cookies (C)",
+    "biscotta miranta 30% ligo.zax. (C)"
+   ]
+  },
+  {
+   "code": "5200100954981",
+   "name": "Dubai vibes Choco-Pistachio Cookies",
+   "family": "biscuit",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "biscotta miranta 30% ligo.zax. (C)",
+    "digestive bar prasino (C)",
+    "Chickpea cakes with dark shocolate and raspberry pieces (C)"
+   ]
+  },
+  {
+   "code": "5203021110702",
+   "name": "Madeleine",
+   "family": "biscuit",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4000358012263",
+   "name": "Whole grain oat bread",
+   "family": "bread",
+   "grade": "C",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201485009044",
+   "name": "Brioche Toast",
+   "family": "bread",
+   "grade": "D",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Wheat And Rye Sliced Bread (B)",
+    "Elite Classic (A)",
+    "Wholemeal Rye Bread (A)"
+   ]
+  },
+  {
+   "code": "5201673011422",
+   "name": "Zeas sliced bread",
+   "family": "bread",
+   "grade": "B",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Wholemeal Rye Bread (A)",
+    "Ψωμί ολικής no added sugar and salt (A)",
+    "8 grain bread (A)"
+   ]
+  },
+  {
+   "code": "5201485000201",
+   "name": "Elite classic με σίκαλη",
+   "family": "bread",
+   "grade": null,
+   "v61": {
+    "status": "top",
+    "better": 0,
+    "peers": 2,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5204610000848",
+   "name": "Croissant Dolce",
+   "family": "cake",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5212026600606",
+   "name": "Amadeus cake",
+   "family": "cake",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": [
+    "Galactic Brownies With Chocolate Candies, Chocolate Candies (C)",
+    "Νηστίσιμο σταφιδόψωμο (D)",
+    "donuts (D)"
+   ]
+  },
+  {
+   "code": "5201360565207",
+   "name": "Chipicao",
+   "family": "cake",
+   "grade": "E",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5061092594803",
+   "name": "Fudgy Brownie",
+   "family": "cake",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "04108535",
+   "name": "Cereals",
+   "family": "cereal",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200100941608",
+   "name": "ΔΗΜΗΤΡΙΑΚΑ ΒΡΩΜΗΣ",
+   "family": "cereal",
+   "grade": "A",
+   "v61": {
+    "status": "top",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "top",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200100942452",
+   "name": "Cornflakes Proteino with dark chocolate",
+   "family": "cereal",
+   "grade": "D",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "High protein granola (A)",
+    "Fitness Protein (A)",
+    "Protein granola (A)"
+   ]
+  },
+  {
+   "code": "5212002207782",
+   "name": "Choco Flakes",
+   "family": "cereal",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201953700091",
+   "name": "Gouda Gradded",
+   "family": "cheese",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201415205324",
+   "name": "Classic Cheese 16%",
+   "family": "cheese",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200379800156",
+   "name": "Kalathaki",
+   "family": "cheese",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 1,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "ΓΡΑΒΙΕΡΑ ΑΝΑΛΑΤΗ ΜΕ 0% ΑΛΑΤΙ (C)"
+   ]
+  },
+  {
+   "code": "5202258200071",
+   "name": "Meze feta olived",
+   "family": "cheese",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4056489762683",
+   "name": "Dark Chocolate",
+   "family": "chocolate",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Chocolate negro. Cacao 95% mínimo (D)",
+    "Hořká čokoláda (D)",
+    "Sweet & Balance ΓΙΩΤΗΣ ΣΟΚΟΛΑΤΑ ΓΑΛΑΚΤΟΣ με γέμιση φράουλα (D)"
+   ]
+  },
+  {
+   "code": "5202460001084",
+   "name": "Σοκολάτα με πορτοκάλι",
+   "family": "chocolate",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Chocolate negro. Cacao 95% mínimo (D)",
+    "Hořká čokoláda (D)",
+    "Milk Chocolate Stevia (D)"
+   ]
+  },
+  {
+   "code": "5201127010100",
+   "name": "Chocolat au lait ION lisse et crémeux",
+   "family": "chocolate",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "Chocolate negro. Cacao 95% mínimo (D)",
+    "Hořká čokoláda (D)",
+    "Milk Chocolate Stevia (D)"
+   ]
+  },
+  {
+   "code": "5200305013605",
+   "name": "Baklava chocolate & hazelnuts",
+   "family": "chocolate",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201156130817",
+   "name": "Lipton green ice tea",
+   "family": "coffee-tea",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 1,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": [
+    "Vikos cool tea (A)"
+   ]
+  },
+  {
+   "code": "0992225747061",
+   "name": "Strawberry Ice Tea",
+   "family": "coffee-tea",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Ice tea green zero sugar (C)",
+    "ice green & matcha tea (B)",
+    "Greek Iced Mountain Tea Peach (C)"
+   ]
+  },
+  {
+   "code": "5201156933227",
+   "name": "Lipton ice tea",
+   "family": "coffee-tea",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Ice tea green lemon (C)",
+    "Lipton green ice tea (B)",
+    "Green ice tea passionfruit (B)"
+   ]
+  },
+  {
+   "code": "5202178084706",
+   "name": "Mountain tea with lemon",
+   "family": "coffee-tea",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 2
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201083351583",
+   "name": "High protein strained yogurt dessert banana & peanut butter flavor",
+   "family": "dessert",
+   "grade": "A",
+   "v61": {
+    "status": "top",
+    "better": 0,
+    "peers": 2,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "top",
+    "better": 0,
+    "peers": 1,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200412400015",
+   "name": "Milk and yogurt",
+   "family": "dessert",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202234611860",
+   "name": "Στραγγιστό & αγαπημένο",
+   "family": "dessert",
+   "grade": "B",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Greek yogurt (A)",
+    "Επιδόρπιο Στραγγιστού Γιαουρτιού (A)",
+    "Greek yoghurt 0% (A)"
+   ]
+  },
+  {
+   "code": "5057172111701",
+   "name": "Sticky toffee pudding flavour milkshake",
+   "family": "dessert",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5208046089361",
+   "name": "Δαμάσκηνα χωρίς κουκούτσι αποξηραμενα",
+   "family": "dried-fruit",
+   "grade": "C",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 1
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4056489763321",
+   "name": "Sultana raisins",
+   "family": "dried-fruit",
+   "grade": "D",
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "20561994",
+   "name": "GOJI BERRIES BIO",
+   "family": "dried-fruit",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "20992309",
+   "name": "Jus de raisin pomme orange et grenade",
+   "family": "dried-fruit",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202336067732",
+   "name": "Sunflower Oil",
+   "family": "fat",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4335619097896",
+   "name": "Extra virgin olive oil",
+   "family": "fat",
+   "grade": "B",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5740900400900",
+   "name": "soft",
+   "family": "fat",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200377200699",
+   "name": "Gluten-free almond biscuits with olive oil",
+   "family": "fat",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8004030770041",
+   "name": "Tuna",
+   "family": "fish",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Tuna Flakes in Brine from real Skipjack tuna (A)",
+    "Thunfischfilets in eigenem Saft (A)",
+    "τόνος σε νερό (A)"
+   ]
+  },
+  {
+   "code": "2955301001561",
+   "name": "Καπνιστή Πέστροφα Υδατοκαλλιέργειας",
+   "family": "fish",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8004030357532",
+   "name": "Τόνος Al Naturale",
+   "family": "fish",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5206830112042",
+   "name": "Σολομός",
+   "family": "fish",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8421826502295",
+   "name": "Mochi Ice Cream Mango",
+   "family": "ice-cream",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202234211022",
+   "name": "Ice Cream Greek Frozen Yogurt",
+   "family": "ice-cream",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5208046090404",
+   "name": "Mini Ksilakia",
+   "family": "ice-cream",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202336157891",
+   "name": "Vanilla Cocoa Ice Cream Family Size",
+   "family": "ice-cream",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5203278064162",
+   "name": "Φυσικός χυμός πορτοκάλι από συμπυκνωμένο χυμό πορτοκαλιών Πελοποννήσου",
+   "family": "juice",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "100% сок от ябълка от концентрат (C)",
+    "orange juice (C)",
+    "Orange Juice (B)"
+   ]
+  },
+  {
+   "code": "8590421081341",
+   "name": "Kids 100% Juice Apple Strawberry",
+   "family": "juice",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "orange juice (C)",
+    "100% сок от ябълка от концентрат (C)",
+    "pomegranate juice (D)"
+   ]
+  },
+  {
+   "code": "5202576043848",
+   "name": "Μαρατα Από συμπύκνωση χυμών",
+   "family": "juice",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201005001473",
+   "name": "Sour Cherry Juice Drink, with 15% sour cherry juice",
+   "family": "juice",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202576250314",
+   "name": "Στραγάλια Ψημένα Αφράτα",
+   "family": "legume-veg",
+   "grade": "A",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "top",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202336098316",
+   "name": "Nihaki rice",
+   "family": "legume-veg",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5203278043631",
+   "name": "Karolina rice",
+   "family": "legume-veg",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201673005445",
+   "name": "Αξιαγαπητες tomato",
+   "family": "legume-veg",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201119000102",
+   "name": "Stuffed vine leaves with rice & herbs",
+   "family": "meal",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 2,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202336118229",
+   "name": "Mousakas",
+   "family": "meal",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 2,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5205461232327",
+   "name": "Freskoulis Caesar’s Salad With Dressing",
+   "family": "meal",
+   "grade": "C",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 1,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "Φασολάκια λαδερά - Green beans in tomato sauce (A)"
+   ]
+  },
+  {
+   "code": "5213015170629",
+   "name": "Pork Tenderloin With Rice And Vegetables",
+   "family": "meal",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5214002982058",
+   "name": "Veggie chicken",
+   "family": "meat",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": [
+    "Organic Natural Tofu Soft (A)",
+    "Tofu, Smoked (A)"
+   ]
+  },
+  {
+   "code": "5200111401078",
+   "name": "Mega meatless nuggets",
+   "family": "meat",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201310003070",
+   "name": "Smoked Turkey Fillet",
+   "family": "meat",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": [
+    "Turkey Roasted, Sliced (A)",
+    "Καπνιστή Γαλοπούλα Σε Φέτες (C)"
+   ]
+  },
+  {
+   "code": "5059944691190",
+   "name": "HAM & EGG CRISPY ROMAINE SALAD",
+   "family": "meat",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5204633002539",
+   "name": "Go barista Milk",
+   "family": "milk",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202336155712",
+   "name": "Milk 1.5% Fat",
+   "family": "milk",
+   "grade": "B",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 1,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4056489907350",
+   "name": "Φρέσκο Γάλα Αγελαδινό Πλήρες 3,7%",
+   "family": "milk",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Γάλα Ελαφρυ Αγελαδινό 7 ημερων (B)",
+    "Κατσικίσιο γάλα 1.5% (B)",
+    "1.5% Cow Milk (B)"
+   ]
+  },
+  {
+   "code": "5200143060106",
+   "name": "Φρέσκο Ημιαποβουτυρωμένο Παστεριωμένο Γάλα",
+   "family": "milk",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202576252042",
+   "name": "Peanuts",
+   "family": "nut",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "20993405",
+   "name": "Peanuts roasted & salted",
+   "family": "nut",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": [
+    "Pistaches de Californie grillées à sec (A)",
+    "Roasted hazelnuts (A)",
+    "Raw pistachios kernel (A)"
+   ]
+  },
+  {
+   "code": "5202576250376",
+   "name": "Walnut kernel",
+   "family": "nut",
+   "grade": "A",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5205944016970",
+   "name": "Αμυγδαλα ωμα ευπορη γη",
+   "family": "nut",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5203149004389",
+   "name": "Ρυζόγαλο",
+   "family": null,
+   "grade": null,
+   "v61": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5204193814290",
+   "name": "fofico",
+   "family": null,
+   "grade": "E",
+   "v61": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4009900418126",
+   "name": "Orbit Strawberry x46 64g",
+   "family": null,
+   "grade": null,
+   "v61": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5204193819905",
+   "name": "Cuba Honakia Spicy",
+   "family": null,
+   "grade": null,
+   "v61": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "category",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201010012266",
+   "name": "Matsata",
+   "family": "pasta",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8076800315103",
+   "name": "Maccheroncini Nr. 10",
+   "family": "pasta",
+   "grade": "A",
+   "v61": {
+    "status": "top",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "top",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4056489167112",
+   "name": "Cereals",
+   "family": "pasta",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5214000885535",
+   "name": "Ζυμαρικά",
+   "family": "pasta",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8008698018620",
+   "name": "Vegan pizza",
+   "family": "pizza",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Greek Fit Pizza (A)",
+    "High Protein Legume Cakes Pizza (A)"
+   ]
+  },
+  {
+   "code": "5200385100318",
+   "name": "Φουρνιστό πίτσα μαργαρίτα",
+   "family": "pizza",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "Pizza (C)",
+    "Veganer Flammkuchen Gemüse & Quinoa (C)",
+    "Pizza Special (D)"
+   ]
+  },
+  {
+   "code": "5202336161287",
+   "name": "Special & margherita pizza",
+   "family": "pizza",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Greek Fit Pizza (A)",
+    "Pizza (C)",
+    "Veganer Flammkuchen Gemüse & Quinoa (C)"
+   ]
+  },
+  {
+   "code": "5202535078119",
+   "name": "Pizza Rolls",
+   "family": "pizza",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5411188136613",
+   "name": "Bevanda 100% Vegetale Gusto Latte Classico Avena",
+   "family": "plant-drink",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": [
+    "Plant Protein (B)",
+    "Soya (B)",
+    "Alpro Soya Unsweetened (B)"
+   ]
+  },
+  {
+   "code": "5411188112709",
+   "name": "Geröstete Mandel Ohne Zucker",
+   "family": "plant-drink",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202178085970",
+   "name": "Almond drink with pea protein and cocoa",
+   "family": "plant-drink",
+   "grade": "B",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5712876252807",
+   "name": "gelato almond milk chocolate",
+   "family": "plant-drink",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202324118378",
+   "name": "Ρύζι μπονετ",
+   "family": "rice-grain",
+   "grade": "B",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Wheat groats (A)",
+    "Ben's Original Parboiled Long Grain Rice (A)"
+   ]
+  },
+  {
+   "code": "5410673006974",
+   "name": "Riso integrale",
+   "family": "rice-grain",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": [
+    "Wheat groats (A)",
+    "Ben's Original Parboiled Long Grain Rice (A)"
+   ]
+  },
+  {
+   "code": "5203583013343",
+   "name": "Barboiled Rice",
+   "family": "rice-grain",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": [
+    "Wheat groats (A)",
+    "Ben's Original Parboiled Long Grain Rice (A)"
+   ]
+  },
+  {
+   "code": "5201262225384",
+   "name": "Quinoa",
+   "family": "rice-grain",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8001250016522",
+   "name": "PESTO alla GENOVESE",
+   "family": "sauce",
+   "grade": "E",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 1,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5000157073006",
+   "name": "Soja",
+   "family": "sauce",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "4002239604505",
+   "name": "Chi Wan Soja Sauce",
+   "family": "sauce",
+   "grade": "D",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": [
+    "Bio Organic Ketchup (C)",
+    "Tomato Ketchup (C)"
+   ]
+  },
+  {
+   "code": "5202336143405",
+   "name": "ΧΟΙΡΙΝΟ ΣΝΙΤΣΕΛ ΜΕ ΠΑΤΑΤΕΣ BABY ΣΕ ΣΑΛΤΣΑ ΜΟΥΣΤΑΡΔΑΣ",
+   "family": "sauce",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201502310054",
+   "name": "Rice Chips Ketcup",
+   "family": "savoury-snack",
+   "grade": "A",
+   "v61": {
+    "status": "top",
+    "better": 0,
+    "peers": 1,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5203064007977",
+   "name": "MINI CRACKERS Μεσογειακά",
+   "family": "savoury-snack",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "Emma Wholegrain rye classic crackers (B)",
+    "ORIGINAL CRISPBREAD (A)",
+    "Rice Crackers From Corn (C)"
+   ]
+  },
+  {
+   "code": "4056489772415",
+   "name": "Snack Day Chips",
+   "family": "savoury-snack",
+   "grade": "E",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201237209036",
+   "name": "Ρυζογκοφρετες",
+   "family": "savoury-snack",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5206542000699",
+   "name": "Green Cola",
+   "family": "soda",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201171150265",
+   "name": "Epsa Lemonada",
+   "family": "soda",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Orange Zero Sugar Added (C)",
+    "sprite zero (C)",
+    "Sprite sans sucre (C)"
+   ]
+  },
+  {
+   "code": "5201946901115",
+   "name": "Βίκος Cola",
+   "family": "soda",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "Lou Cola Zero (C)",
+    "Coca-Cola Zero 500ml (C)",
+    "Coca-Cola Zero Sugar (C)"
+   ]
+  },
+  {
+   "code": "5200106138033",
+   "name": "Lime Ginger Soda",
+   "family": "soda",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "9060452648428",
+   "name": "cook up ζωμός λαχανικών",
+   "family": "soup",
+   "grade": "C",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8718114871530",
+   "name": "Ζωμός Κότας",
+   "family": "soup",
+   "grade": "E",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 2,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 2
+   },
+   "v62Better": [
+    "cook up ζωμός λαχανικών (C)",
+    "ΖΩΜΟΣ ΚΟΤΑΣ (D)"
+   ]
+  },
+  {
+   "code": "5213006050022",
+   "name": "cook up ζωμός λαχανικών",
+   "family": "soup",
+   "grade": "C",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 2
+   },
+   "v62Better": []
+  },
+  {
+   "code": "8711200403899",
+   "name": "Chciken Stock",
+   "family": "soup",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5740900402119",
+   "name": "Lurpak Fats",
+   "family": "spread",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200115840248",
+   "name": "Ταχίνι",
+   "family": "spread",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5203927883410",
+   "name": "Peanuts Butter Smooth",
+   "family": "spread",
+   "grade": "A",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "top",
+    "better": 0,
+    "peers": 3,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200378901809",
+   "name": "Μελι",
+   "family": "spread",
+   "grade": null,
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "7622202233913",
+   "name": "Gkofreta Ygeias",
+   "family": "sweets",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 1,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": [
+    "Bonbons (D)"
+   ]
+  },
+  {
+   "code": "5000159366229",
+   "name": "Snickers",
+   "family": "sweets",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "80761761",
+   "name": "Kinder Bueno White 39g",
+   "family": "sweets",
+   "grade": "E",
+   "v61": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "7622210680402",
+   "name": "Chewing gum Trident Max",
+   "family": "sweets",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "20560850",
+   "name": "Table water",
+   "family": "water",
+   "grade": "B",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200252841795",
+   "name": "PAIKO Water",
+   "family": "water",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201946210019",
+   "name": "Eau minérale",
+   "family": "water",
+   "grade": "A",
+   "v61": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5201875000507",
+   "name": "dirfys",
+   "family": "water",
+   "grade": null,
+   "v61": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62": {
+    "status": "none",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 0
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5202234251363",
+   "name": "Frozen Yogurt with sour cherry",
+   "family": "yogurt",
+   "grade": "C",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 3,
+    "compare": 3
+   },
+   "v62Better": [
+    "γιαούρτι από αγελαδινό και πρόβειο γάλα, 2% λιπαρά (A)",
+    "STRAINED COW YOGURT 0% FAT (A)",
+    "No Sugars Natural (A)"
+   ]
+  },
+  {
+   "code": "5208069000145",
+   "name": "Βιτάμ με γιαούρτι",
+   "family": "yogurt",
+   "grade": "D",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "better",
+    "better": 3,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62Better": [
+    "STRAINED COW YOGURT 0% FAT (A)",
+    "γιαούρτι από αγελαδινό και πρόβειο γάλα, 2% λιπαρά (A)",
+    "Total 5% Fat Greek Yogurt (B)"
+   ]
+  },
+  {
+   "code": "5202178085765",
+   "name": "Κεφίρ",
+   "family": "yogurt",
+   "grade": "A",
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 1,
+    "compare": 3
+   },
+   "v62": {
+    "status": "compare",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 0,
+    "compare": 3
+   },
+   "v62Better": []
+  },
+  {
+   "code": "5200107080560",
+   "name": "Στραγγιστό Γιαούρτι Αγελάδος 2%",
+   "family": "yogurt",
+   "grade": null,
+   "v61": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62": {
+    "status": "nutrition",
+    "better": 0,
+    "peers": 0,
+    "nutrition": 2,
+    "compare": 3
+   },
+   "v62Better": []
+  }
+ ]
+}

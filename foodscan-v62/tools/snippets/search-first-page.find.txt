@@ -1,0 +1,1 @@
+s(i,a`<p class="muted small" role="status">${C(n.length,"{n} popular match. Tap one for the full report.","{n} popular matches. Tap one for the full report.")}</p>
