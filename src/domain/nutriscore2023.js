@@ -76,10 +76,14 @@ const NS23_PNNS = {
   sweets: ['general'], vegetables: ['general'], 'ice cream': ['general'], appetizers: ['general'], potatoes: ['general'], 'fish and seafood': ['general'],
   eggs: ['general'], meat: ['general'], 'processed meat': ['general'], 'fish meat eggs': ['general']
 };
+const NS23_WORD = words => new RegExp(`(?<![\\p{L}])(?:${words})(?![\\p{L}])`, 'u');
+const NS23_WATER_TAGS = ['en:spring-waters', 'en:waters', 'en:mineral-waters', 'en:natural-mineral-waters', 'en:bottled-waters', 'en:still-waters', 'en:carbonated-waters', 'en:sparkling-waters'];
+const NS23_POULTRY_TAGS = /^en:(?:poultries|chickens|turkeys|chicken-breasts|turkey-breasts|chicken-meats|turkey-meats)$/;
 const NS23_NAME = {
-  water: /\b(?:water|eau|acqua|agua|wasser|νερο|μεταλλικο)\b/,
-  drink: /\b(?:drink|beverage|juice|nectar|soda|cola|lemonade|tonic|iced tea|smoothie|kefir|milk|γαλα|χυμοσ|χυμου|νεκταρ|αναψυκτ|λεμοναδα|πορτοκαλαδα|ροφημα)\b/,
-  meat: /\b(?:beef|pork|lamb|veal|ham|bacon|salami|sausage|chorizo|prosciutto|burger|μοσχαρ|χοιριν|αρνι|ζαμπον|μπεικον|σαλαμι|λουκανικ)\b/
+  water: NS23_WORD('water|eau|acqua|agua|wasser|νερο|νερα|μεταλλικο|επιτραπεζιο'),
+  drink: NS23_WORD('drinks?|beverages?|juices?|nectars?|sodas?|cola|lemonade|tonic|iced? tea|smoothies?|kefir|milk|γαλα|χυμοσ|χυμου|χυμοι|νεκταρ|αναψυκτ[α-ω]*|λεμοναδα|πορτοκαλαδα|ροφημα'),
+  meat: NS23_WORD('beef|pork|lamb|veal|mutton|ham|bacon|salami|sausages?|chorizo|prosciutto|mortadella|pancetta|burger|μοσχαρ[α-ω]*|χοιριν[α-ω]*|αρνι[α-ω]*|ζαμπον|μπεικον|σαλαμι|λουκανικ[α-ω]*|παστουρμα[α-ω]*'),
+  poultry: NS23_WORD('chicken|turkey|poultry|κοτοπουλ[α-ω]*|γαλοπουλ[α-ω]*|πουλερικ[α-ω]*')
 };
 // categories whose fruit/vegetable/legume share the source fixes at 100 whatever the ingredient estimate says
 const NS23_FVL_OVERRIDE = ['en:olive-oils', 'en:rapeseed-oils', 'en:colza-oils', 'en:walnut-oils'];
@@ -92,10 +96,11 @@ function ns23Kinds(p) {
   const cats = p?.categories || [], n = p?.nutrition || {}, name = ns23Fold(`${p?.name || ''} ${p?.brand || ''}`);
   if (ns23Known(n.alcohol) && n.alcohol > 1.2) return { kinds: [], via: 'composition', exempt: true };
   if (cats.length && (ns23Has(cats, ...NS23_EXEMPT) || cats.some(c => /supplement|\u03c3\u03c5\u03bc\u03c0\u03bb\u03b7\u03c1\u03c9\u03bc/i.test(c)))) return { kinds: [], via: 'category', exempt: true };
-  const red = cats.some(c => NS23_RED_MEAT.test(c)) ? 'certain' : cats.some(c => NS23_MEAT.test(c)) || NS23_NAME.meat.test(name) ? 'maybe' : false;
+  const isPoultry = cats.some(c => NS23_POULTRY_TAGS.test(c)) || (NS23_NAME.poultry.test(name) && !NS23_NAME.meat.test(name));
+  const red = isPoultry ? false : cats.some(c => NS23_RED_MEAT.test(c)) ? 'certain' : cats.some(c => NS23_MEAT.test(c)) || NS23_NAME.meat.test(name) ? 'maybe' : false;
   if (cats.length) {
     const beverage = (ns23Has(cats, 'en:beverages', 'en:beverage-preparations') && !ns23Has(cats, 'en:meal-replacement', 'en:soups')) || ns23Has(cats, ...NS23_BEVERAGE_ALSO);
-    const water = ns23Has(cats, 'en:spring-waters') && !ns23Has(cats, 'en:flavored-waters', 'en:flavoured-waters');
+    const water = ns23Has(cats, ...NS23_WATER_TAGS) && !ns23Has(cats, 'en:flavored-waters', 'en:flavoured-waters', 'en:sweetened-beverages', 'en:sodas') && (n.sugars ?? 0) === 0 && (n.kcal ?? 0) < 5;
     const cheese = ns23Has(cats, 'en:cheeses') && !ns23Has(cats, 'fr:fromages-blancs');
     const fat = !ns23Has(cats, 'en:chestnuts') && (ns23Has(cats, 'en:fats', 'en:creams', 'en:seeds') || cats.some(c => NS23_NUT_TAGS.test(c)));
     const kind = beverage ? (water ? 'water' : 'beverage') : cheese ? 'cheese' : fat ? 'fat' : 'general';
