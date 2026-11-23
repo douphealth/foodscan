@@ -6,13 +6,14 @@
  *  Two runs: the record as it is, and the same record with its categories and PNNS group hidden (the situation of a record with no category).
  *  Plus coverage over the whole catalogue, with the grade the page has (published, calculated, or an estimate's likely letter). */
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const D = await import(path.join(here, '../assets/domain-v8500.mjs'));
-const Q = await import(path.join(here, '../prices/quick-grade-v85.mjs'));
-const W = await import(path.join(here, '../prices/swaps-v88.mjs'));
-const B = await import(path.join(here, 'build-swaps.mjs'));
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href);
+const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
+const W = await import(pathToFileURL(path.join(here, '../prices/swaps-v88.mjs')).href);
+const B = await import(pathToFileURL(path.join(here, 'build-swaps.mjs')).href);
 
 export function load() {
   const dir = path.join(here, '../assets/greece-r20261030'), items = [];

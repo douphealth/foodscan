@@ -1,4 +1,5 @@
 /* Healthier swaps (prices/swaps-v88.mjs): same shelf, strictly better grade, never a drink for a food, and the printed figures never exceed what was measured. */
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -8,7 +9,7 @@ const W = await imp('prices/swaps-v88.mjs'), V = await imp('tools/swaps-validate
 const data = V.load(), prep = data.prep;
 
 test('the swap index is exactly what the catalogue produces', () => {
-  execFileSync(process.execPath, [new URL('../tools/build-swaps.mjs', import.meta.url).pathname, '--check'], { stdio: 'pipe' });
+  execFileSync(process.execPath, [fileURLToPath(new URL('../tools/build-swaps.mjs', import.meta.url)), '--check'], { stdio: 'pipe' });
   assert.ok(prep.rows.length > 4500);
   for (const r of prep.rows) assert.match(r.grade, /^[A-E]$/);
 });

@@ -1,0 +1,127 @@
+/* FoodScan 98: Daily Pulse Hub, Data Confidence & Label Math Audit, My Lens, and Aisle Compare Tray. */
+.fs98-hub,
+.fs98-trust {
+  background: var(--surface, #FFFDF7);
+  border: 1px solid var(--line, #E0D8C2);
+  border-radius: var(--radius, 24px);
+  padding: 18px;
+  margin: 0 0 16px;
+  box-shadow: var(--shadow, 0 1px 0 rgba(13,31,22,.04), 0 14px 34px -18px rgba(13,31,22,.22));
+  color: var(--ink, #0D1F16);
+}
+.fs98-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.fs98-eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand, #0A5C3C); margin: 0 0 2px; }
+:lang(el) .fs98-eyebrow { letter-spacing: normal; }
+.fs98-title { font-family: var(--font-display, Georgia, serif); font-size: clamp(1.08rem, 3vw, 1.32rem); line-height: 1.22; margin: 0; color: var(--ink, #0D1F16); }
+.fs98-sub { font-size: .84rem; line-height: 1.45; color: var(--ink2, #36463D); margin: 4px 0 0; }
+.fs98-badge { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.fs98-badge--good { background: var(--good-bg, #DFF0E2); color: var(--good, #17693F); }
+.fs98-badge--warn { background: var(--warn-bg, #FBEBC8); color: var(--warn, #8A5200); }
+.fs98-badge--bad  { background: var(--bad-bg, #FBE3DC); color: var(--bad, #A92A14); }
+.fs98-badge--soft { background: var(--surface2, #F8F3E6); color: var(--ink2, #36463D); border-color: var(--line, #E0D8C2); }
+
+.fs98-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 38px; padding: 7px 13px; border-radius: 999px;
+  border: 1px solid var(--line2, #CBC1A5); background: var(--surface2, #F8F3E6);
+  color: var(--ink, #0D1F16); font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: .83rem; font-weight: 600; text-decoration: none; cursor: pointer;
+  transition: transform .14s var(--ease, ease), background .14s ease, border-color .14s ease;
+}
+.fs98-btn:hover { border-color: var(--brand, #0A5C3C); }
+.fs98-btn:active { transform: scale(.98); }
+.fs98-btn--primary { background: var(--brand, #0A5C3C); border-color: var(--brand, #0A5C3C); color: var(--brand-ink, #FFFFFF); }
+.fs98-btn--primary:hover { background: var(--brand2, #13744B); }
+.fs98-btn--sm { min-height: 32px; padding: 4px 10px; font-size: .78rem; }
+.fs98-btn[aria-pressed="true"] { background: var(--brand-soft, #DBEDDD); border-color: var(--brand, #0A5C3C); color: var(--brand, #0A5C3C); }
+
+.fs98-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; margin: 12px 0; }
+.fs98-stat { background: var(--surface2, #F8F3E6); border: 1px solid var(--line, #E0D8C2); border-radius: var(--radius-sm, 16px); padding: 10px 12px; min-width: 0; }
+.fs98-stat__k { display: block; font-size: .72rem; color: var(--ink3, #52625A); margin-bottom: 2px; }
+.fs98-stat__v { display: block; font-family: var(--font-mono, monospace); font-size: 1.05rem; font-weight: 700; color: var(--ink, #0D1F16); }
+.fs98-stat__s { display: block; font-size: .71rem; color: var(--ink3, #52625A); margin-top: 2px; }
+
+.fs98-sec { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line, #E0D8C2); }
+.fs98-sec__label { font-size: .76rem; font-weight: 700; color: var(--ink2, #36463D); margin: 0 0 8px; }
+.fs98-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fs98-chip {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 4px 10px;
+  border-radius: 999px; border: 1px solid var(--line2, #CBC1A5);
+  background: var(--surface, #FFFDF7); color: var(--ink2, #36463D);
+  font-size: .77rem; font-weight: 600; cursor: pointer;
+}
+.fs98-chip[aria-pressed="true"] { background: var(--brand, #0A5C3C); border-color: var(--brand, #0A5C3C); color: var(--brand-ink, #FFFFFF); }
+.fs98-chip--log { background: var(--surface2, #F8F3E6); max-width: 220px; }
+.fs98-chip__txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.fs98-checks { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.fs98-checks li { display: flex; align-items: flex-start; gap: 8px; font-size: .82rem; line-height: 1.4; color: var(--ink2, #36463D); }
+.fs98-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; background: var(--good, #17693F); }
+.fs98-dot--warn { background: var(--warn, #8A5200); }
+.fs98-dot--bad  { background: var(--bad, #A92A14); }
+.fs98-dot--soft { background: var(--ink3, #52625A); opacity: .55; }
+
+/* 98.1: the lens and backup sit in a closed details block so the hub stays short on a phone */
+.fs98-more { margin-top: 12px; border-top: 1px solid var(--line, #E0D8C2); padding-top: 10px; }
+.fs98-more > summary { cursor: pointer; font-size: .8rem; font-weight: 700; color: var(--ink2, #36463D); min-height: 32px; display: flex; align-items: center; list-style-position: inside; }
+.fs98-more[open] > summary { margin-bottom: 4px; }
+.fs98-status:empty { min-height: 0; margin: 0; }
+.fs98-stat__k, .fs98-stat__s { overflow-wrap: anywhere; }
+.fs98-btn:focus-visible, .fs98-chip:focus-visible, .fs98-more > summary:focus-visible, .fs98-tray button:focus-visible { outline: 3px solid var(--brand, #0A5C3C); outline-offset: 2px; }
+.fs98-modal__box:focus { outline: none; }
+@media (max-width: 520px) {
+  .fs98-hub, .fs98-trust { padding: 14px; border-radius: var(--radius-sm, 18px); }
+  .fs98-hub .fs98-head { margin-bottom: 8px; }
+  .fs98-hub .fs98-head .fs98-sub { display: none; }                       /* the title says it; keep the first screen short for the scan button below */
+  .fs98-hub .fs98-stats { margin: 8px 0; gap: 6px; }
+  .fs98-hub .fs98-stat { padding: 8px 10px; }
+  .fs98-hub .fs98-stat__v { font-size: .98rem; }
+  .fs98-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fs98-foot { flex-direction: column; align-items: flex-start; }
+  .fs98-tray { max-width: 96vw; gap: 8px; padding: 7px 10px; }
+  .fs98-modal { padding: 8px; }
+  .fs98-modal__box { padding: 14px; max-height: 92vh; }
+}
+
+.fs98-meter { height: 7px; border-radius: 999px; background: var(--bg2, #EBE4D0); overflow: hidden; margin: 8px 0 4px; }
+.fs98-meter > i { display: block; height: 100%; border-radius: inherit; background: var(--brand, #0A5C3C); transition: width .25s ease; }
+
+.fs98-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line, #E0D8C2); font-size: .76rem; color: var(--ink3, #52625A); }
+.fs98-status { font-size: .78rem; font-weight: 600; color: var(--brand, #0A5C3C); margin: 8px 0 0; min-height: 1.1em; }
+
+.fs98-tray {
+  position: fixed; left: 50%;
+  bottom: calc(var(--fs76-dock-space, 88px) + env(safe-area-inset-bottom, 0px) + 8px);
+  transform: translateX(-50%); z-index: 45;
+  /* 98.1: width:max-content. A fixed box with left:50% and an automatic width can only be half the screen wide, so on a phone its text broke letter by letter. */
+  width: max-content;
+  display: flex; align-items: center; gap: 10px; max-width: min(94vw, 520px);
+  padding: 8px 12px; border-radius: 999px;
+  background: var(--stage, #06130D); color: var(--stage-ink, #F6F1E4);
+  box-shadow: var(--shadow-lg, 0 18px 40px rgba(0,0,0,.35));
+  border: 1px solid rgba(255,255,255,.14);
+}
+.fs98-tray[hidden], .fs98-modal[hidden] { display: none; }
+.fs98-tray__label { font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.fs98-tray__go { background: var(--mint, #5EDBA0); color: var(--mint-ink, #04281C); border: 0; border-radius: 999px; padding: 6px 12px; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.fs98-tray__clear { background: transparent; color: inherit; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 5px 9px; font-size: .74rem; cursor: pointer; }
+
+.fs98-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(6, 19, 13, .62); backdrop-filter: blur(4px); }
+.fs98-modal__box { width: min(760px, 100%); max-height: 86vh; overflow: auto; background: var(--surface, #FFFDF7); color: var(--ink, #0D1F16); border: 1px solid var(--line, #E0D8C2); border-radius: var(--radius, 24px); padding: 18px; box-shadow: var(--shadow-lg, 0 28px 64px -20px rgba(0,0,0,.5)); }
+.fs98-table-wrap { overflow-x: auto; margin-top: 10px; }
+.fs98-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.fs98-table th, .fs98-table td { padding: 8px 10px; border-bottom: 1px solid var(--line, #E0D8C2); text-align: left; vertical-align: top; }
+.fs98-table th { font-size: .76rem; color: var(--ink3, #52625A); font-weight: 700; }
+.fs98-win { color: var(--good, #17693F); font-weight: 700; }
+
+.fs98-grade { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 7px; font-weight: 800; font-size: .78rem; }
+.fs98-grade--A { background: var(--g-a, #038141); color: var(--g-a-ink, #fff); }
+.fs98-grade--B { background: var(--g-b, #85BB2F); color: var(--g-b-ink, #16240A); }
+.fs98-grade--C { background: var(--g-c, #FECB02); color: var(--g-c-ink, #2A2200); }
+.fs98-grade--D { background: var(--g-d, #EE8100); color: var(--g-d-ink, #2A1600); }
+.fs98-grade--E { background: var(--g-e, #D63A0F); color: var(--g-e-ink, #fff); }
+.fs98-grade--U { background: var(--surface2, #F8F3E6); color: var(--ink3, #52625A); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fs98-btn, .fs98-meter > i { transition: none; }
+}
