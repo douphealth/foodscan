@@ -2,11 +2,12 @@
 /** How many products of the bundled catalogue end up with what, using the same order the product page uses:
  *  published grade > calculated estimate (quick grade) > not rated (the method does not cover it) > estimate from similar products > nothing (photo offered). */
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const W = await import(path.join(here, '../prices/swaps-v88.mjs')), SW = await import(path.join(here, 'build-swaps.mjs'));
-const D = await import(path.join(here, '../assets/domain-v8500.mjs')), Q = await import(path.join(here, '../prices/quick-grade-v85.mjs')), S = await import(path.join(here, '../prices/similar-v86.mjs')), B = await import(path.join(here, 'build-peers.mjs'));
+const W = await import(pathToFileURL(path.join(here, '../prices/swaps-v88.mjs')).href), SW = await import(pathToFileURL(path.join(here, 'build-swaps.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href), Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href), S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href), B = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
 export function coverage() {
   const dir = path.join(here, '../assets/greece-r20261030'), prep = S.prepare(JSON.parse(fs.readFileSync(B.fileFor(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'))).revision), 'utf8'))), swaps = W.prepare(JSON.parse(fs.readFileSync(SW.fileFor(JSON.parse(fs.readFileSync(path.join(dir, 'index.json'))).revision), 'utf8')));
   const c = { total: 0, published: 0, calculated: 0, notRated: 0, imputed: 0, typical: 0, maker: 0, category: 0, none: 0 };

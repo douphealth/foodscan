@@ -1,4 +1,5 @@
 /* 89: grades in lists and real photos (prices/fill-v89.js, tools/build-estimates.mjs, tools/build-photos.mjs). */
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -8,7 +9,7 @@ const F = await imp('prices/fill-v89.js'), E = await imp('tools/build-estimates.
 const est = JSON.parse(fs.readFileSync(new URL('../assets/estimates-off-csv-2026-10-30.json', import.meta.url))).e;
 
 test('the estimate index is exactly what the catalogue and the page steps produce', () => {
-  execFileSync(process.execPath, [new URL('../tools/build-estimates.mjs', import.meta.url).pathname, '--check'], { stdio: 'pipe' });
+  execFileSync(process.execPath, [fileURLToPath(new URL('../tools/build-estimates.mjs', import.meta.url)), '--check'], { stdio: 'pipe' });
   assert.ok(Object.keys(est).length > 6000);
 });
 

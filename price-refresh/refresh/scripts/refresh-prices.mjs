@@ -24,6 +24,8 @@ import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { shardSeeds, unshard } from '../../tools/lib/shard-seeds.mjs';
 import { priceLinks } from '../src/pricelink.mjs';
+import { newestSnapshotDay, MAX_BACK_DAYS, feedPublishedSince } from '../src/snapshot-day.mjs';
+import { FEED_URL as EK_FEED } from '../src/ekatanalotis.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.resolve(here, '..', '..');
 const arg = (n, d = null) => { const i = process.argv.indexOf('--' + n); return i > -1 ? process.argv[i + 1] : d; }, flag = n => process.argv.includes('--' + n);
@@ -42,17 +44,29 @@ const base = n => prevSeed(n) || bundledSeed(n);
 if (!base('posokanei-latest.json') || !base('bazaar-eshop-latest.json') || !base('lidl-eshop-latest.json') || !base('ekatanalotis-latest.json')) throw new Error('no previous seeds: pass --prev <dir with seeds/> or keep data/seeds in the repository');
 
 /* 1. observatory snapshot + links from the previous seed */
-const pkFile = path.join(work, 'pk.json'); let pkDate = null;
-for (let d = 0; d < 6 && !pkDate; d++) {
-  const day = new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
-  try { await download(`https://raw.githubusercontent.com/spyrosavl/posokanei/main/data/${day.slice(0, 4)}/posokanei-${day}.json`, pkFile); pkDate = day; log('posokanei snapshot', day, (fs.statSync(pkFile).size / 1048576).toFixed(1) + ' MB'); } catch (e) { log('no snapshot for', day, String(e).slice(0, 80)); }
-}
-if (!pkDate) throw new Error('no posokanei snapshot in the last 6 days');
+const pkFile = path.join(work, 'pk.json');
+// 98.1: the archive is third-party and can pause; take its newest snapshot of the last 45 days with its TRUE date (a pause must not stop the shop crawls)
+const pkPick = await newestSnapshotDay(async day => {
+  try { await download(`https://raw.githubusercontent.com/spyrosavl/posokanei/main/data/${day.slice(0, 4)}/posokanei-${day}.json`, pkFile); return true; }
+  catch (e) { log('no snapshot for', day, String(e).slice(0, 80)); return false; }
+});
+if (!pkPick) throw new Error(`no posokanei snapshot in the last ${MAX_BACK_DAYS} days`);
+const pkDate = pkPick.day;
+log('posokanei snapshot', pkDate, (fs.statSync(pkFile).size / 1048576).toFixed(1) + ' MB', pkPick.stale ? `STALE: ${pkPick.ageDays} days old, kept with its true date` : 'fresh');
+if (pkPick.stale) console.log(`::warning title=Observatory snapshot is ${pkPick.ageDays} days old::The posokanei archive has not published since ${pkDate}. Observatory prices keep that date (shown as "last recorded" after 7 days); Bazaar, Lidl and Open Prices were still refreshed.`);
 const snap = readJSON(pkFile); if (!Array.isArray(snap.products) || snap.products.length < 5000) throw new Error('posokanei snapshot rejected: ' + (snap.products?.length || 0) + ' products');
 const oldPk = base('posokanei-latest.json');
 const linkDoc = { schema: 2, built: today, links: Object.entries(oldPk.products).map(([ean, p]) => ({ ean: ean.replace(/^0+(?=\d{8})/, ''), pk_id: p.id, pk_name: p.n, method: p.lm || (p.m === 'a' ? 'auto-exact' : 'hand') })) };
-// e-katanalotis: frozen since 16 Jun 2026, history only: carried forward unchanged
-fs.writeFileSync(path.join(seeds, 'ekatanalotis-latest.json'), JSON.stringify(base('ekatanalotis-latest.json')));
+// e-katanalotis: frozen since 16 Jun 2026, history only: carried forward unchanged. 98.1: but look at the ministry file every day, so the day it
+// is published again is reported in the run (a warning on the GitHub run page) instead of the old date staying unseen.
+const ekSeed = base('ekatanalotis-latest.json');
+try {
+  const head = await fetch(EK_FEED, { method: 'HEAD', headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(20000) });
+  const newer = head.ok ? feedPublishedSince(head.headers.get('last-modified'), ekSeed.source?.snapshot) : null;
+  if (newer) { log('e-katanalotis: the ministry published a NEWER file', newer, 'than the stored', ekSeed.source?.snapshot); console.log(`::warning title=e-katanalotis has a new file (${newer})::The ministry file changed after ${ekSeed.source?.snapshot}. Its prices are still the old ones here; run refresh/scripts/import.mjs to bring in the new file.`); }
+  else log('e-katanalotis: unchanged since', ekSeed.source?.snapshot);
+} catch (e) { log('e-katanalotis check skipped:', String(e).slice(0, 80)); }
+fs.writeFileSync(path.join(seeds, 'ekatanalotis-latest.json'), JSON.stringify(ekSeed));
 
 /* 2. web shops: previous observations first, then the new crawl over them (new overrides old per barcode) */
 const bz = base('bazaar-eshop-latest.json'), li = base('lidl-eshop-latest.json'), nBz0 = Object.keys(bz.products).length, nLi0 = Object.keys(li.products).length;
@@ -118,6 +132,7 @@ for (const c of ['A', 'B', 'C', 'D', 'E']) if (!nm.estimator.classes[c]?.usable)
 for (const [c, h] of Object.entries(nm.estimator.holdout)) if (h.coverage80 < 65 || h.coverage80 > 95) throw new Error(`gate: class ${c} held-out coverage ${h.coverage80}%`);
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(path.join(out, 'seeds'), { recursive: true });
 for (const f of fs.readdirSync(stage)) if (f !== 'validation.json') fs.copyFileSync(path.join(stage, f), path.join(out, f));
+{ const mf = path.join(out, 'manifest.json'), m = readJSON(mf); m.sources.posokanei = { ...m.sources.posokanei, ageDays: pkPick.ageDays, stale: pkPick.stale }; fs.writeFileSync(mf, JSON.stringify(m, null, 1)); }   // 98.1: say so when the observatory archive paused
 const shardSummary = shardSeeds(seeds, path.join(out, 'seeds')); // manifest + 100 small shards per source: a lookup parses ~11 KB instead of 1.8 MB
 for (const f of [autoLinkFile, quarantineFile]) if (fs.existsSync(f)) fs.copyFileSync(f, path.join(out, path.basename(f)));   // audit trail, not read by the site
 fs.writeFileSync(path.join(out, 'README.txt'), 'FoodScan price data (generated). Observations are copied from public sources with their dates; estimates are labelled and calibrated (see manifest.json). https://food-scan.gearuptofit.com/how/\n');

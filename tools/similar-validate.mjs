@@ -5,13 +5,14 @@
  *    sugars+salt hidden: the situation of a record that has energy, fat, saturates, carbohydrate and protein but no sugars and no salt
  *  Reports how often the published letter is inside the estimated band, how wide the bands are, and how many products get one. */
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const D = await import(path.join(here, '../assets/domain-v8500.mjs'));
-const S = await import(path.join(here, '../prices/similar-v86.mjs'));
-const B = await import(path.join(here, 'build-peers.mjs'));
-const QG = await import(path.join(here, '../prices/quick-grade-v85.mjs'));
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href);
+const S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href);
+const B = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
+const QG = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 
 export function validate({ limit = Infinity, opts = {}, only = null } = {}) {
   const dir = path.join(here, '../assets/greece-r20261030'), items = [];

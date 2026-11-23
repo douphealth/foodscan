@@ -4,12 +4,13 @@
  *   node tools/build-peers.mjs            writes the file
  *   node tools/build-peers.mjs --check    fails if the file is not what the catalogue produces (qa/similar.test.mjs runs this) */
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(path.join(here, '../assets/domain-v8500.mjs'));
-const Q = await import(path.join(here, '../prices/quick-grade-v85.mjs'));
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href);
+const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const KIND = { general: 'g', beverage: 'b', water: 'w', cheese: 'c', fat: 'f' };
 const r = (v, d = 1) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 10 ** d) / 10 ** d : null);
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));

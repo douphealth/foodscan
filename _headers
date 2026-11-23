@@ -73,3 +73,13 @@ https://:version.:project.pages.dev/*
 /prices/*.mjs
   Content-Type: text/javascript; charset=utf-8
   Cache-Control: public, max-age=3600
+
+/daily-v98.js
+  Cache-Control: public, max-age=3600
+
+/daily-v98-core.mjs
+  Content-Type: text/javascript; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/daily-v98.css
+  Cache-Control: public, max-age=3600

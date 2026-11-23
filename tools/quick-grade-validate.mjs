@@ -6,11 +6,12 @@
  * category, so a juice without a category is graded as a food there). Also hides, one at a time, the salt, the sugars and the saturated fat of each graded product to measure
  * the bounded estimate, and counts how many products that show "No grade" today would get an estimate. */
 import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const D = await import(path.join(here, '../assets/domain-v8500.mjs'));
-const Q = await import(path.join(here, '../prices/quick-grade-v85.mjs'));
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href);
+const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const blank = () => ({ n: 0, inside: 0, likely: 0, likelyN: 0 });
 const add = (b, q, truth) => { b.n++; if (q.letters.includes(truth)) b.inside++; if (q.likely) { b.likelyN++; if (q.likely === truth) b.likely++; } };
 
