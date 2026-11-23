@@ -125,3 +125,76 @@
 @media (prefers-reduced-motion: reduce) {
   .fs98-btn, .fs98-meter > i { transition: none; }
 }
+
+/* FoodScan 99: real portions. The day is what was eaten (amount x the food's numbers) against the WHO limits, not an average per 100 g. */
+.fs99-rows { display: grid; gap: 10px; }
+.fs99-row { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; align-items: baseline; min-width: 0; }
+.fs99-row .fs98-stat__k { margin: 0; }
+.fs99-val { font-family: var(--font-mono, monospace); font-size: .86rem; font-weight: 700; color: var(--ink, #0D1F16); text-align: right; }
+.fs99-row .fs98-meter, .fs99-row .fs99-low { grid-column: 1 / -1; }
+.fs99-row .fs98-meter { margin: 4px 0 0; }
+.fs99-row--near .fs98-meter > i { background: var(--warn, #8A5200); }
+.fs99-row--over .fs98-meter > i { background: var(--bad, #A92A14); }
+.fs99-row--near .fs99-val { color: var(--warn, #8A5200); }
+.fs99-row--over .fs99-val { color: var(--bad, #A92A14); }
+.fs99-low { font-size: .72rem; line-height: 1.35; color: var(--ink3, #52625A); }
+.fs99-notes { font-size: .72rem; line-height: 1.45; color: var(--ink3, #52625A); }
+
+.fs99-pick { margin-top: 10px; padding: 12px; border: 1px solid var(--brand, #0A5C3C); border-radius: var(--radius-sm, 16px); background: var(--brand-soft, #DBEDDD); }
+.fs99-pick .fs98-sec__label { color: var(--ink, #0D1F16); }
+.fs99-custom { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 10px; }
+.fs99-custom__l { display: grid; gap: 3px; font-size: .72rem; font-weight: 700; color: var(--ink2, #36463D); flex: 1 1 150px; min-width: 0; }
+.fs99-custom__l input { min-height: 38px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line2, #CBC1A5); background: var(--surface, #FFFDF7); color: var(--ink, #0D1F16); font: inherit; font-size: 1rem; width: 100%; box-sizing: border-box; }
+.fs99-custom__l input:focus-visible { outline: 3px solid var(--brand, #0A5C3C); outline-offset: 1px; }
+.fs99-err { color: var(--bad, #A92A14); }
+.fs99-err:empty { margin: 0; min-height: 0; }
+
+.fs99-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fs99-list li { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: .82rem; color: var(--ink2, #36463D); }
+.fs99-li__n { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs99-li__a { flex: 0 0 auto; font-family: var(--font-mono, monospace); font-weight: 700; color: var(--ink, #0D1F16); }
+.fs99-x { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line2, #CBC1A5); background: var(--surface2, #F8F3E6); color: var(--ink2, #36463D); font-size: .8rem; cursor: pointer; }
+.fs99-x:hover { border-color: var(--bad, #A92A14); color: var(--bad, #A92A14); }
+.fs99-x:focus-visible, .fs99-pick button:focus-visible { outline: 3px solid var(--brand, #0A5C3C); outline-offset: 2px; }
+@media (max-width: 520px) {
+  .fs99-pick { padding: 10px; }
+  .fs99-custom__l { flex-basis: 100%; }
+}
+.fs99-about { margin-top: 10px; }
+.fs99-about > summary { cursor: pointer; font-size: .76rem; font-weight: 700; color: var(--ink2, #36463D); min-height: 32px; display: flex; align-items: center; list-style-position: inside; }
+.fs99-about > summary:focus-visible { outline: 3px solid var(--brand, #0A5C3C); outline-offset: 2px; }
+.fs99-notes { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+
+/* FoodScan 100: where the grade comes from, the last 7 days, the swap list, a welcome for a new phone. */
+.fs100-srcline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0; }
+.fs100-srcline .fs98-stat__k { margin: 0; }
+.fs100-src--published, .fs100-src--label { background: var(--good-bg, #DFF0E2); color: var(--good, #17693F); }
+.fs100-src--calculated { background: var(--brand-soft, #DBEDDD); color: var(--ink, #0D1F16); border-color: var(--brand, #0A5C3C); }
+.fs100-src--similar { background: var(--warn-bg, #FBEBC8); color: var(--warn, #8A5200); }
+.fs100-src--none { background: var(--surface2, #F8F3E6); color: var(--ink2, #36463D); border-color: var(--line, #E0D8C2); }
+.fs100-src { white-space: normal; }
+
+.fs100-days { list-style: none; margin: 8px 0 6px; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; }
+.fs100-day { display: grid; grid-template-rows: 56px auto; justify-items: center; gap: 4px; margin: 0; padding: 0; min-width: 0; }
+.fs100-day > i { align-self: end; width: 100%; max-width: 30px; min-height: 3px; border-radius: 6px 6px 3px 3px; background: var(--line2, #CBC1A5); }
+.fs100-day--ok > i { background: var(--brand, #0A5C3C); }
+.fs100-day--near > i { background: var(--warn, #8A5200); }
+.fs100-day--over > i { background: var(--bad, #A92A14); }
+.fs100-day--na > i { background: transparent; border: 2px dashed var(--line2, #CBC1A5); height: 8px !important; }
+.fs100-day > span { font-size: .7rem; font-weight: 700; color: var(--ink3, #52625A); }
+.fs100-win { color: var(--good, #17693F); font-weight: 700; }
+
+.fs100-swaps li { align-items: flex-start; }
+.fs100-swaps .fs98-grade { flex: 0 0 auto; margin-top: 2px; }
+.fs100-item__t { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.fs100-item__t > a { color: var(--ink, #0D1F16); font-weight: 700; text-decoration: none; }
+.fs100-item__t > a:hover { text-decoration: underline; }
+.fs100-item__t > small { font-size: .72rem; line-height: 1.35; color: var(--ink3, #52625A); overflow-wrap: anywhere; }
+
+.fs100-add { margin-top: 6px; }
+.fs100-add[aria-pressed="true"] { background: var(--brand-soft, #DBEDDD); border-color: var(--brand, #0A5C3C); color: var(--ink, #0D1F16); }
+.fs100-basis { color: var(--ink3, #52625A); font-weight: 600; }
+.fs100-mixed { margin: 6px 0 0; color: var(--warn, #8A5200); }
+.fs100-welcome { padding-block: 12px; }
+@media (max-width: 380px) { .fs100-days { gap: 3px; } }
+.fs98-hub.fs100-welcome .fs98-head .fs98-sub { display: block; }   /* the welcome line is the point of the compact card: keep it on phones */
