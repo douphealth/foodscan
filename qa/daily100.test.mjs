@@ -193,7 +193,7 @@ test('fix 6: the data check reads a shared link (snapshot) and the label numbers
   assert.ok(src.includes('mergeLabel(') && src.includes('labelKeys()'));
 });
 test('the swap list and the source pill are drawn, in both languages', () => {
-  for (const k of ['srcLabel', 'src', 'srcTip', 'labelNote', 'confHighLabel', 'weekTitle', 'weekLogged', 'weekAvgSugar', 'weekAvgSalt', 'weekOver', 'weekOnly', 'weekBest', 'listTitle', 'listSub', 'listAdd', 'listOn', 'listAddedMsg', 'listRemovedMsg', 'listRemove', 'listInstead', 'listMore', 'listCount', 'listGain', 'listTotal', 'listCheaper', 'listDearer', 'listNoPrice', 'listOlder', 'welcomeSub', 'perBasis', 'mixedBasis'])
+  for (const k of ['srcLabel', 'src', 'srcTip', 'labelNote', 'confHighLabel', 'weekTitle', 'weekLogged', 'weekAvgSugar', 'weekAvgSalt', 'weekOver', 'weekOnly', 'weekBars', 'weekAbout', 'listBest', 'listTitle', 'listSub', 'listAdd', 'listOn', 'listAddedMsg', 'listRemovedMsg', 'listRemove', 'listInstead', 'listMore', 'listCount', 'listGain', 'listTotal', 'listCheaper', 'listDearer', 'listNoPrice', 'listOlder', 'welcomeSub', 'perBasis', 'mixedBasis'])
     assert.equal((src.match(new RegExp(`^\\s+(?:.*[ ,{])?${k}:`, 'gm')) || []).length >= 2, true, `${k} exists in English and Greek`);
   assert.ok(src.includes('fs100-add') && src.includes('a.fs88__item'));
   assert.ok(fs.readFileSync(path.join(ROOT, 'daily-v98.css'), 'utf8').includes('.fs100-src--published'));

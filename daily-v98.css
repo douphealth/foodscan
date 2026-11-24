@@ -198,3 +198,16 @@
 .fs100-welcome { padding-block: 12px; }
 @media (max-width: 380px) { .fs100-days { gap: 3px; } }
 .fs98-hub.fs100-welcome .fs98-head .fs98-sub { display: block; }   /* the welcome line is the point of the compact card: keep it on phones */
+
+
+/* 100.1: on a tablet or desktop the hub sits in the same column as the page below it (1328 px wide with 32 px padding, so 1264 px of content) and, from 960 px,
+ * its sections flow in two columns (today | the day's list, then the week | the swap list) instead of stretching across the whole window. Phones keep one column. */
+.fs98-hub { box-sizing: border-box; }
+@media (min-width: 600px) { .fs98-hub { width: min(1264px, calc(100% - 64px)); margin-inline: auto; } }
+@media (min-width: 960px) {
+  .fs98-hub { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; align-items: start; padding: 22px 28px; }
+  .fs98-hub > .fs98-head, .fs98-hub > .fs98-stats, .fs98-hub > .fs100-wide, .fs98-hub > .fs98-more, .fs98-hub > .fs98-status { grid-column: 1 / -1; }
+  .fs98-hub > .fs98-stats { grid-template-columns: repeat(auto-fit, minmax(112px, 260px)); }
+}
+.fs100-hint { font-weight: 500; color: var(--ink3, #52625A); }
+.fs100-bits { margin-top: 2px; }
