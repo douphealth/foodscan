@@ -289,6 +289,10 @@ export function weekPulse(entries, today) {
     daysOverSugar: rows.filter(r => r.sugars != null && r.sugars > LIMITS.sugars).length, daysOverSalt: rows.filter(r => r.salt != null && r.salt > LIMITS.salt).length
   };
 }
+/** 100.1: the week card is drawn only when it has something to say: at least two days with an amount (one day is not a week, and check-ins written before amounts
+ *  existed cannot be charted: a card of blank bars about them is clutter). */
+export const WEEK_MIN_DAYS = 2;
+export const weekReady = pulse => Number(pulse?.daysCounted) >= WEEK_MIN_DAYS;
 
 /* ---- 100.0: swap list ("Swap and save") ------------------------------------------------------------------------------ */
 export const LIST_MAX = 30;

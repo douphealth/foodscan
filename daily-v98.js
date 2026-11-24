@@ -4,7 +4,7 @@
  * Logic (and what was checked) lives in daily-v98-core.mjs; this file only draws it.
  * Uses the same engine module as the app (domain-v8400.mjs), so grades match and the app's own translated messages are reused. */
 import { assessGrade, dataQuality } from './assets/domain-v8400.mjs';
-import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, parseBackup, BACKUP_KEY, gtin14, presetsFor, logEntry, dayIntake, LIMITS, progress, parseAmount, rememberPortion, AMOUNT_MIN, AMOUNT_MAX, labelCode, mergeLabel, provenance, weekPulse, listAdd, listRemove, gradeGain, listSummary, gtinCheckOk } from './daily-v98-core.mjs';
+import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, parseBackup, BACKUP_KEY, gtin14, presetsFor, logEntry, dayIntake, LIMITS, progress, parseAmount, rememberPortion, AMOUNT_MIN, AMOUNT_MAX, labelCode, mergeLabel, provenance, weekPulse, listAdd, listRemove, gradeGain, listSummary, gtinCheckOk, weekReady } from './daily-v98-core.mjs';
 import { detectMarket } from './prices/market-v83.mjs';
 
 const LENS_KEY = 'foodscan:lens:v98';
@@ -85,7 +85,8 @@ const TX = {
     weekTitle: 'Last 7 days', weekLogged: n => `${n} of 7 days logged`, weekAvgSugar: v => `average sugars ${v} g a day`, weekAvgSalt: v => `average salt ${v} g a day`,
     weekOver: n => `${n} day${n === 1 ? '' : 's'} over a limit`,
     weekOnly: 'Averages use only days with amounts, and a food that does not report a nutrient adds nothing to it, so they can be low. One heavy day is a bar, not a failure.',
-    weekBest: (name, a, b) => `Biggest swap win on your list: ${name} (${a} → ${b})`,
+    weekBars: 'bars show sugars against the 50 g WHO limit', weekAbout: 'About these averages',
+    listBest: (name, a, b) => `Biggest swap win: ${name} (${a} → ${b})`,
     listTitle: 'Swap list', listSub: 'Healthier products to buy next time, with the lowest current recorded price (daily data). Nothing is estimated.',
     listAdd: '+ Swap list', listOn: 'On swap list ✓', listAddedMsg: n => `Added “${n}” to your swap list.`, listRemovedMsg: n => `Removed “${n}” from your swap list.`, listRemove: n => `Remove “${n}” from the swap list`,
     listInstead: (n, g) => `instead of ${n}${g ? ` (${g})` : ''}`, listMore: n => `and ${n} more`,
@@ -164,7 +165,8 @@ const TX = {
     weekTitle: 'Τελευταίες 7 ημέρες', weekLogged: n => `${n} από 7 ημέρες με καταγραφή`, weekAvgSugar: v => `μέσος όρος σακχάρων ${String(v).replace('.', ',')} g την ημέρα`, weekAvgSalt: v => `μέσος όρος αλατιού ${String(v).replace('.', ',')} g την ημέρα`,
     weekOver: n => `${n} ${n === 1 ? 'ημέρα' : 'ημέρες'} πάνω από όριο`,
     weekOnly: 'Οι μέσοι όροι χρησιμοποιούν μόνο ημέρες με ποσότητες, και ένα τρόφιμο που δεν δηλώνει ένα θρεπτικό συστατικό δεν προσθέτει τίποτα σε αυτό, οπότε μπορεί να βγαίνουν χαμηλοί. Μία βαριά ημέρα είναι μια μπάρα, όχι αποτυχία.',
-    weekBest: (name, a, b) => `Μεγαλύτερη βελτίωση στη λίστα σου: ${name} (${a} → ${b})`,
+    weekBars: 'οι μπάρες δείχνουν σάκχαρα σε σχέση με το όριο του ΠΟΥ των 50 g', weekAbout: 'Για αυτούς τους μέσους όρους',
+    listBest: (name, a, b) => `Μεγαλύτερη βελτίωση: ${name} (${a} → ${b})`,
     listTitle: 'Λίστα αλλαγών', listSub: 'Πιο υγιεινά προϊόντα για την επόμενη φορά, με τη χαμηλότερη τρέχουσα καταγεγραμμένη τιμή (ημερήσια δεδομένα). Τίποτα δεν εκτιμάται.',
     listAdd: '+ Λίστα αλλαγών', listOn: 'Στη λίστα ✓', listAddedMsg: n => `Προστέθηκε το «${n}» στη λίστα αλλαγών.`, listRemovedMsg: n => `Αφαιρέθηκε το «${n}» από τη λίστα αλλαγών.`, listRemove: n => `Αφαίρεση «${n}» από τη λίστα αλλαγών`,
     listInstead: (n, g) => `αντί για ${n}${g ? ` (${g})` : ''}`, listMore: n => `και ${n} ακόμη`,
@@ -417,10 +419,10 @@ function wireMore(h, view, t) {
 }
 
 /** The last 7 days: one bar per day (sugars against the WHO limit), days logged, averages over the days that have amounts, days over a limit.
- *  A heavy day is a taller bar, never a failure. `best`: the swap on the list that gains the most grade steps. */
-function weekHtml(t, log, best) {
+ *  A heavy day is a taller bar, never a failure. Drawn only from two days with an amount (see weekReady). */
+function weekHtml(t, log) {
   const wp = weekPulse(log, todayKey());
-  if (!wp.daysLogged) return '';
+  if (!weekReady(wp)) return '';
   const loc = isEl() ? 'el' : 'en', narrow = new Intl.DateTimeFormat(loc, { weekday: 'narrow' }), long = new Intl.DateTimeFormat(loc, { weekday: 'long', day: 'numeric', month: 'short' });
   const days = wp.rows.map(r => {
     const d = new Date(`${r.day}T12:00:00`), pr = progress(r.sugars, LIMITS.sugars);
@@ -432,11 +434,10 @@ function weekHtml(t, log, best) {
   if (wp.avgSugars != null) bits.push(t.weekAvgSugar(dec(wp.avgSugars)));
   if (wp.avgSalt != null) bits.push(t.weekAvgSalt(dec(wp.avgSalt)));
   if (over) bits.push(t.weekOver(over));
-  return `<div class="fs98-sec fs100-week"><p class="fs98-sec__label">${esc(t.weekTitle)}</p>
+  return `<div class="fs98-sec fs100-week"><p class="fs98-sec__label">${esc(t.weekTitle)} <span class="fs100-hint">· ${esc(t.weekBars)}</span></p>
     <ul class="fs100-days">${days}</ul>
-    <p class="fs98-sub">${esc(bits.join(' · '))}</p>
-    ${best?.forGrade ? `<p class="fs98-sub fs100-win">${esc(t.weekBest(best.name, best.forGrade, best.grade))}</p>` : ''}
-    <p class="fs99-low">${esc(t.weekOnly)}</p></div>`;
+    <p class="fs98-sub fs100-bits">${esc(bits.join(' · '))}</p>
+    <details class="fs99-about"><summary>${esc(t.weekAbout)}</summary><ul class="fs99-notes"><li>${esc(t.weekOnly)}</li></ul></details></div>`;
 }
 
 /** The swap list: healthier products to buy next time, each with the product it replaces and its lowest current recorded price (nothing estimated). */
@@ -455,6 +456,7 @@ function listHtml(t, list, sum) {
   if (sum.cheaper) lines.push(t.listCheaper(sum.cheaper));
   if (sum.dearer) lines.push(t.listDearer(sum.dearer));
   return `<div class="fs98-sec fs100-list"><p class="fs98-sec__label">${esc(t.listTitle)}</p><p class="fs98-sub">${esc(lines.join(' · '))}</p>
+    ${sum.best?.forGrade ? `<p class="fs98-sub fs100-win">${esc(t.listBest(sum.best.name, sum.best.forGrade, sum.best.grade))}</p>` : ''}
     <ul class="fs99-list fs100-swaps">${rows}</ul>${list.length > 8 ? `<p class="fs99-low">${esc(t.listMore(list.length - 8))}</p>` : ''}<p class="fs99-low">${esc(t.listSub)}</p></div>`;
 }
 
@@ -499,10 +501,10 @@ function renderHub(view) {
       <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.todayItems)}</span><span class="fs98-stat__v">${di.entries}</span><span class="fs98-stat__s">${esc(td)}</span></div>
       <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.pantry)}</span><span class="fs98-stat__v">${savedRows.length}</span><span class="fs98-stat__s">${esc(t.pantrySub(abCount))}</span></div>
     </div>
-    <div class="fs98-sec"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips">${chips}</div>${pickRec ? pickerHtml(pickRec.product) : ''}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
+    <div class="fs98-sec fs100-wide"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips">${chips}</div>${pickRec ? pickerHtml(pickRec.product) : ''}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
     ${intakeHtml(t, di, aboutOpen)}
     ${todayListHtml(t, todayRows)}
-    ${weekHtml(t, log, sum.best)}
+    ${weekHtml(t, log)}
     ${listHtml(t, list, sum)}
     ${moreHtml(t, el, open)}`, h => {
     wireMore(h, view, t);
@@ -670,7 +672,7 @@ function openCompareModal() {
 function exportBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BACKUP_KEY.test(k)) data[k] = localStorage.getItem(k); }
-  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '100.0.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '100.1.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `foodscan-backup-${todayKey()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }
