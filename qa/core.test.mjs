@@ -65,9 +65,9 @@ test('package: every precached file exists, shell pages load the v83 modules, ve
   const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
   const sw = read('sw.js'); const list = new Function('return ' + sw.match(/const PRECACHE = (\[.*?\]);/s)[1])();
   for (const f of list.filter(x => x.startsWith('/') && !x.endsWith('/'))) assert.ok(fs.existsSync(path.join(ROOT, f.split('?')[0])), `precached file missing: ${f}`);
-  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="98\.1\.0"/, page); assert.ok(page === 'prices/index.html' || (h.includes('/prices/reader-v85.js') && h.includes('/prices/reader-v85.css')), `${page} does not load the label reader`); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) { const h = read(page); assert.match(h, /data-foodscan-version="100\.0\.0"/, page); assert.ok(page === 'prices/index.html' || (h.includes('/prices/reader-v85.js') && h.includes('/prices/reader-v85.css')), `${page} does not load the label reader`); assert.ok(!/-v80\.(?:js|mjs)/.test(h.replace(/prices-base-v80|ocr|add-price/g, '')), `${page} still loads a v80 price module`); }
   assert.ok(fs.existsSync(path.join(ROOT, 'assets/domain-v8500.mjs')) && /from '\.\.\/assets\/domain-v8500\.mjs'/.test(read('prices/label-reader-v85.mjs')));
-  assert.match(sw, /const CACHE = 'foodscan-98\.1\.0'/); assert.match(read('_worker.js'), /var VERSION = "98\.1\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-98\.1\.0'/);
+  assert.match(sw, /const CACHE = 'foodscan-100\.0\.0'/); assert.match(read('_worker.js'), /var VERSION = "100\.0\.0"/); assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-100\.0\.0'/);
   // every relative import of the v83 modules resolves
   for (const f of ['prices/reader-v85.js', 'prices/similar-v86.mjs', 'prices/label-reader-v85.mjs', 'prices/label-ocr-v85.mjs', 'prices/native-v83.js', 'prices/prices-v83.js', 'prices/price-client-v83.mjs', 'prices/price-core-v83.mjs', 'prices/market-v83.mjs']) for (const m of read(f).matchAll(/from '(\.\/[^']+)'|import\('(\.\/[^']+)'\)/g)) assert.ok(fs.existsSync(path.join(ROOT, 'prices', m[1] || m[2])), `${f} imports a missing file: ${m[1] || m[2]}`);
 });
@@ -104,7 +104,7 @@ test('the market is the same on every page: only an explicit choice or the profi
 test('asset generations: every v8300 module has a v8400 twin, nothing in v8400 points back at an older generation or at the old domain/catalogue modules, the shell uses v8400', async () => {
   const fs = await import('node:fs'); const { read } = await import('./helpers.mjs');
   const old = fs.readdirSync(path.join(ROOT, 'assets')).filter(f => f.endsWith('-v8300.js'));
-  assert.ok(old.length >= 33);
+  assert.equal(old.length, 0, 'the v8300 generation was pruned in 100.0: nothing loads it (the twin check below stays for any that come back)');
   for (const f of old) { const twin = f.replace('-v8300.js', '-v8400.js'); assert.ok(fs.existsSync(path.join(ROOT, 'assets', twin)), `missing ${twin}`);
     const t = read('assets/' + twin); assert.ok(!/-v8[23]00\.js/.test(t), `${twin} still imports an older generation`); assert.ok(!/(?:domain|market-catalogue|recommendations-core)-v8100\.mjs/.test(t), `${twin} still imports a v8100 module`); }
   for (const f of ['domain-v8400.mjs', 'market-catalogue-v8400.mjs', 'recommendations-core-v8400.mjs']) { assert.ok(fs.existsSync(path.join(ROOT, 'assets', f)), f); assert.ok(!/(?:domain|market-catalogue|recommendations-core)-v8100\.mjs/.test(read('assets/' + f)), `${f} imports a v8100 module`); }

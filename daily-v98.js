@@ -1,24 +1,41 @@
-/* FoodScan 98.1 · Daily check-in on Home, a data check on every product page, My Lens, a 3-product compare tray and a local backup.
+/* FoodScan 100 · Daily check-in on Home (real portions against the WHO limits, the last 7 days, a swap list), a data check on every product page (with where the grade
+ * comes from and the shopper's own label numbers), My Lens, a 3-product compare tray and a local backup.
  * Local-first: everything stays in this browser's localStorage, no tracking, no network. English and Greek.
  * Logic (and what was checked) lives in daily-v98-core.mjs; this file only draws it.
  * Uses the same engine module as the app (domain-v8400.mjs), so grades match and the app's own translated messages are reused. */
 import { assessGrade, dataQuality } from './assets/domain-v8400.mjs';
-import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, dayStats, parseBackup, BACKUP_KEY } from './daily-v98-core.mjs';
+import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, parseBackup, BACKUP_KEY, gtin14, presetsFor, logEntry, dayIntake, LIMITS, progress, parseAmount, rememberPortion, AMOUNT_MIN, AMOUNT_MAX, labelCode, mergeLabel, provenance, weekPulse, listAdd, listRemove, gradeGain, listSummary, gtinCheckOk } from './daily-v98-core.mjs';
+import { detectMarket } from './prices/market-v83.mjs';
 
 const LENS_KEY = 'foodscan:lens:v98';
 const DAILY_KEY = 'foodscan:daily:v98';
 const COMPARE_KEY = 'foodscan:compare:v98';
+const PORTION_KEY = 'foodscan:portion:v99';   // the last amount of each food, by GTIN-14
+const LIST_KEY = 'foodscan:list:v100';        // the swap list: healthier products to buy instead
 
 const TX = {
   en: {
     hubEye: 'Daily check-in · Private on this device',
     hubTitle: 'Your everyday kitchen hub',
-    hubSub: 'Log what you had in one tap, keep a streak, and see your own priorities on every product.',
-    todayItems: 'Logged today', sugarAvg: 'Sugar in foods logged', saltAvg: 'Salt in foods logged',
-    per100: v => `${v} g / 100 g`, tsp: v => `≈ ${v} tsp per 100 g · not your intake`, whoSalt: 'WHO: under 5 g salt a day',
+    hubSub: 'Log what you had and how much, keep a streak, and see today against the WHO limits.',
+    todayItems: 'Logged today',
     streak: 'Streak', streakDays: n => (n === 1 ? '1 day' : `${n} days`),
     pantry: 'Saved foods', pantrySub: ab => `${ab} graded A or B`,
-    quickLogLabel: 'One-tap check-in from your recent foods:',
+    quickLogLabel: 'Tap a recent food, then how much you had:',
+    aboutLimits: 'About these limits', intakeTitle: 'Today against the limits', intakeNone: 'Nothing logged with an amount yet today. Tap a food below, then an amount.',
+    sugarsToday: 'Sugars today', saltToday: 'Salt today', kcalToday: 'Energy today', satToday: 'Saturated fat today',
+    ofLimit: (v, lim, u) => `${v} ${u} of ${lim} ${u}`, ofKcal: (v, lim) => `${v.toLocaleString('en')} of ${lim.toLocaleString('en')} kcal`,
+    whoSugars: 'WHO: free sugars under 10 % of energy (about 50 g a day; under 25 g is better). The label counts all sugars, milk and fruit sugar too, so this is an upper estimate.',
+    whoSalt: 'WHO: under 5 g salt a day.', refKcal: 'The EU label reference is 2,000 kcal a day. Your own need differs.', whoSat: 'WHO: saturated fat under 10 % of energy (about 22 g on 2,000 kcal).',
+    state: { ok: 'within the limit', near: 'close to the limit', over: 'over the limit' }, nut: { sugars: 'sugars', salt: 'salt', kcal: 'energy', sat: 'saturated fat' },
+    lowerBound: (k, n) => `At least this much: ${n} food${n === 1 ? '' : 's'} you logged do${n === 1 ? 'es' : ''} not report ${k}.`,
+    uncounted: n => `${n} earlier check-in${n === 1 ? ' has' : 's have'} no amount and ${n === 1 ? 'is' : 'are'} not counted.`,
+    todayList: 'Logged today', removeItem: name => `Remove “${name}”`, removedMsg: name => `Removed “${name}”.`, noAmount: 'no amount',
+    pickTitle: name => `How much of “${name}”?`, sameAsLast: label => `Same as last time · ${label}`,
+    customLabel: u => `Other amount (${u})`, customHint: `from ${AMOUNT_MIN} to ${AMOUNT_MAX.toLocaleString('en')}`, logIt: 'Log', cancel: 'Cancel',
+    badAmount: `Enter an amount from ${AMOUNT_MIN} to ${AMOUNT_MAX.toLocaleString('en')}.`,
+    loggedAmount: (name, label) => `Logged ${label} of “${name}” for today.`,
+    portion: { serving: (a, u) => `1 serving (${a} ${u})`, pack: (a, u) => `Whole pack (${a} ${u})`, unit: (a, u) => `1 unit (${a} ${u})`, g: (a, u) => `${a} ${u}`, glass: a => `1 glass (${a} ml)`, cup: a => `1 cup (${a} ml)`, can: a => `1 can (${a} ml)`, bottle: a => `1 bottle (${a} ml)`, custom: (a, u) => `${a} ${u}` },
     quickLogEmpty: 'Open or save a food to unlock one-tap check-ins.',
     loggedMsg: name => `Logged “${name}” for today.`,
     more: 'My Lens and backup',
@@ -43,24 +60,61 @@ const TX = {
     ctxSugar: (g, tsp, u) => `${g} g sugars in 100 ${u}, about ${tsp} tsp`,
     ctxSalt: (g, pct, u) => `${g} g salt in 100 ${u}: ${pct}% of the WHO limit of 5 g a day`,
     ctxNova: n => `Processing: NOVA ${n} (${['', 'unprocessed or minimally processed', 'culinary ingredient', 'processed', 'ultra-processed'][n] || ''})`,
-    hadToday: '+ Had today', hadTodayDone: 'Logged today ✓',
+    hadToday: '+ Had today', hadTodayDone: 'Logged today ✓ · add more',
     pinCompare: 'Pin to compare', pinnedCompare: 'Pinned ✓',
     trayCount: n => `Compare (${n}/${MAX_COMPARE})`, trayOpen: 'Compare now', trayClear: 'Clear',
     cmpTitle: 'Side-by-side compare',
     cmpSub: 'Values per 100 g or 100 ml from your records; a drink and a food are not on the same basis. Always check allergens on the pack.',
     cmpClose: 'Close', cmpRemove: 'Remove', colMetric: 'Metric',
     mGrade: 'Grade', mNova: 'NOVA', mKcal: 'Energy (kcal)', mSugar: 'Sugars g (tsp)', mProt: 'Protein (g)', mFiber: 'Fibre (g)', mSalt: 'Salt (g)', mLens: 'My Lens',
-    allergyNote: 'Ingredient checks are never medical allergy clearance: always read the pack.'
+    allergyNote: 'Ingredient checks are never medical allergy clearance: always read the pack.',
+    welcomeSub: 'Scan or open a food to start your check-in. New phone? Restore your backup and set My Lens below.',
+    perBasis: { g: 'per 100 g', ml: 'per 100 ml' },
+    mixedBasis: 'These products are not on the same basis (per 100 g and per 100 ml), so no column is marked best.',
+    srcLabel: 'Grade source',
+    src: { published: 'Published Nutri-Score', calculated: 'Calculated from the record', similar: 'Estimated from similar products', label: 'Your label photo', none: 'No grade on record' },
+    srcTip: {
+      published: 'The grade published with the record (Open Food Facts). FoodScan checks it against the numbers.',
+      calculated: 'The record has no usable published grade, so FoodScan calculated it with the Nutri-Score 2023 rules from the record’s own numbers.',
+      similar: 'The record has no numbers of its own: this is the range of similar products, not a calculation for this one.',
+      label: 'Calculated from the label numbers you entered or confirmed on this device.',
+      none: 'Neither a published grade nor enough numbers to calculate one.'
+    },
+    labelNote: 'Numbers you entered from the label replace the database values here, in your check-in and in the compare tray.',
+    confHighLabel: 'The label numbers do not contradict each other. Where you gave a number from your own label, it replaces the database value; the rest comes from a community database.',
+    weekTitle: 'Last 7 days', weekLogged: n => `${n} of 7 days logged`, weekAvgSugar: v => `average sugars ${v} g a day`, weekAvgSalt: v => `average salt ${v} g a day`,
+    weekOver: n => `${n} day${n === 1 ? '' : 's'} over a limit`,
+    weekOnly: 'Averages use only days with amounts, and a food that does not report a nutrient adds nothing to it, so they can be low. One heavy day is a bar, not a failure.',
+    weekBest: (name, a, b) => `Biggest swap win on your list: ${name} (${a} → ${b})`,
+    listTitle: 'Swap list', listSub: 'Healthier products to buy next time, with the lowest current recorded price (daily data). Nothing is estimated.',
+    listAdd: '+ Swap list', listOn: 'On swap list ✓', listAddedMsg: n => `Added “${n}” to your swap list.`, listRemovedMsg: n => `Removed “${n}” from your swap list.`, listRemove: n => `Remove “${n}” from the swap list`,
+    listInstead: (n, g) => `instead of ${n}${g ? ` (${g})` : ''}`, listMore: n => `and ${n} more`,
+    listCount: n => `${n} swap${n === 1 ? '' : 's'}`, listGain: (i, n, g) => `${i} of ${n} graded swaps improve the grade (+${g} steps in total)`,
+    listTotal: (v, k, n) => `${v} at current recorded prices for ${k} of ${n}`, listCheaper: n => `cheaper per kg or litre than what you scanned: ${n}`, listDearer: n => `dearer per kg or litre: ${n}`,
+    listNoPrice: 'no recorded price', listOlder: 'older price'
   },
   el: {
     hubEye: 'Καθημερινό τσεκάρισμα · Ιδιωτικό στη συσκευή σου',
     hubTitle: 'Το καθημερινό σου κέντρο κουζίνας',
-    hubSub: 'Κατέγραψε τι έφαγες με ένα πάτημα, κράτα σερί ημερών και δες τις δικές σου προτεραιότητες σε κάθε προϊόν.',
-    todayItems: 'Καταγράφηκαν σήμερα', sugarAvg: 'Ζάχαρη στις καταγραφές', saltAvg: 'Αλάτι στις καταγραφές',
-    per100: v => `${String(v).replace('.', ',')} g / 100 g`, tsp: v => `≈ ${String(v).replace('.', ',')} κ.γ. ανά 100 g · όχι η πρόσληψή σου`, whoSalt: 'ΠΟΥ: κάτω από 5 g αλάτι την ημέρα',
+    hubSub: 'Κατέγραψε τι έφαγες και πόσο, κράτα σερί ημερών και δες τη σημερινή σου πρόσληψη απέναντι στα όρια του ΠΟΥ.',
+    todayItems: 'Καταγράφηκαν σήμερα',
     streak: 'Σερί', streakDays: n => (n === 1 ? '1 ημέρα' : `${n} ημέρες`),
     pantry: 'Αποθηκευμένα τρόφιμα', pantrySub: ab => `${ab} με βαθμό A ή B`,
-    quickLogLabel: 'Καταγραφή με ένα πάτημα από τα πρόσφατα τρόφιμά σου:',
+    quickLogLabel: 'Πάτα ένα πρόσφατο τρόφιμο και μετά πόσο έφαγες:',
+    aboutLimits: 'Για αυτά τα όρια', intakeTitle: 'Σήμερα απέναντι στα όρια', intakeNone: 'Δεν έχει καταγραφεί ακόμη τίποτα με ποσότητα σήμερα. Πάτα ένα τρόφιμο και μετά μια ποσότητα.',
+    sugarsToday: 'Σάκχαρα σήμερα', saltToday: 'Αλάτι σήμερα', kcalToday: 'Ενέργεια σήμερα', satToday: 'Κορεσμένα λιπαρά σήμερα',
+    ofLimit: (v, lim, u) => `${String(v).replace('.', ',')} ${u} από ${lim} ${u}`, ofKcal: (v, lim) => `${v.toLocaleString('el')} από ${lim.toLocaleString('el')} kcal`,
+    whoSugars: 'ΠΟΥ: ελεύθερα σάκχαρα κάτω από 10 % της ενέργειας (περίπου 50 g την ημέρα· κάτω από 25 g είναι καλύτερα). Η ετικέτα μετρά όλα τα σάκχαρα, και του γάλακτος και των φρούτων, οπότε το νούμερο είναι ανώτερη εκτίμηση.',
+    whoSalt: 'ΠΟΥ: κάτω από 5 g αλάτι την ημέρα.', refKcal: 'Η τιμή αναφοράς των ετικετών της ΕΕ είναι 2.000 kcal την ημέρα. Οι δικές σου ανάγκες διαφέρουν.', whoSat: 'ΠΟΥ: κορεσμένα λιπαρά κάτω από 10 % της ενέργειας (περίπου 22 g στις 2.000 kcal).',
+    state: { ok: 'μέσα στο όριο', near: 'κοντά στο όριο', over: 'πάνω από το όριο' }, nut: { sugars: 'σάκχαρα', salt: 'αλάτι', kcal: 'ενέργεια', sat: 'κορεσμένα λιπαρά' },
+    lowerBound: (k, n) => `Τουλάχιστον τόσο: ${n} ${n === 1 ? 'τρόφιμο που κατέγραψες δεν δηλώνει' : 'τρόφιμα που κατέγραψες δεν δηλώνουν'} ${k}.`,
+    uncounted: n => `${n} ${n === 1 ? 'παλαιότερη καταγραφή δεν έχει' : 'παλαιότερες καταγραφές δεν έχουν'} ποσότητα και δεν ${n === 1 ? 'υπολογίζεται' : 'υπολογίζονται'}.`,
+    todayList: 'Καταγράφηκαν σήμερα', removeItem: name => `Αφαίρεση «${name}»`, removedMsg: name => `Αφαιρέθηκε το «${name}».`, noAmount: 'χωρίς ποσότητα',
+    pickTitle: name => `Πόσο από «${name}»;`, sameAsLast: label => `Όπως την τελευταία φορά · ${label}`,
+    customLabel: u => `Άλλη ποσότητα (${u})`, customHint: `από ${AMOUNT_MIN} έως ${AMOUNT_MAX.toLocaleString('el')}`, logIt: 'Καταγραφή', cancel: 'Άκυρο',
+    badAmount: `Γράψε μια ποσότητα από ${AMOUNT_MIN} έως ${AMOUNT_MAX.toLocaleString('el')}.`,
+    loggedAmount: (name, label) => `Καταγράφηκε ${label} από «${name}» για σήμερα.`,
+    portion: { serving: (a, u) => `1 μερίδα (${a} ${u})`, pack: (a, u) => `Όλη η συσκευασία (${a} ${u})`, unit: (a, u) => `1 τεμάχιο (${a} ${u})`, g: (a, u) => `${a} ${u}`, glass: a => `1 ποτήρι (${a} ml)`, cup: a => `1 φλιτζάνι (${a} ml)`, can: a => `1 κουτάκι (${a} ml)`, bottle: a => `1 μπουκάλι (${a} ml)`, custom: (a, u) => `${a} ${u}` },
     quickLogEmpty: 'Άνοιξε ή αποθήκευσε ένα τρόφιμο για να ξεκλειδώσεις την καταγραφή με ένα πάτημα.',
     loggedMsg: name => `Καταγράφηκε το «${name}» για σήμερα.`,
     more: 'Ο Φακός μου και αντίγραφο',
@@ -85,14 +139,38 @@ const TX = {
     ctxSugar: (g, tsp, u) => `${String(g).replace('.', ',')} g σάκχαρα στα 100 ${u}, περίπου ${String(tsp).replace('.', ',')} κ.γ.`,
     ctxSalt: (g, pct, u) => `${String(g).replace('.', ',')} g αλάτι στα 100 ${u}: ${pct}% του ορίου του ΠΟΥ των 5 g ημερησίως`,
     ctxNova: n => `Επεξεργασία: NOVA ${n} (${['', 'ανεπεξέργαστο ή ελάχιστα επεξεργασμένο', 'μαγειρικό συστατικό', 'επεξεργασμένο', 'υπερεπεξεργασμένο'][n] || ''})`,
-    hadToday: '+ Έφαγα σήμερα', hadTodayDone: 'Καταγράφηκε σήμερα ✓',
+    hadToday: '+ Έφαγα σήμερα', hadTodayDone: 'Καταγράφηκε σήμερα ✓ · πρόσθεσε κι άλλο',
     pinCompare: 'Καρφίτσωμα για σύγκριση', pinnedCompare: 'Στη σύγκριση ✓',
     trayCount: n => `Σύγκριση (${n}/${MAX_COMPARE})`, trayOpen: 'Σύγκρινε τώρα', trayClear: 'Καθαρισμός',
     cmpTitle: 'Σύγκριση δίπλα-δίπλα',
     cmpSub: 'Τιμές ανά 100 g ή 100 ml από τις εγγραφές σου· ένα ρόφημα και ένα στερεό δεν έχουν την ίδια βάση. Έλεγχε πάντα τα αλλεργιογόνα στη συσκευασία.',
     cmpClose: 'Κλείσιμο', cmpRemove: 'Αφαίρεση', colMetric: 'Κριτήριο',
     mGrade: 'Βαθμός', mNova: 'NOVA', mKcal: 'Ενέργεια (kcal)', mSugar: 'Σάκχαρα g (κ.γ.)', mProt: 'Πρωτεΐνη (g)', mFiber: 'Φυτικές ίνες (g)', mSalt: 'Αλάτι (g)', mLens: 'Ο Φακός μου',
-    allergyNote: 'Ο έλεγχος συστατικών δεν αποτελεί ιατρική βεβαίωση για αλλεργίες: διάβαζε πάντα τη συσκευασία.'
+    allergyNote: 'Ο έλεγχος συστατικών δεν αποτελεί ιατρική βεβαίωση για αλλεργίες: διάβαζε πάντα τη συσκευασία.',
+    welcomeSub: 'Σκάναρε ή άνοιξε ένα τρόφιμο για να ξεκινήσεις. Νέο κινητό; Επανάφερε το αντίγραφό σου και ρύθμισε τον Φακό σου παρακάτω.',
+    perBasis: { g: 'ανά 100 g', ml: 'ανά 100 ml' },
+    mixedBasis: 'Αυτά τα προϊόντα δεν έχουν την ίδια βάση (ανά 100 g και ανά 100 ml), οπότε καμία στήλη δεν σημειώνεται ως καλύτερη.',
+    srcLabel: 'Πηγή βαθμού',
+    src: { published: 'Δημοσιευμένο Nutri-Score', calculated: 'Υπολογισμός από την εγγραφή', similar: 'Εκτίμηση από παρόμοια προϊόντα', label: 'Η φωτογραφία της ετικέτας σου', none: 'Χωρίς βαθμό στην εγγραφή' },
+    srcTip: {
+      published: 'Ο βαθμός που δημοσιεύεται με την εγγραφή (Open Food Facts). Το FoodScan τον ελέγχει με τους αριθμούς.',
+      calculated: 'Η εγγραφή δεν έχει χρησιμοποιήσιμο δημοσιευμένο βαθμό, οπότε το FoodScan τον υπολόγισε με τους κανόνες Nutri-Score 2023 από τους δικούς της αριθμούς.',
+      similar: 'Η εγγραφή δεν έχει δικούς της αριθμούς: αυτό είναι το εύρος παρόμοιων προϊόντων, όχι υπολογισμός για αυτό το προϊόν.',
+      label: 'Υπολογισμένος από τους αριθμούς της ετικέτας που έγραψες ή επιβεβαίωσες σε αυτή τη συσκευή.',
+      none: 'Ούτε δημοσιευμένος βαθμός ούτε αρκετοί αριθμοί για υπολογισμό.'
+    },
+    labelNote: 'Οι αριθμοί που έγραψες από την ετικέτα αντικαθιστούν εδώ τις τιμές της βάσης, στο καθημερινό τσεκάρισμα και στη σύγκριση.',
+    confHighLabel: 'Τα νούμερα της ετικέτας δεν αντιφάσκουν μεταξύ τους. Όπου έδωσες αριθμό από τη δική σου ετικέτα, αντικαθιστά την τιμή της βάσης· τα υπόλοιπα προέρχονται από κοινοτική βάση δεδομένων.',
+    weekTitle: 'Τελευταίες 7 ημέρες', weekLogged: n => `${n} από 7 ημέρες με καταγραφή`, weekAvgSugar: v => `μέσος όρος σακχάρων ${String(v).replace('.', ',')} g την ημέρα`, weekAvgSalt: v => `μέσος όρος αλατιού ${String(v).replace('.', ',')} g την ημέρα`,
+    weekOver: n => `${n} ${n === 1 ? 'ημέρα' : 'ημέρες'} πάνω από όριο`,
+    weekOnly: 'Οι μέσοι όροι χρησιμοποιούν μόνο ημέρες με ποσότητες, και ένα τρόφιμο που δεν δηλώνει ένα θρεπτικό συστατικό δεν προσθέτει τίποτα σε αυτό, οπότε μπορεί να βγαίνουν χαμηλοί. Μία βαριά ημέρα είναι μια μπάρα, όχι αποτυχία.',
+    weekBest: (name, a, b) => `Μεγαλύτερη βελτίωση στη λίστα σου: ${name} (${a} → ${b})`,
+    listTitle: 'Λίστα αλλαγών', listSub: 'Πιο υγιεινά προϊόντα για την επόμενη φορά, με τη χαμηλότερη τρέχουσα καταγεγραμμένη τιμή (ημερήσια δεδομένα). Τίποτα δεν εκτιμάται.',
+    listAdd: '+ Λίστα αλλαγών', listOn: 'Στη λίστα ✓', listAddedMsg: n => `Προστέθηκε το «${n}» στη λίστα αλλαγών.`, listRemovedMsg: n => `Αφαιρέθηκε το «${n}» από τη λίστα αλλαγών.`, listRemove: n => `Αφαίρεση «${n}» από τη λίστα αλλαγών`,
+    listInstead: (n, g) => `αντί για ${n}${g ? ` (${g})` : ''}`, listMore: n => `και ${n} ακόμη`,
+    listCount: n => `${n} ${n === 1 ? 'αλλαγή' : 'αλλαγές'}`, listGain: (i, n, g) => `${i} από ${n} αλλαγές με βαθμό βελτιώνουν τον βαθμό (+${g} βαθμίδες συνολικά)`,
+    listTotal: (v, k, n) => `${v} με τρέχουσες καταγεγραμμένες τιμές για ${k} από ${n}`, listCheaper: n => `φθηνότερες ανά kg ή λίτρο από όσα σκάναρες: ${n}`, listDearer: n => `ακριβότερες ανά kg ή λίτρο: ${n}`,
+    listNoPrice: 'χωρίς καταγεγραμμένη τιμή', listOlder: 'παλαιότερη τιμή'
   }
 };
 
@@ -109,6 +187,10 @@ const pad = n => String(n).padStart(2, '0');
 const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
 const readRaw = key => { try { return localStorage.getItem(key) || ''; } catch { return ''; } };
+/* 100: a change signature of a big stored string in constant time (length, first and last 48 characters): the app writes new rows at the front and drops them from
+ * the back, so every add, delete and reorder changes it, and no megabyte string is built on each page mutation. */
+const sig = s => (s ? `${s.length}:${s.slice(0, 48)}:${s.slice(-48)}` : '0');
+const readSig = key => sig(readRaw(key));
 const readJSON = (key, fallback) => { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; } catch { return fallback; } };
 const writeJSON = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
 
@@ -119,19 +201,60 @@ const getDailyLog = () => { const a = readJSON(DAILY_KEY, []); return Array.isAr
 function safeGrade(p) {
   if (!p) return null;
   try { const v = assessGrade(p); if (v && ['reported', 'estimated'].includes(v.status) && /^[A-E]$/.test(String(v.grade || ''))) return v.grade; } catch {}
-  return null;
+  return /^[A-E]$/.test(String(p.labelGrade || '')) ? p.labelGrade : null;   // the shopper's own label calculation, when the database has no grade
 }
-function addDailyLog(prod) {
-  if (!prod?.barcode) return false;
-  const log = getDailyLog(), n = prod.nutrition || {};
-  log.push({ day: todayKey(), at: Date.now(), barcode: String(prod.barcode), name: String(prod.name || prod.barcode).slice(0, 80), grade: safeGrade(prod), sugars: num(n.sugars), salt: num(n.salt), protein: num(n.protein) });
-  return writeJSON(DAILY_KEY, log.slice(-240));
+const getList = () => { const a = readJSON(LIST_KEY, []); return Array.isArray(a) ? a.filter(x => x && /^\d{14}$/.test(x.gtin)) : []; };
+
+/* ---- 100: prices for the swap list: the same line the swap rows show (lowest current recorded price, else the last recorded one, marked older), from
+ * GET /api/prices/peek (the daily data), five barcodes a request, two requests at a time. A product with no recorded price simply has none: nothing is estimated. */
+const lineOf = v => { if (!v) return null; const o = v.best || v.latest; return o && o.price > 0 ? { price: o.price, currency: o.currency || v.currency || 'EUR', retailer: o.retailer || '', older: !v.best, date: o.date, unitPrice: o.unitPrice, unitBasis: o.unitBasis } : null; };
+const PRICE_TTL = 10 * 60 * 1000;
+const priceBook = new Map();   // GTIN-14 -> { at, line }
+let priceBusy = false, priceVersion = 0;
+function wantPrices(list) {
+  if (priceBusy) return;
+  const codes = [], seen = new Set();
+  for (const it of list) for (const c of [it.code, it.forCode]) {
+    const k = gtin14(c), e = k && priceBook.get(k);
+    if (k && gtinCheckOk(c) && !seen.has(k) && !(e && Date.now() - e.at < PRICE_TTL)) { seen.add(k); codes.push(String(c)); }   // a code with a bad check digit has no price and would fail the whole batch
+  }
+  if (!codes.length) return;
+  priceBusy = true;
+  let m = ''; try { m = detectMarket().code || ''; } catch {}
+  const batches = []; for (let i = 0; i < codes.length; i += 5) batches.push(codes.slice(i, i + 5));
+  const retrySoon = Date.now() - PRICE_TTL + 60000;   // a failed batch is asked again in a minute
+  const worker = async () => {
+    while (batches.length) {
+      const b = batches.shift();
+      try {
+        const r = await fetch(`/api/prices/peek?codes=${b.join(',')}${m ? `&market=${m}` : ''}`, { headers: { accept: 'application/json' } }), j = r.ok ? await r.json() : null;
+        const by = new Map((j?.items || []).map(i => [gtin14(i.code), i]));
+        for (const c of b) priceBook.set(gtin14(c), { at: j ? Date.now() : retrySoon, line: lineOf(by.get(gtin14(c))), failed: !j });
+      } catch { for (const c of b) priceBook.set(gtin14(c), { at: retrySoon, line: null, failed: true }); }
+    }
+  };
+  Promise.all([worker(), worker()]).finally(() => { priceBusy = false; priceVersion++; schedule(); });
 }
+/* 99: a check-in is a food AND an amount. The amount is remembered per food, so the next time is one tap. */
+const getPortions = () => { const m = readJSON(PORTION_KEY, {}); return m && typeof m === 'object' && !Array.isArray(m) ? m : {}; };
+function addDailyLog(prod, amount, kind) {
+  const entry = logEntry(prod, amount, kind, { day: todayKey(), at: Date.now(), grade: safeGrade(prod) });
+  if (!entry) return null;
+  const ok = writeJSON(DAILY_KEY, [...getDailyLog(), entry].slice(-240));
+  if (ok) writeJSON(PORTION_KEY, rememberPortion(getPortions(), entry.gtin, entry.grams, entry.portion, entry.at));
+  return ok ? entry : null;
+}
+const entryKey = x => x.gtin || gtin14(x.barcode) || String(x.barcode);
+function removeDailyLog(at, key) {
+  const log = getDailyLog(), next = log.filter(x => !(x.at === at && entryKey(x) === key));
+  return next.length !== log.length && writeJSON(DAILY_KEY, next);
+}
+const sameFood = (a, b) => { const x = gtin14(a), y = gtin14(b); return x && y ? x === y : String(a) === String(b); };
 
 const getCompareList = () => { const a = readJSON(COMPARE_KEY, []); return Array.isArray(a) ? a.slice(0, MAX_COMPARE) : []; };
 function toggleCompare(prod) {
   if (!prod?.barcode) return false;
-  const list = getCompareList(), idx = list.findIndex(x => String(x.barcode) === String(prod.barcode)), n = prod.nutrition || {};
+  const list = getCompareList(), idx = list.findIndex(x => sameFood(x.barcode, prod.barcode)), n = prod.nutrition || {};
   if (idx >= 0) { list.splice(idx, 1); writeJSON(COMPARE_KEY, list); return false; }
   if (list.length >= MAX_COMPARE) list.shift();
   list.push({ barcode: String(prod.barcode), name: String(prod.name || prod.barcode).slice(0, 72), brand: String(prod.brand || '').slice(0, 48), basis: prod.basis === 'ml' ? 'ml' : 'g', grade: safeGrade(prod), nova: prod.nova ?? null, kcal: num(n.kcal), sugars: num(n.sugars), protein: num(n.protein), fiber: num(n.fiber), salt: num(n.salt) });
@@ -139,19 +262,45 @@ function toggleCompare(prod) {
   return true;
 }
 
-/* The app keeps opened and saved products as { product, at } rows. */
+/* The app keeps opened and saved products as { product, at } rows. 99: keyed by GTIN-14, so a UPC-A, an EAN-13 and a GTIN-14 of one product are one chip
+ * (the first row found wins; the app lists saved foods first, then history, newest first). */
+const recordKey = code => gtin14(code) || (/^\d{8,14}$/.test(code) ? code : null);
+/* 100: the label numbers a shopper typed or confirmed (prices/reader-v85.js keeps them under fs85:label:<code>) are laid over the database record, and the whole map is
+ * rebuilt only when the saved list, the history or a label changed (before, every call parsed up to a megabyte of JSON). */
+function labelKeys() {
+  const idx = new Map();
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i), g = k && labelCode(k); if (g) idx.set(g, k); } } catch {}
+  return idx;
+}
+let recCache = { key: null, map: null };
+const recordsKey = labels => [readSig('fs13:saved'), readSig('fs13:history'), ...[...labels].map(([g, k]) => g + readSig(k))].join('|');
 function readAllRecords() {
+  const labels = labelKeys(), key = recordsKey(labels);
+  if (recCache.key === key) return recCache.map;
   const map = new Map();
-  for (const key of ['fs13:saved', 'fs13:history']) {
-    const rows = readJSON(key, []);
+  for (const store of ['fs13:saved', 'fs13:history']) {
+    const rows = readJSON(store, []);
     if (!Array.isArray(rows)) continue;
     for (const row of rows) {
-      const p = row?.product || row, code = String(p?.barcode || row?.barcode || '').trim();
-      if (!/^\d{8,14}$/.test(code) || map.has(code)) continue;
-      map.set(code, { product: p, saved: key === 'fs13:saved', at: row?.at || 0 });
+      const p = row?.product || row, code = String(p?.barcode || row?.barcode || '').trim(), k = recordKey(code);
+      if (!k) continue;
+      const prev = map.get(k), at = row?.at || 0;
+      if (prev) { if (store === 'fs13:saved') prev.saved = true; prev.at = Math.max(prev.at, at); continue; }   // the same product again: one record, saved if any copy is, newest time
+      const lk = labels.get(k);
+      map.set(k, { key: k, product: lk ? mergeLabel(p, readJSON(lk, null)) : p, saved: store === 'fs13:saved', at });
     }
   }
+  recCache = { key, map };
   return map;
+}
+/* A product page opened from a shared link has no history row until the app has written one; the app's own snapshot list (fs591:source-snapshots) can already hold it. */
+function snapshotRecord(code) {
+  const k = recordKey(code), rows = readJSON('fs591:source-snapshots', []);
+  if (!k || !Array.isArray(rows)) return null;
+  const p = rows.find(x => x && x.nutrition && typeof x.nutrition === 'object' && recordKey(String(x.barcode || '')) === k);
+  if (!p) return null;
+  const lk = labelKeys().get(k);
+  return { key: k, product: lk ? mergeLabel(p, readJSON(lk, null)) : p, saved: false, at: 0 };
 }
 
 function routeInfo() {
@@ -171,41 +320,80 @@ function paint(el, html, after) {
   return true;
 }
 
-function renderHub(view) {
-  const records = readAllRecords(), log = getDailyLog();
-  if (!records.size && !log.length) { view.querySelectorAll('.fs98-hub').forEach(n => n.remove()); return; }   // a first-time visitor sees the app's own scan screen, not a page of zeros
-  const t = tr(), el = isEl();
-  const savedRows = [...records.values()].filter(r => r.saved);
-  const recentRows = [...records.values()].sort((a, b) => b.at - a.at).slice(0, 6);
-  const abCount = savedRows.filter(r => ['A', 'B'].includes(safeGrade(r.product))).length;
-  const td = todayKey(), todayRows = log.filter(x => x.day === td), st = dayStats(todayRows);
-  const streak = computeStreak(log.map(x => x.day), td), active = new Set(getLenses());
+/* ---- 99: "how much?" -----------------------------------------------------------------------------------------
+ * A tap on a food opens one row of amounts: the product's own serving, its pack or one unit, a glass/cup/can/bottle or 30/50/100/150 g, the amount
+ * of last time (one tap), or a typed number. Nothing is logged without an amount, and no amount is ever guessed. */
+let picker = null;   // { gtin, where: 'hub' | 'product', focus }: the food whose amounts are open
+const unitOf = p => (p?.basis === 'ml' ? 'ml' : 'g');
+const portionLabel = (t, kind, amount, unit) => (t.portion[kind] || t.portion.custom)(dec(amount), unit);
+function pickerHtml(p) {
+  const t = tr(), unit = unitOf(p), key = gtin14(p.barcode) || String(p.barcode), last = getPortions()[key], name = p.name || p.barcode;
+  const lastOk = last && num(last.amount) != null && last.amount >= AMOUNT_MIN && last.amount <= AMOUNT_MAX;
+  const presets = presetsFor(p).filter(x => !(lastOk && x.amount === last.amount));
+  return `<div class="fs99-pick" role="group" aria-label="${esc(t.pickTitle(name))}">
+    <p class="fs98-sec__label">${esc(t.pickTitle(name))}</p>
+    <div class="fs98-chips">${lastOk ? `<button type="button" class="fs98-btn fs98-btn--sm fs98-btn--primary" data-fs99-amt="${last.amount}" data-fs99-kind="${esc(last.kind)}">${esc(t.sameAsLast(portionLabel(t, last.kind, last.amount, unit)))}</button>` : ''}${presets.map(x => `<button type="button" class="fs98-chip" data-fs99-amt="${x.amount}" data-fs99-kind="${esc(x.kind)}">${esc(portionLabel(t, x.kind, x.amount, unit))}</button>`).join('')}</div>
+    <form class="fs99-custom" data-fs99-custom novalidate>
+      <label class="fs99-custom__l"><span>${esc(t.customLabel(unit))}</span><input type="text" inputmode="decimal" autocomplete="off" maxlength="7" placeholder="${esc(t.customHint)}" data-fs99-input></label>
+      <button type="submit" class="fs98-btn fs98-btn--sm fs98-btn--primary">${esc(t.logIt)}</button>
+      <button type="button" class="fs98-btn fs98-btn--sm" data-fs99-cancel>${esc(t.cancel)}</button>
+    </form>
+    <p class="fs98-status fs99-err" role="alert" data-fs99-err></p></div>`;
+}
+/** Hooks up the amounts row inside `root`. `done(message)` redraws the card and says what happened. */
+function wirePicker(root, p, done) {
+  if (!root) return;
+  const t = tr(), unit = unitOf(p), name = p.name || p.barcode;
+  const fail = () => { const e = root.querySelector('[data-fs99-err]'); if (e) e.textContent = t.badAmount; };
+  const commit = (amount, kind) => {
+    const entry = addDailyLog(p, amount, kind);
+    if (!entry) return fail();
+    picker = null; done(t.loggedAmount(name, portionLabel(t, kind, entry.grams, unit)));
+  };
+  root.querySelectorAll('[data-fs99-amt]').forEach(b => b.addEventListener('click', () => commit(Number(b.dataset.fs99Amt), b.dataset.fs99Kind)));
+  const form = root.querySelector('[data-fs99-custom]');
+  form?.addEventListener('submit', ev => { ev.preventDefault(); const a = parseAmount(form.querySelector('[data-fs99-input]')?.value); if (a == null) return fail(); commit(a, 'custom'); });
+  root.querySelector('[data-fs99-cancel]')?.addEventListener('click', () => { picker = null; done(''); });
+  root.addEventListener('keydown', ev => { if (ev.key === 'Escape') { ev.stopPropagation(); picker = null; done(''); } });
+  if (picker?.focus) { picker.focus = false; root.querySelector('[data-fs99-amt], [data-fs99-input]')?.focus(); }
+}
 
-  let hub = view.querySelector('.fs98-hub');
-  if (!hub) { hub = document.createElement('section'); hub.className = 'fs98-hub'; view.prepend(hub); }
-  hub.setAttribute('aria-label', t.hubTitle);
-  const open = hub.querySelector('details.fs98-more')?.open ? ' open' : '';
+/** Today against the WHO limits: what was actually eaten (amount x the food's numbers), never an average per 100 g. */
+function intakeHtml(t, di, aboutOpen) {
+  const el = isEl(), cells = [
+    ['sugars', t.sugarsToday, LIMITS.sugars, 'g', v => t.ofLimit(dec(v), LIMITS.sugars, 'g')],
+    ['salt', t.saltToday, LIMITS.salt, 'g', v => t.ofLimit(dec(v), LIMITS.salt, 'g')],
+    ['kcal', t.kcalToday, LIMITS.kcal, 'kcal', v => t.ofKcal(v, LIMITS.kcal)],
+    ['sat', t.satToday, LIMITS.sat, 'g', v => t.ofLimit(dec(v), LIMITS.sat, 'g')]
+  ];
+  const rows = cells.map(([k, label, lim, , text]) => {
+    const v = di.totals[k], pr = progress(v, lim);
+    if (!pr) return `<div class="fs99-row"><span class="fs98-stat__k">${esc(label)}</span><span class="fs99-val">${'—'}</span></div>`;
+    const low = di.missing[k] > 0 ? `<small class="fs99-low">${esc(t.lowerBound(t.nut[k], di.missing[k]))}</small>` : '';
+    return `<div class="fs99-row fs99-row--${pr.state}"><span class="fs98-stat__k">${esc(label)}</span><span class="fs99-val">${esc(text(v))} · ${pr.pct} %</span>
+      <div class="fs98-meter fs99-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(pr.pct, 100)}" aria-valuetext="${esc(`${pr.pct} % · ${t.state[pr.state]}`)}"><i style="width:${pr.bar}%"></i></div>${low}</div>`;
+  }).join('');
+  return `<div class="fs98-sec fs99-intake"><p class="fs98-sec__label">${esc(t.intakeTitle)}</p>
+    ${di.counted ? `<div class="fs99-rows">${rows}</div>` : `<p class="fs98-sub">${esc(t.intakeNone)}</p>`}
+    ${di.uncounted ? `<p class="fs98-sub fs99-low">${esc(t.uncounted(di.uncounted))}</p>` : ''}
+    <details class="fs99-about"${aboutOpen ? ' open' : ''}><summary>${esc(t.aboutLimits)}</summary><ul class="fs99-notes"><li>${esc(t.whoSugars)}</li><li>${esc(t.whoSalt)}</li><li>${esc(t.whoSat)}</li><li>${esc(t.refKcal)}</li></ul></details></div>`;
+}
+function todayListHtml(t, rows) {
+  if (!rows.length) return '';
+  const items = rows.slice().reverse().slice(0, 8).map(x => {
+    const amt = num(x.grams) ? `${dec(x.grams)} ${x.basis === 'ml' ? 'ml' : 'g'}` : t.noAmount;
+    return `<li><span class="fs99-li__n">${esc(x.name)}</span><span class="fs99-li__a">${esc(amt)}</span><button type="button" class="fs99-x" data-fs99-rm="${esc(x.at)}" data-fs99-key="${esc(entryKey(x))}" data-fs99-name="${esc(x.name)}" aria-label="${esc(t.removeItem(x.name))}">✕</button></li>`;
+  }).join('');
+  return `<div class="fs98-sec"><p class="fs98-sec__label">${esc(t.todayList)}</p><ul class="fs99-list">${items}</ul></div>`;
+}
 
-  const chips = recentRows.length
-    ? recentRows.map(r => { const p = r.product, g = safeGrade(p), label = p.name || p.barcode;
-        return `<button type="button" class="fs98-chip fs98-chip--log" data-fs98-log="${esc(p.barcode)}" title="${esc(label)}">${g ? `<span class="fs98-grade fs98-grade--${esc(g)}">${esc(g)}</span>` : ''}<span class="fs98-chip__txt">+ ${esc(label)}</span></button>`; }).join('')
-    : `<span class="fs98-sub">${esc(t.quickLogEmpty)}</span>`;
+const money = (v, cur = 'EUR') => { try { return new Intl.NumberFormat(isEl() ? 'el-GR' : 'en-GB', { style: 'currency', currency: cur }).format(v); } catch { return `${v.toFixed(2)} ${cur}`; } };
+
+/* My Lens and the backup live in one folded block. 100: it is also what a first-time visitor on a new phone sees, so "Restore backup" is never hidden. */
+function moreHtml(t, el, open) {
+  const active = new Set(getLenses());
   const lensChips = LENSES.map(l => `<button type="button" class="fs98-chip" data-fs98-lens="${esc(l.id)}" aria-pressed="${active.has(l.id)}" title="${esc(el ? l.ruleEl : l.ruleEn)}">${esc(el ? l.el : l.en)}</button>`).join('');
-  const dash = '—';
-
-  paint(hub, `
-    <div class="fs98-head">
-      <div><p class="fs98-eyebrow">${esc(t.hubEye)}</p><h2 class="fs98-title">${esc(t.hubTitle)}</h2><p class="fs98-sub">${esc(t.hubSub)}</p></div>
-      <span class="fs98-badge fs98-badge--good">${esc(t.streak)}: ${esc(t.streakDays(streak))}</span>
-    </div>
-    <div class="fs98-stats">
-      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.todayItems)}</span><span class="fs98-stat__v">${st.count}</span><span class="fs98-stat__s">${esc(td)}</span></div>
-      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.sugarAvg)}</span><span class="fs98-stat__v">${st.sugars == null ? dash : esc(t.per100(st.sugars))}</span><span class="fs98-stat__s">${st.sugars == null ? '' : esc(t.tsp(r1(st.sugars / 4)))}</span></div>
-      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.saltAvg)}</span><span class="fs98-stat__v">${st.salt == null ? dash : esc(t.per100(st.salt))}</span><span class="fs98-stat__s">${esc(t.whoSalt)}</span></div>
-      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.pantry)}</span><span class="fs98-stat__v">${savedRows.length}</span><span class="fs98-stat__s">${esc(t.pantrySub(abCount))}</span></div>
-    </div>
-    <div class="fs98-sec"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips">${chips}</div><p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
-    <details class="fs98-more"${open}><summary>${esc(t.more)}</summary>
+  return `<details class="fs98-more"${open}><summary>${esc(t.more)}</summary>
       <div class="fs98-sec"><p class="fs98-sec__label">${esc(t.lensLabel)}</p><div class="fs98-chips">${lensChips}</div></div>
       <div class="fs98-foot"><span>${esc(t.allergyNote)}</span>
         <div class="fs98-chips">
@@ -214,36 +402,147 @@ function renderHub(view) {
           <input type="file" accept="application/json,.json" hidden id="fs98-import-input">
         </div>
       </div>
-    </details>`, h => {
-    const say = text => { const s = h.querySelector('#fs98-hub-status'); if (s) s.textContent = text; };
-    h.querySelectorAll('[data-fs98-lens]').forEach(b => b.addEventListener('click', () => { toggleLens(b.dataset.fs98Lens); renderHub(view); }));
-    h.querySelectorAll('[data-fs98-log]').forEach(b => b.addEventListener('click', () => {
-      const rec = records.get(b.dataset.fs98Log);
-      if (rec?.product && addDailyLog(rec.product)) { renderHub(view); const s = view.querySelector('#fs98-hub-status'); if (s) s.textContent = t.loggedMsg(rec.product.name || rec.product.barcode); }
-    }));
-    h.querySelector('[data-fs98-export]')?.addEventListener('click', () => { exportBackup(); say(t.backupDone); });
-    const fileIn = h.querySelector('#fs98-import-input');
-    h.querySelector('[data-fs98-import]')?.addEventListener('click', () => fileIn?.click());
-    fileIn?.addEventListener('change', async () => {
-      const file = fileIn.files?.[0]; if (!file) return;
-      try { const n = importBackup(await file.text()); say(t.restoreDone(n)); setTimeout(() => location.reload(), 900); } catch { say(t.restoreBad); }
-    });
+    </details>`;
+}
+function wireMore(h, view, t) {
+  const say = text => { const s = h.querySelector('#fs98-hub-status'); if (s) s.textContent = text; };
+  h.querySelectorAll('[data-fs98-lens]').forEach(b => b.addEventListener('click', () => { toggleLens(b.dataset.fs98Lens); renderHub(view); }));
+  h.querySelector('[data-fs98-export]')?.addEventListener('click', () => { exportBackup(); say(t.backupDone); });
+  const fileIn = h.querySelector('#fs98-import-input');
+  h.querySelector('[data-fs98-import]')?.addEventListener('click', () => fileIn?.click());
+  fileIn?.addEventListener('change', async () => {
+    const file = fileIn.files?.[0]; if (!file) return;
+    try { const n = importBackup(await file.text()); say(t.restoreDone(n)); setTimeout(() => location.reload(), 900); } catch { say(t.restoreBad); }
   });
 }
 
+/** The last 7 days: one bar per day (sugars against the WHO limit), days logged, averages over the days that have amounts, days over a limit.
+ *  A heavy day is a taller bar, never a failure. `best`: the swap on the list that gains the most grade steps. */
+function weekHtml(t, log, best) {
+  const wp = weekPulse(log, todayKey());
+  if (!wp.daysLogged) return '';
+  const loc = isEl() ? 'el' : 'en', narrow = new Intl.DateTimeFormat(loc, { weekday: 'narrow' }), long = new Intl.DateTimeFormat(loc, { weekday: 'long', day: 'numeric', month: 'short' });
+  const days = wp.rows.map(r => {
+    const d = new Date(`${r.day}T12:00:00`), pr = progress(r.sugars, LIMITS.sugars);
+    const label = pr ? `${long.format(d)}: ${t.nut.sugars} ${dec(r.sugars)} g · ${pr.pct} %` : r.entries ? `${long.format(d)}: ${t.noAmount}` : long.format(d);
+    return `<li class="fs100-day${pr ? ` fs100-day--${pr.state}` : r.entries ? ' fs100-day--na' : ''}" role="img" aria-label="${esc(label)}" title="${esc(label)}"><i style="height:${pr ? Math.max(8, pr.bar) : 0}%"></i><span aria-hidden="true">${esc(narrow.format(d))}</span></li>`;
+  }).join('');
+  const over = wp.rows.filter(r => (r.sugars != null && r.sugars > LIMITS.sugars) || (r.salt != null && r.salt > LIMITS.salt)).length;
+  const bits = [t.weekLogged(wp.daysLogged)];
+  if (wp.avgSugars != null) bits.push(t.weekAvgSugar(dec(wp.avgSugars)));
+  if (wp.avgSalt != null) bits.push(t.weekAvgSalt(dec(wp.avgSalt)));
+  if (over) bits.push(t.weekOver(over));
+  return `<div class="fs98-sec fs100-week"><p class="fs98-sec__label">${esc(t.weekTitle)}</p>
+    <ul class="fs100-days">${days}</ul>
+    <p class="fs98-sub">${esc(bits.join(' · '))}</p>
+    ${best?.forGrade ? `<p class="fs98-sub fs100-win">${esc(t.weekBest(best.name, best.forGrade, best.grade))}</p>` : ''}
+    <p class="fs99-low">${esc(t.weekOnly)}</p></div>`;
+}
+
+/** The swap list: healthier products to buy next time, each with the product it replaces and its lowest current recorded price (nothing estimated). */
+function listHtml(t, list, sum) {
+  if (!list.length) return '';
+  const rows = list.slice(0, 8).map(it => {
+    const e = priceBook.get(it.gtin), line = e?.line;
+    const unit = line?.unitPrice > 0 && line.unitBasis ? ` · ${money(line.unitPrice, line.currency)}/${line.unitBasis}` : '';
+    const price = line ? ` · ${money(line.price, line.currency)}${line.retailer ? ` · ${line.retailer}` : ''}${line.older ? ` · ${t.listOlder}` : ''}${unit}` : e && !e.failed ? ` · ${t.listNoPrice}` : '';
+    const note = ((it.forName ? t.listInstead(it.forName, it.forGrade) : '') + price).replace(/^ · /, '');
+    return `<li class="fs100-item"><span class="fs98-grade fs98-grade--${esc(it.grade || 'U')}">${esc(it.grade || '—')}</span><span class="fs100-item__t"><a class="fs99-li__n" href="#/p/${esc(it.code)}">${esc(it.name)}</a><small>${esc(note)}</small></span><button type="button" class="fs99-x" data-fs100-rm="${esc(it.gtin)}" data-fs100-name="${esc(it.name)}" aria-label="${esc(t.listRemove(it.name))}">✕</button></li>`;
+  }).join('');
+  const lines = [t.listCount(sum.count)];
+  if (sum.graded) lines.push(t.listGain(sum.improved, sum.graded, sum.gain));
+  if (sum.total != null && sum.current) lines.push(t.listTotal(money(sum.total, sum.currency), sum.current, sum.count));
+  if (sum.cheaper) lines.push(t.listCheaper(sum.cheaper));
+  if (sum.dearer) lines.push(t.listDearer(sum.dearer));
+  return `<div class="fs98-sec fs100-list"><p class="fs98-sec__label">${esc(t.listTitle)}</p><p class="fs98-sub">${esc(lines.join(' · '))}</p>
+    <ul class="fs99-list fs100-swaps">${rows}</ul>${list.length > 8 ? `<p class="fs99-low">${esc(t.listMore(list.length - 8))}</p>` : ''}<p class="fs99-low">${esc(t.listSub)}</p></div>`;
+}
+
+function renderHub(view) {
+  const records = readAllRecords(), log = getDailyLog(), list = getList(), t = tr(), el = isEl();
+  const welcome = !records.size && !log.length && !list.length;
+  let hub = view.querySelector('.fs98-hub');
+  if (!hub) { hub = document.createElement('section'); hub.className = 'fs98-hub'; view.prepend(hub); }
+  hub.setAttribute('aria-label', t.hubTitle);
+  hub.classList.toggle('fs100-welcome', welcome);
+  const open = hub.querySelector('details.fs98-more')?.open ? ' open' : '';
+
+  // 100: a new phone or cleared storage: a compact welcome that still offers My Lens and Restore backup (before, the whole hub was removed and both were unreachable)
+  if (welcome) {
+    paint(hub, `<div class="fs98-head"><div><p class="fs98-eyebrow">${esc(t.hubEye)}</p><h2 class="fs98-title">${esc(t.hubTitle)}</h2><p class="fs98-sub">${esc(t.welcomeSub)}</p></div></div>
+      ${moreHtml(t, el, open)}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p>`, h => wireMore(h, view, t));
+    return;
+  }
+
+  const savedRows = [...records.values()].filter(r => r.saved);
+  const recentRows = [...records.values()].sort((a, b) => b.at - a.at).slice(0, 6);
+  const abCount = savedRows.filter(r => ['A', 'B'].includes(safeGrade(r.product))).length;
+  const td = todayKey(), todayRows = log.filter(x => x.day === td), di = dayIntake(todayRows);
+  const streak = computeStreak(log.map(x => x.day), td), aboutOpen = !!hub.querySelector('details.fs99-about')?.open;
+  const priceMap = new Map(); for (const [k, v] of priceBook) if (v.line) priceMap.set(k, v.line);
+  if (list.length) wantPrices(list);
+  const sum = listSummary(list, priceMap);
+
+  const chips = recentRows.length
+    ? recentRows.map(r => { const p = r.product, g = safeGrade(p), label = p.name || p.barcode;
+        return `<button type="button" class="fs98-chip fs98-chip--log" data-fs98-log="${esc(r.key)}" title="${esc(label)}">${g ? `<span class="fs98-grade fs98-grade--${esc(g)}">${esc(g)}</span>` : ''}<span class="fs98-chip__txt">+ ${esc(label)}</span></button>`; }).join('')
+    : `<span class="fs98-sub">${esc(t.quickLogEmpty)}</span>`;
+  const pickRec = picker?.where === 'hub' ? records.get(picker.gtin) : null;
+  if (picker?.where === 'hub' && !pickRec) picker = null;
+
+  paint(hub, `
+    <div class="fs98-head">
+      <div><p class="fs98-eyebrow">${esc(t.hubEye)}</p><h2 class="fs98-title">${esc(t.hubTitle)}</h2><p class="fs98-sub">${esc(t.hubSub)}</p></div>
+      <span class="fs98-badge fs98-badge--good">${esc(t.streak)}: ${esc(t.streakDays(streak))}</span>
+    </div>
+    <div class="fs98-stats">
+      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.todayItems)}</span><span class="fs98-stat__v">${di.entries}</span><span class="fs98-stat__s">${esc(td)}</span></div>
+      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.pantry)}</span><span class="fs98-stat__v">${savedRows.length}</span><span class="fs98-stat__s">${esc(t.pantrySub(abCount))}</span></div>
+    </div>
+    <div class="fs98-sec"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips">${chips}</div>${pickRec ? pickerHtml(pickRec.product) : ''}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
+    ${intakeHtml(t, di, aboutOpen)}
+    ${todayListHtml(t, todayRows)}
+    ${weekHtml(t, log, sum.best)}
+    ${listHtml(t, list, sum)}
+    ${moreHtml(t, el, open)}`, h => {
+    wireMore(h, view, t);
+    const after = msg => { renderHub(view); const s = view.querySelector('#fs98-hub-status'); if (s) s.textContent = msg; };
+    h.querySelectorAll('[data-fs98-log]').forEach(b => b.addEventListener('click', () => {
+      const key = b.dataset.fs98Log;
+      if (!records.get(key)?.product) return;
+      picker = picker?.where === 'hub' && picker.gtin === key ? null : { gtin: key, where: 'hub', focus: true };   // a second tap on the same food closes the amounts
+      renderHub(view);
+    }));
+    wirePicker(h.querySelector('.fs99-pick'), pickRec?.product, after);
+    h.querySelectorAll('[data-fs99-rm]').forEach(b => b.addEventListener('click', () => { if (removeDailyLog(Number(b.dataset.fs99Rm), b.dataset.fs99Key)) after(t.removedMsg(b.dataset.fs99Name)); }));
+    h.querySelectorAll('[data-fs100-rm]').forEach(b => b.addEventListener('click', () => { writeJSON(LIST_KEY, listRemove(getList(), b.dataset.fs100Rm)); after(t.listRemovedMsg(b.dataset.fs100Name)); }));
+  });
+}
+
+let trustRetry = 0;
 function renderProductTrust(view, code) {
   const anchor = view.querySelector('.report__main') || view.querySelector('.report');
   if (!anchor) return;
-  const rec = readAllRecords().get(code);
-  if (!rec?.product) return;
+  // 100: a shared link has no history row yet: fall back to the app's own snapshot of the record, and look again for a few seconds while the app writes it
+  const rec = readAllRecords().get(recordKey(code)) || snapshotRecord(code);
+  if (!rec?.product) {
+    view.querySelectorAll(`.fs98-trust:not([data-code="${code}"])`).forEach(n => n.remove());
+    if (trustRetry++ < 10) setTimeout(schedule, 500);
+    return;
+  }
+  trustRetry = 0;
   const p = rec.product, t = tr(), el = isEl(), unit = p.basis === 'ml' ? 'ml' : 'g';
   let dq = null; try { dq = dataQuality(p); } catch {}
   const aud = auditProduct(p, dq), pct = Math.round((aud.have / aud.total) * 100);
   const badge = aud.tier === 'high' ? 'good' : aud.tier === 'med' ? 'warn' : 'bad';
   const label = aud.tier === 'high' ? t.confHigh : aud.tier === 'med' ? t.confMed : t.confLow;
-  const desc = aud.tier === 'high' ? t.confHighDesc : aud.tier === 'med' ? t.confMedDesc : t.confLowDesc;
+  const desc = aud.tier === 'high' ? (p.labelPhoto ? t.confHighLabel : t.confHighDesc) : aud.tier === 'med' ? t.confMedDesc : t.confLowDesc;
+  // where the grade comes from, in one word: published, calculated from the record, estimated from similar products, or your own label photo
+  let src = 'none';
+  try { const a = assessGrade(p), qk = globalThis.__fs85quick?.get(code); src = provenance({ status: a?.status, grade: a?.grade, quick: qk && qk.state !== 'loading' ? qk.kind : null, label: !!p.labelGrade }); } catch {}
 
   const checks = [];
+  if (p.labelPhoto) checks.push({ tone: 'good', text: t.labelNote });
   aud.reasons.forEach(text => checks.push({ tone: 'bad', text }));                       // the app's own (translated) reasons
   const e = aud.energy;
   if (e?.skip) checks.push({ tone: 'soft', text: e.skip === 'alcohol' ? t.skipAlcohol : t.skipPolyols });
@@ -257,8 +556,9 @@ function renderProductTrust(view, code) {
     const v = lensVerdict(id, p);
     return `<span class="fs98-badge ${v === true ? 'fs98-badge--good' : v === false ? 'fs98-badge--warn' : 'fs98-badge--soft'}" title="${esc(el ? def.ruleEl : def.ruleEn)}">${v === true ? '✓' : v === false ? '×' : '?'} ${esc(el ? def.el : def.en)}</span>`;
   }).join('');
-  const pinned = getCompareList().some(x => String(x.barcode) === code);
-  const logged = getDailyLog().some(x => x.day === todayKey() && String(x.barcode) === code);
+  const pinned = getCompareList().some(x => sameFood(x.barcode, code));
+  const logged = getDailyLog().some(x => x.day === todayKey() && sameFood(x.barcode, code));
+  const openPick = picker?.where === 'product' && picker.gtin === recordKey(code);
 
   let card = view.querySelector(`.fs98-trust[data-code="${code}"]`);
   if (!card) {
@@ -272,17 +572,22 @@ function renderProductTrust(view, code) {
       <div><p class="fs98-eyebrow">${esc(t.trustEye)}</p><p class="fs98-sub">${esc(desc)}</p></div>
       <span class="fs98-badge fs98-badge--${badge}">${esc(label)}</span>
     </div>
+    <p class="fs100-srcline"><span class="fs98-stat__k">${esc(t.srcLabel)}</span><span class="fs98-badge fs100-src fs100-src--${esc(src)}" title="${esc(t.srcTip[src])}">${esc(t.src[src])}</span></p>
     <div><span class="fs98-stat__k">${esc(t.compLabel(aud.have, aud.total))}${aud.missing.length ? ' · ' + esc(t.missingList(aud.missing.map(k => t.fields[k] || k))) : ''}</span><div class="fs98-meter" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>
     <ul class="fs98-checks">${checks.map(c => `<li><span class="fs98-dot ${c.tone === 'warn' ? 'fs98-dot--warn' : c.tone === 'bad' ? 'fs98-dot--bad' : c.tone === 'soft' ? 'fs98-dot--soft' : ''}"></span><span>${esc(c.text)}</span></li>`).join('')}</ul>
     ${lensBadges ? `<div class="fs98-sec"><div class="fs98-chips">${lensBadges}</div></div>` : ''}
     <div class="fs98-foot">
       <div class="fs98-chips">
-        <button type="button" class="fs98-btn fs98-btn--sm" data-fs98-had aria-pressed="${logged}">${esc(logged ? t.hadTodayDone : t.hadToday)}</button>
+        <button type="button" class="fs98-btn fs98-btn--sm" data-fs98-had aria-pressed="${logged}" aria-expanded="${openPick}">${esc(logged ? t.hadTodayDone : t.hadToday)}</button>
         <button type="button" class="fs98-btn fs98-btn--sm" data-fs98-pin aria-pressed="${pinned}">${esc(pinned ? t.pinnedCompare : t.pinCompare)}</button>
       </div>
       <span>${esc(t.allergyNote)}</span>
-    </div>`, c => {
-    c.querySelector('[data-fs98-had]')?.addEventListener('click', () => { addDailyLog(p); renderProductTrust(view, code); });
+    </div>
+    ${openPick ? pickerHtml(p) : ''}
+    <p class="fs98-status" id="fs99-prod-status" role="status" aria-live="polite"></p>`, c => {
+    const after = msg => { renderProductTrust(view, code); const s = view.querySelector('#fs99-prod-status'); if (s) s.textContent = msg; };
+    c.querySelector('[data-fs98-had]')?.addEventListener('click', () => { picker = openPick ? null : { gtin: recordKey(code), where: 'product', focus: true }; renderProductTrust(view, code); });
+    wirePicker(c.querySelector('.fs99-pick'), p, after);
     c.querySelector('[data-fs98-pin]')?.addEventListener('click', () => { toggleCompare(p); renderProductTrust(view, code); renderTray(); });
   });
 }
@@ -330,18 +635,20 @@ function openCompareModal() {
   modal.setAttribute('aria-label', t.cmpTitle);
   const best = (k, f) => { const v = list.map(x => x[k]).filter(n => n != null); return v.length > 1 ? f(...v) : null; };
   const minSugar = best('sugars', Math.min), minSalt = best('salt', Math.min), minKcal = best('kcal', Math.min), maxProt = best('protein', Math.max), maxFiber = best('fiber', Math.max);
-  const win = (v, b) => (b != null && v === b ? 'fs98-win' : '');
+  const mixed = new Set(list.map(x => x.basis)).size > 1;   // a food (per 100 g) beside a drink (per 100 ml): no column is "best"
+  const win = (v, b) => (!mixed && b != null && v === b ? 'fs98-win' : '');
   const row = (head, cell) => `<tr><th>${esc(head)}</th>${list.map(x => `<td class="${cell(x)[0]}">${cell(x)[1]}</td>`).join('')}</tr>`;
 
   modal.innerHTML = `
     <div class="fs98-modal__box">
       <div class="fs98-head"><div><h2 class="fs98-title">${esc(t.cmpTitle)}</h2><p class="fs98-sub">${esc(t.cmpSub)}</p></div><button type="button" class="fs98-btn fs98-btn--sm" data-fs98-close-cmp>${esc(t.cmpClose)}</button></div>
+      ${mixed ? `<p class="fs98-sub fs100-mixed" role="note">${esc(t.mixedBasis)}</p>` : ''}
       <div class="fs98-table-wrap"><table class="fs98-table">
-        <thead><tr><th>${esc(t.colMetric)}</th>${list.map(x => `<th><a href="#/p/${esc(x.barcode)}">${esc(x.name)}</a>${x.brand ? `<br><small>${esc(x.brand)}</small>` : ''}<br><button type="button" class="fs98-btn fs98-btn--sm" data-fs98-rm="${esc(x.barcode)}">${esc(t.cmpRemove)}</button></th>`).join('')}</tr></thead>
+        <thead><tr><th>${esc(t.colMetric)}</th>${list.map(x => `<th><a href="#/p/${esc(x.barcode)}">${esc(x.name)}</a>${x.brand ? `<br><small>${esc(x.brand)}</small>` : ''}<br><small class="fs100-basis">${esc(t.perBasis[x.basis === 'ml' ? 'ml' : 'g'])}</small><br><button type="button" class="fs98-btn fs98-btn--sm" data-fs98-rm="${esc(x.barcode)}">${esc(t.cmpRemove)}</button></th>`).join('')}</tr></thead>
         <tbody>
           ${row(t.mGrade, x => ['', `<span class="fs98-grade fs98-grade--${esc(x.grade || 'U')}">${esc(x.grade || '—')}</span>`])}
           ${row(t.mNova, x => ['', x.nova != null ? `NOVA ${esc(x.nova)}` : '—'])}
-          ${row(t.mKcal, x => [win(x.kcal, minKcal), x.kcal != null ? Math.round(x.kcal) : '—'])}
+          ${row(t.mKcal, x => [win(x.kcal, minKcal), x.kcal != null ? Math.round(x.kcal).toLocaleString(el ? 'el' : 'en') : '—'])}
           ${row(t.mSugar, x => [win(x.sugars, minSugar), x.sugars != null ? `${dec(r1(x.sugars))} (${dec(r1(x.sugars / 4))})` : '—'])}
           ${row(t.mProt, x => [win(x.protein, maxProt), x.protein != null ? dec(r1(x.protein)) : '—'])}
           ${row(t.mFiber, x => [win(x.fiber, maxFiber), x.fiber != null ? dec(r1(x.fiber)) : '—'])}
@@ -363,7 +670,7 @@ function openCompareModal() {
 function exportBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BACKUP_KEY.test(k)) data[k] = localStorage.getItem(k); }
-  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '98.1.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '100.0.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `foodscan-backup-${todayKey()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }
@@ -374,12 +681,48 @@ function importBackup(text) {
 }
 
 /* Which page, which cards. The home hub needs the language, the saved/history/log data and the lens set: when none of them changed, nothing is redone. */
-let lastKey = '';
+let lastKey = '', lastWhere = '';
+
+/* ---- 100: "Swap list" buttons on the product page's healthier-swap rows (prices/swaps-ui-v88.js draws the rows; this adds one button under each) ---------------- */
+function toggleSwap(b) {
+  const a = b.closest('li')?.querySelector('a.fs88__item'), gk = gtin14(b.dataset.code), page = routeInfo().code;
+  if (!a || !gk) return;
+  const cur = getList();
+  if (cur.some(x => x.gtin === gk)) writeJSON(LIST_KEY, listRemove(cur, gk));
+  else {
+    const rec = readAllRecords().get(recordKey(page)) || snapshotRecord(page);
+    writeJSON(LIST_KEY, listAdd(cur, {
+      code: b.dataset.code, name: a.querySelector('.fs88__name')?.textContent || '', brand: a.querySelector('.fs88__brand')?.textContent || '', grade: a.querySelector('.fs88__grade b')?.textContent || '',
+      forCode: page, forName: rec?.product?.name || '', forGrade: rec ? safeGrade(rec.product) : null
+    }, Date.now()));
+  }
+  ensureSwapButtons(document.getElementById('view'), page);
+}
+function ensureSwapButtons(view, code) {
+  if (!view) return;
+  const t = tr(), list = getList();
+  for (const a of view.querySelectorAll('a.fs88__item[href*="#/p/"]')) {
+    const li = a.closest('li'), to = (a.getAttribute('href').match(/#\/p\/(\d{8,14})/) || [])[1], gk = gtin14(to);
+    if (!li || !gk || gk === gtin14(code)) continue;
+    const on = list.some(x => x.gtin === gk);
+    let b = li.querySelector(':scope > .fs100-add');
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'fs98-btn fs98-btn--sm fs100-add'; li.append(b); b.addEventListener('click', () => toggleSwap(b)); }
+    b.dataset.code = to;
+    const text = on ? t.listOn : t.listAdd;
+    if (b.textContent !== text) b.textContent = text;
+    b.setAttribute('aria-pressed', String(on));
+  }
+}
+
 function sync() {
   const view = document.getElementById('view');
   if (!view) return;
-  const r = routeInfo();
-  const key = [r.page, r.code, lang(), readRaw('fs13:saved'), readRaw('fs13:history'), readRaw(DAILY_KEY), readRaw(LENS_KEY), readRaw(COMPARE_KEY), todayKey()].join('\u0001');
+  const r = routeInfo(), where = `${r.page}:${r.code}`;
+  if (where !== lastWhere) { lastWhere = where; picker = null; trustRetry = 0; closeModal(); }   // the amounts row and the compare dialog belong to one page: leaving it closes them
+  if (r.page === 'product') ensureSwapButtons(view, r.code);
+  // 100: signatures (length, first and last 48 characters) of the big stored lists, not the lists themselves: no megabyte string is built on each page change
+  const qk = r.page === 'product' ? globalThis.__fs85quick?.get(r.code) : null;
+  const key = [r.page, r.code, lang(), readSig(PORTION_KEY), recordsKey(labelKeys()), readSig(DAILY_KEY), readSig(LENS_KEY), readSig(COMPARE_KEY), readSig(LIST_KEY), priceVersion, qk ? `${qk.kind}:${qk.state}` : '', todayKey()].join('\u0001');
   const present = r.page === 'home' ? !!view.querySelector('.fs98-hub') : r.page === 'product' ? !!view.querySelector('.fs98-trust') : true;
   if (key === lastKey && present) return;
   lastKey = key;
@@ -391,7 +734,7 @@ function sync() {
 
 let timer = 0;
 function schedule() { if (!timer) timer = setTimeout(() => { timer = 0; sync(); }, 90); }
-const ours = n => { const e = n?.nodeType === 1 ? n : n?.parentElement; return !!e?.closest?.('.fs98-hub, .fs98-trust, .fs98-tray, .fs98-modal'); };
+const ours = n => { const e = n?.nodeType === 1 ? n : n?.parentElement; return !!e?.closest?.('.fs98-hub, .fs98-trust, .fs98-tray, .fs98-modal, .fs100-add'); };
 function start() {
   const host = document.getElementById('app');
   if (host) new MutationObserver(muts => { if (muts.some(m => !ours(m.target))) schedule(); }).observe(host, { childList: true, subtree: true });
