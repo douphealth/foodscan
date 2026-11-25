@@ -116,18 +116,25 @@ function parseNutriscore(raw) {
 function per100(n, suffix) {
   const out = Object.fromEntries(NUTRIENTS.map(([key, , , field]) => [key, nutrientNumber(n[`${field}_${suffix}`])]));
   const kj = nutrientNumber(n[`energy-kj_${suffix}`]) ?? nutrientNumber(n[`energy_${suffix}`]);
-  let converted = false;
+  let converted = false, reconciled = false;
   if (out.kcal === null && kj !== null) {
     out.kcal = kj / 4.184;
     converted = true;
   }
   out.kj = kj;
+  // 101: a kcal field that contradicts BOTH the kJ field and the macronutrients is a data-entry error (e.g. 2092 kcal for
+  // biscuits whose label says 2013 kJ). The grade uses kJ; kcal is then shown converted from kJ and marked as converted.
+  if (out.kcal !== null && kj !== null && kj > 0 && Math.abs(out.kcal * 4.184 - kj) > Math.max(60, kj * 0.08)) {
+    const lowerKcal = 9 * (out.fat ?? 0) + 4 * (out.carbohydrates ?? 0) + 4 * (out.protein ?? 0);
+    const fits = (kcal) => lowerKcal > 0 && kcal + Math.max(20, lowerKcal * 0.18) >= lowerKcal && kcal <= lowerKcal * 1.45 + 60;
+    if (fits(kj / 4.184) && !fits(out.kcal)) { out.kcal = kj / 4.184; converted = true; reconciled = true; }
+  }
   out.fvl = nutrientNumber(n[`fruits-vegetables-legumes-estimate-from-ingredients_${suffix}`]) ?? nutrientNumber(n[`fruits-vegetables-legumes_${suffix}`]);
   out.sodium = nutrientNumber(n[`sodium_${suffix}`]);
   const derived = out.sodium === null && out.salt !== null;
   out.sodium = out.sodium !== null ? out.sodium * 1e3 : derived ? out.salt * 400 : null;
   if (out.salt === null && out.sodium !== null && !derived) out.salt = out.sodium / 400;
-  return { values: out, converted, sodiumDerived: derived };
+  return { values: out, converted, reconciled, sodiumDerived: derived };
 }
 function parseProduct(payload, requestedCode, now = Date.now()) {
   if (!payload || typeof payload !== "object" || payload.status === 0 || payload.status === "failure" || payload.result?.id === "product_not_found") return null;
@@ -186,7 +193,8 @@ function parseProduct(payload, requestedCode, now = Date.now()) {
     additivesCount: nutrientNumber(p.additives_n),
     additives: tags(p.additives_tags, 40).map((t2) => t2.replace(/^[a-z]{2}:/, "")),
     addedSugars: nutrientNumber(n["added-sugars_100g"]),
-    qualityWarnings: tags(p.data_quality_errors_tags).filter((t2) => !/^foodscan:/i.test(t2)),
+    qualityWarnings: tags(p.data_quality_errors_tags).filter((t2) => !/^foodscan:/i.test(t2) && !(total.reconciled && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)|energy-value-in-kcal-does-not-match-value-computed/i.test(t2))),
+    energyReconciled: total.reconciled,
     pnns: text(p.pnns_groups_2, 60),
     basis: basis.basis,
     basisSource: basis.source,

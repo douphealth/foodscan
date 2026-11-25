@@ -2,10 +2,10 @@
  * comes from and the shopper's own label numbers), My Lens, a 3-product compare tray and a local backup.
  * Local-first: everything stays in this browser's localStorage, no tracking, no network. English and Greek.
  * Logic (and what was checked) lives in daily-v98-core.mjs; this file only draws it.
- * Uses the same engine module as the app (domain-v8400.mjs), so grades match and the app's own translated messages are reused. */
-import { assessGrade, dataQuality } from './assets/domain-v8400.mjs';
+ * Uses the same engine module as the app (domain-v101.mjs), so grades match and the app's own translated messages are reused. */
+import { assessGrade, dataQuality } from './assets/domain-v101.mjs';
 import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, parseBackup, BACKUP_KEY, gtin14, presetsFor, logEntry, dayIntake, LIMITS, progress, parseAmount, rememberPortion, AMOUNT_MIN, AMOUNT_MAX, labelCode, mergeLabel, provenance, weekPulse, listAdd, listRemove, gradeGain, listSummary, gtinCheckOk, weekReady } from './daily-v98-core.mjs';
-import { detectMarket } from './prices/market-v83.mjs';
+import { detectMarket, setMarket, marketName, marketFlag, marketsSorted, dismissSuggestion } from './prices/market-v83.mjs';
 
 const LENS_KEY = 'foodscan:lens:v98';
 const DAILY_KEY = 'foodscan:daily:v98';
@@ -92,7 +92,13 @@ const TX = {
     listInstead: (n, g) => `instead of ${n}${g ? ` (${g})` : ''}`, listMore: n => `and ${n} more`,
     listCount: n => `${n} swap${n === 1 ? '' : 's'}`, listGain: (i, n, g) => `${i} of ${n} graded swaps improve the grade (+${g} steps in total)`,
     listTotal: (v, k, n) => `${v} at current recorded prices for ${k} of ${n}`, listCheaper: n => `cheaper per kg or litre than what you scanned: ${n}`, listDearer: n => `dearer per kg or litre: ${n}`,
-    listNoPrice: 'no recorded price', listOlder: 'older price'
+    listNoPrice: 'no recorded price', listOlder: 'older price',
+    locLabel: 'Prices and portions for', locChange: 'Change country', locAuto: 'Automatic (follow my location)', locPick: 'Choose a country…',
+    locSrc: { choice: 'your choice', profile: 'your choice', network: 'from your connection', device: "from your phone's clock", language: 'a guess from your language' },
+    locUnknownTitle: 'Where are you shopping?',
+    locUnknownSub: 'FoodScan could not tell which country you are in, so it shows no prices. Choose your country for local, dated prices and the drink sizes people use there.',
+    locSuggest: (to, from) => `Your phone's clock says you are in ${to}, but your connection says ${from}. Which should FoodScan use?`,
+    locUse: n => `Use ${n}`, locKeep: n => `Keep ${n}`, locSaved: n => `Now showing prices and portions for ${n}.`
   },
   el: {
     hubEye: 'Καθημερινό τσεκάρισμα · Ιδιωτικό στη συσκευή σου',
@@ -172,7 +178,13 @@ const TX = {
     listInstead: (n, g) => `αντί για ${n}${g ? ` (${g})` : ''}`, listMore: n => `και ${n} ακόμη`,
     listCount: n => `${n} ${n === 1 ? 'αλλαγή' : 'αλλαγές'}`, listGain: (i, n, g) => `${i} από ${n} αλλαγές με βαθμό βελτιώνουν τον βαθμό (+${g} βαθμίδες συνολικά)`,
     listTotal: (v, k, n) => `${v} με τρέχουσες καταγεγραμμένες τιμές για ${k} από ${n}`, listCheaper: n => `φθηνότερες ανά kg ή λίτρο από όσα σκάναρες: ${n}`, listDearer: n => `ακριβότερες ανά kg ή λίτρο: ${n}`,
-    listNoPrice: 'χωρίς καταγεγραμμένη τιμή', listOlder: 'παλαιότερη τιμή'
+    listNoPrice: 'χωρίς καταγεγραμμένη τιμή', listOlder: 'παλαιότερη τιμή',
+    locLabel: 'Τιμές και μερίδες για', locChange: 'Αλλαγή χώρας', locAuto: 'Αυτόματα (ακολούθησε την τοποθεσία μου)', locPick: 'Διάλεξε χώρα…',
+    locSrc: { choice: 'δική σου επιλογή', profile: 'δική σου επιλογή', network: 'από τη σύνδεσή σου', device: 'από το ρολόι του κινητού σου', language: 'εκτίμηση από τη γλώσσα σου' },
+    locUnknownTitle: 'Πού ψωνίζεις;',
+    locUnknownSub: 'Το FoodScan δεν μπόρεσε να καταλάβει σε ποια χώρα βρίσκεσαι και γι’ αυτό δεν δείχνει τιμές. Διάλεξε τη χώρα σου για τοπικές, χρονολογημένες τιμές και για τα μεγέθη ποτών που χρησιμοποιούνται εκεί.',
+    locSuggest: (to, from) => `Το ρολόι του κινητού σου δείχνει ότι βρίσκεσαι σε: ${to}, ενώ η σύνδεσή σου δείχνει: ${from}. Ποια να χρησιμοποιήσει το FoodScan;`,
+    locUse: n => `Χρήση: ${n}`, locKeep: n => `Να μείνει: ${n}`, locSaved: n => `Εμφανίζονται τώρα τιμές και μερίδες για: ${n}.`
   }
 };
 
@@ -331,7 +343,7 @@ const portionLabel = (t, kind, amount, unit) => (t.portion[kind] || t.portion.cu
 function pickerHtml(p) {
   const t = tr(), unit = unitOf(p), key = gtin14(p.barcode) || String(p.barcode), last = getPortions()[key], name = p.name || p.barcode;
   const lastOk = last && num(last.amount) != null && last.amount >= AMOUNT_MIN && last.amount <= AMOUNT_MAX;
-  const presets = presetsFor(p).filter(x => !(lastOk && x.amount === last.amount));
+  const presets = presetsFor(p, marketNow().code).filter(x => !(lastOk && x.amount === last.amount));
   return `<div class="fs99-pick" role="group" aria-label="${esc(t.pickTitle(name))}">
     <p class="fs98-sec__label">${esc(t.pickTitle(name))}</p>
     <div class="fs98-chips">${lastOk ? `<button type="button" class="fs98-btn fs98-btn--sm fs98-btn--primary" data-fs99-amt="${last.amount}" data-fs99-kind="${esc(last.kind)}">${esc(t.sameAsLast(portionLabel(t, last.kind, last.amount, unit)))}</button>` : ''}${presets.map(x => `<button type="button" class="fs98-chip" data-fs99-amt="${x.amount}" data-fs99-kind="${esc(x.kind)}">${esc(portionLabel(t, x.kind, x.amount, unit))}</button>`).join('')}</div>
@@ -406,6 +418,39 @@ function moreHtml(t, el, open) {
       </div>
     </details>`;
 }
+/* 102: where is this shopper? One answer, shared with the price card, the Prices page and the swaps (prices/market-v83.mjs): the shopper's choice, else the network's
+ * country, else the phone's clock, else the browser language (a guess), else nothing (the app asks, and shows no prices). It is on Home because the country decides
+ * which shops' prices appear and which drink sizes the one-tap amounts offer; a new phone sees it first. */
+const marketNow = () => { try { return detectMarket(); } catch { return { code: '', source: 'unknown' }; } };
+let countryOpts = { lang: '', html: '' };
+function countryOptionsHtml(language) {
+  if (countryOpts.lang !== language) countryOpts = { lang: language, html: marketsSorted(language).map(c => `<option value="${esc(c.code)}">${marketFlag(c.code) ? `${marketFlag(c.code)} ` : ''}${esc(c.name)}</option>`).join('') };
+  return countryOpts.html;
+}
+function locHtml(t, language) {
+  const m = marketNow(), code = m.code, opts = countryOptionsHtml(language);
+  if (!code) {
+    return `<div class="fs98-sec fs100-wide fs102-loc fs102-loc--ask"><p class="fs98-sec__label">${esc(t.locUnknownTitle)}</p><p class="fs98-sub">${esc(t.locUnknownSub)}</p>
+      <select class="fs102-loc__sel" data-fs102-country aria-label="${esc(t.locPick)}"><option value="" disabled selected>${esc(t.locPick)}</option>${opts}</select></div>`;
+  }
+  const name = marketName(code, language), flag = marketFlag(code);
+  const sug = m.suggest ? `<div class="fs102-loc__sug" role="group" aria-label="${esc(t.locChange)}"><p class="fs98-sub">${esc(t.locSuggest(marketName(m.suggest, language), name))}</p>
+      <div class="fs98-chips"><button type="button" class="fs98-btn fs98-btn--sm" data-fs102-use="${esc(m.suggest)}">${esc(t.locUse(marketName(m.suggest, language)))}</button>
+      <button type="button" class="fs98-btn fs98-btn--sm" data-fs102-keep data-fs102-from="${esc(code)}" data-fs102-to="${esc(m.suggest)}">${esc(t.locKeep(name))}</button></div></div>` : '';
+  return `<div class="fs98-sec fs100-wide fs102-loc"><div class="fs102-loc__row"><span class="fs102-loc__txt">${esc(t.locLabel)} <b>${flag ? `${esc(flag)} ` : ''}${esc(name)}</b> <span class="fs100-hint">· ${esc(t.locSrc[m.source] || '')}</span></span>
+      <select class="fs102-loc__sel" data-fs102-country aria-label="${esc(t.locChange)}"><option value="" disabled selected>${esc(t.locChange)}</option><option value="auto">${esc(t.locAuto)}</option>${opts}</select></div>${sug}</div>`;
+}
+function wireLoc(h, view, t) {
+  const language = lang();
+  const done = () => {
+    priceBook.clear(); priceVersion++; lastKey = '';   // every price line was for the old country
+    renderHub(view);
+    const s = view.querySelector('#fs98-hub-status'), c = marketNow().code; if (s && c) s.textContent = t.locSaved(marketName(c, language));
+  };
+  h.querySelector('[data-fs102-country]')?.addEventListener('change', ev => { const v = ev.target.value; if (!v) return; setMarket(v === 'auto' ? '' : v); done(); });
+  h.querySelector('[data-fs102-use]')?.addEventListener('click', ev => { setMarket(ev.currentTarget.dataset.fs102Use); done(); });
+  h.querySelector('[data-fs102-keep]')?.addEventListener('click', ev => { const b = ev.currentTarget; dismissSuggestion(b.dataset.fs102From, b.dataset.fs102To); done(); });
+}
 function wireMore(h, view, t) {
   const say = text => { const s = h.querySelector('#fs98-hub-status'); if (s) s.textContent = text; };
   h.querySelectorAll('[data-fs98-lens]').forEach(b => b.addEventListener('click', () => { toggleLens(b.dataset.fs98Lens); renderHub(view); }));
@@ -472,7 +517,7 @@ function renderHub(view) {
   // 100: a new phone or cleared storage: a compact welcome that still offers My Lens and Restore backup (before, the whole hub was removed and both were unreachable)
   if (welcome) {
     paint(hub, `<div class="fs98-head"><div><p class="fs98-eyebrow">${esc(t.hubEye)}</p><h2 class="fs98-title">${esc(t.hubTitle)}</h2><p class="fs98-sub">${esc(t.welcomeSub)}</p></div></div>
-      ${moreHtml(t, el, open)}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p>`, h => wireMore(h, view, t));
+      ${locHtml(t, lang())}${moreHtml(t, el, open)}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p>`, h => { wireMore(h, view, t); wireLoc(h, view, t); });
     return;
   }
 
@@ -502,12 +547,13 @@ function renderHub(view) {
       <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.pantry)}</span><span class="fs98-stat__v">${savedRows.length}</span><span class="fs98-stat__s">${esc(t.pantrySub(abCount))}</span></div>
     </div>
     <div class="fs98-sec fs100-wide"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips">${chips}</div>${pickRec ? pickerHtml(pickRec.product) : ''}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
+    ${locHtml(t, lang())}
     ${intakeHtml(t, di, aboutOpen)}
     ${todayListHtml(t, todayRows)}
     ${weekHtml(t, log)}
     ${listHtml(t, list, sum)}
     ${moreHtml(t, el, open)}`, h => {
-    wireMore(h, view, t);
+    wireMore(h, view, t); wireLoc(h, view, t);
     const after = msg => { renderHub(view); const s = view.querySelector('#fs98-hub-status'); if (s) s.textContent = msg; };
     h.querySelectorAll('[data-fs98-log]').forEach(b => b.addEventListener('click', () => {
       const key = b.dataset.fs98Log;
@@ -672,7 +718,7 @@ function openCompareModal() {
 function exportBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BACKUP_KEY.test(k)) data[k] = localStorage.getItem(k); }
-  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '100.1.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '102.1.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `foodscan-backup-${todayKey()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }
@@ -724,7 +770,7 @@ function sync() {
   if (r.page === 'product') ensureSwapButtons(view, r.code);
   // 100: signatures (length, first and last 48 characters) of the big stored lists, not the lists themselves: no megabyte string is built on each page change
   const qk = r.page === 'product' ? globalThis.__fs85quick?.get(r.code) : null;
-  const key = [r.page, r.code, lang(), readSig(PORTION_KEY), recordsKey(labelKeys()), readSig(DAILY_KEY), readSig(LENS_KEY), readSig(COMPARE_KEY), readSig(LIST_KEY), priceVersion, qk ? `${qk.kind}:${qk.state}` : '', todayKey()].join('\u0001');
+  const mk = marketNow(), key = [r.page, r.code, lang(), `${mk.code}:${mk.source}:${mk.suggest || ''}`, readSig(PORTION_KEY), recordsKey(labelKeys()), readSig(DAILY_KEY), readSig(LENS_KEY), readSig(COMPARE_KEY), readSig(LIST_KEY), priceVersion, qk ? `${qk.kind}:${qk.state}` : '', todayKey()].join('\u0001');
   const present = r.page === 'home' ? !!view.querySelector('.fs98-hub') : r.page === 'product' ? !!view.querySelector('.fs98-trust') : true;
   if (key === lastKey && present) return;
   lastKey = key;
@@ -741,6 +787,7 @@ function start() {
   const host = document.getElementById('app');
   if (host) new MutationObserver(muts => { if (muts.some(m => !ours(m.target))) schedule(); }).observe(host, { childList: true, subtree: true });
   addEventListener('hashchange', schedule); addEventListener('popstate', schedule); addEventListener('storage', schedule); addEventListener('fs:language', schedule);
+  addEventListener('foodscan:market', () => { priceBook.clear(); priceVersion++; schedule(); });   // 102: the country was changed on another page (Prices, a product card): the hub follows
   schedule();
 }
 if (typeof document !== 'undefined') {

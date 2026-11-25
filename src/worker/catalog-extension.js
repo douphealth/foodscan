@@ -1,7 +1,7 @@
 /* BEGIN catalog-extension.js */
 // FoodScan v54: isolated public discovery catalog, additive to the original v52 worker.
 // Binding: FOODSCAN_PUBLIC_DB (dedicated D1). Two explicit feature flags are required for writes.
-const FSC_VERSION = '55.0.0';
+const FSC_VERSION = VERSION; // 101: one version everywhere (was '55.0.0')
 const FSC_SCHEMA_VERSION = 3;
 const FSC_ORIGIN = 'https://food-scan.gearuptofit.com';
 const FSC_SITEMAP_SIZE = 2000;
@@ -387,6 +387,11 @@ async function fscPublicRoute(request,env,ctx){
   return null;
 }
 
+// 101: internals the unit tests call directly (tests/v101.test.mjs). Pages only uses the default export.
+const fs101Testing = {fsRemoteJSON, fsRemoteManifest, fsRemoteState, fsPriceNormalizeLicensed, fsPriceFreshness, fsConfirmMin, FS_PRICE_SOURCE_REGISTRY,
+  resetRemote(){ fsRemoteManifestEntry = null; Object.assign(fsRemoteState, {status:'not_checked', built:null, files:0, mismatches:0, checkedAt:null, reason:null}); }};
+// handed over only when a test asks for it (no extra module export, so Pages sees exactly one: the default handler)
+if (globalThis.__FS101_TEST__ === true) globalThis.__FS101_TEST__ = fs101Testing;
 export {
   worker_default as default
 };

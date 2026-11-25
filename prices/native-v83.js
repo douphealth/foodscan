@@ -11,13 +11,13 @@
  * both prices are per kg or both per litre. */
 import { getPrices, peekPrices, forgetPrices, setConfirmed, confirmedFor, shareConfirmation, TTL } from './price-client-v83.mjs';
 import { esc, euro, money, unitText, whenText, dateText, unitDelta, pageLang, t, marketContext } from './price-core-v83.mjs';
-import { detectMarket, setMarket, marketName, marketFlag, marketsSorted, validMarket, liveSearchURL } from './market-v83.mjs';
+import { detectMarket, setMarket, dismissSuggestion, marketName, marketFlag, marketsSorted, validMarket, liveSearchURL } from './market-v83.mjs';
 
 const icon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
 const chev = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 const T = {
   en:{eyebrow:'Supermarket price', facts:'Compare label facts', hideFacts:'Hide label facts', moreOpts:n => `Show ${n} more`, show:'Show', hide:'Hide', navPrices:'Prices', update:'A new version of FoodScan is ready.', reload:'Refresh', cheapest:'Cheapest current price', condTitle:k => `Current ${k.toLowerCase()}`, offer:'offer', checking:'Checking supermarket prices…', na:'Not available', allStores:'All stores', seeAll:n => n > 1 ? `See all ${n} prices` : 'See all prices', seeAllOld:(c, o) => `All prices · ${c} current, ${o} older`, noneRel:'No supermarket price is on record for this exact barcode yet. FoodScan does not guess prices.', relHead:'Recorded prices of the closest products · not this product', candHead:'Is it one of these? Same brand, priced in every chain by the national price observatory', candHeadNow:'Current prices: is it one of these? Same brand, from the national price observatory', candSub:'Pick one only if the name and the pack size match the product in your hand. You will then see its own dated chain prices. You can undo it.', candBtn:'This is it', candChains:n => `prices in ${n} ${n === 1 ? 'chain' : 'chains'}`, candOtherSize:'different pack size', confLine:'Prices of the product you confirmed', confChange:'Change', otherPackPill:'Other pack size', otherPackLead:p => `Lowest price for ${p}`, otherPackNote:(a, b) => `The product you confirmed is listed as ${a}; this barcode's label says ${b}. Compare by the price per kg or litre.`, otherPackCount:n => `${n} ${n === 1 ? 'chain' : 'chains'} · not ranked as this barcode's price`, confNone:'The product you confirmed has no recorded price right now.', userConf:'confirmed by you', communityConf:'confirmed by shoppers', sharedOk:n => `Shared with everyone: confirmed by ${n} shoppers.`, sharedPending:(n, m) => `Saved for everyone: ${n} of ${m} confirmations. These prices show for all shoppers once ${m} different shoppers confirm.`, sharedOff:'Kept on this device only: shared confirmations are not switched on for this site yet.', sharedPack:'Not shared: that product is sold in another pack size than this barcode.', sharedNo:'Not shared: this choice could not be checked.', commLine:(n) => `Prices of the product ${n} shoppers confirmed as this one`, commDispute:'Not this product', commDisputed:'Thank you. If others agree, these prices stop showing for this barcode.', addShort:'Add a price',
-    noData:'No supermarket price recorded for this barcode yet.', addOwn:'Add a price you saw', lastSeen:'Last seen', notCurrent:'Not a current price',
+    noData:'No supermarket price recorded for this barcode yet.', liveFail:'The shop\'s page could not confirm this price today, so it is not counted as the cheapest. Check the shelf.', addOwn:'Add a price you saw', lastSeen:'Last seen', notCurrent:'Not a current price',
     elsewhere:c => `Only seen outside Greece (${c})`, down:'Prices could not be checked right now. The grade above is unaffected.', retry:'Try again',
     of:(n, m) => n > 1 ? `Lowest of ${n} prices${m > 1 ? ` · ${m} chains` : ''}` : 'Only current price on record', upTo:x => `others up to +${x}`,
     observed:'Observed', alsoCheaper:'Also cheaper', perKgMore:x => `+${x}`, noPrice:'Price not available', vsThis:'vs this', row:'Cheapest price', fresh:'Current', older:'Older', historical:'Historical', expired:'Expired',
@@ -30,7 +30,7 @@ const T = {
     valid:(m, n) => `On ${n} products with known prices the typical error was ${m}%.`, kinds:{close:'Very similar products', similar:'Similar products', broad:'Broadly similar products', rough:'Rough estimate: few close matches', typical:'Rough estimate: typical for this kind of product'}, sim:'match',
     none:'No verified price for this barcode', noneSub:'No supermarket price is on record for it yet. FoodScan does not guess prices. That does not mean it is not sold.', elseLine:(c, p, s, d) => `Seen in ${c}: ${p} · ${s} · ${d}`},
   el:{eyebrow:'Τιμή σούπερ μάρκετ', facts:'Σύγκριση στοιχείων ετικέτας', hideFacts:'Απόκρυψη στοιχείων', moreOpts:n => `Εμφάνιση ${n} ακόμη`, show:'Εμφάνιση', hide:'Απόκρυψη', navPrices:'Τιμές', update:'Νέα έκδοση FoodScan διαθέσιμη.', reload:'Ανανέωση', cheapest:'Φθηνότερη τρέχουσα τιμή', condTitle:k => `Τρέχουσα ${k.toLowerCase()}`, offer:'προσφορά', checking:'Έλεγχος τιμών σούπερ μάρκετ…', na:'Δεν υπάρχει διαθέσιμη τιμή', allStores:'Όλα τα καταστήματα', seeAll:n => n > 1 ? `Δείτε όλες τις τιμές (${n})` : 'Δείτε όλες τις τιμές', seeAllOld:(c, o) => `Όλες οι τιμές · ${c} τρέχουσες, ${o} παλαιότερες`, noneRel:'Δεν υπάρχει ακόμη καταγεγραμμένη τιμή σούπερ μάρκετ για αυτό ακριβώς το barcode. Το FoodScan δεν μαντεύει τιμές.', relHead:'Καταγεγραμμένες τιμές των πιο κοντινών προϊόντων · όχι αυτού του προϊόντος', candHead:'Μήπως είναι κάποιο από αυτά; Ίδια μάρκα, με τιμές σε κάθε αλυσίδα από το Παρατηρητήριο Τιμών', candHeadNow:'Τρέχουσες τιμές: μήπως είναι κάποιο από αυτά; Ίδια μάρκα, από το Παρατηρητήριο Τιμών', candSub:'Επιλέξτε μόνο αν το όνομα και η συσκευασία ταιριάζουν με το προϊόν που κρατάτε. Θα δείτε τις δικές του τιμές ανά αλυσίδα, με ημερομηνία. Μπορείτε να το αναιρέσετε.', candBtn:'Αυτό είναι', candChains:n => `τιμές σε ${n} ${n === 1 ? 'αλυσίδα' : 'αλυσίδες'}`, candOtherSize:'άλλη συσκευασία', confLine:'Τιμές του προϊόντος που επιβεβαιώσατε', confChange:'Αλλαγή', otherPackPill:'Άλλη συσκευασία', otherPackLead:p => `Χαμηλότερη τιμή για ${p}`, otherPackNote:(a, b) => `Το προϊόν που επιβεβαιώσατε είναι καταχωρημένο ως ${a}· η ετικέτα αυτού του barcode γράφει ${b}. Συγκρίνετε με την τιμή ανά κιλό ή λίτρο.`, otherPackCount:n => `${n} ${n === 1 ? 'αλυσίδα' : 'αλυσίδες'} · δεν κατατάσσεται ως τιμή αυτού του barcode`, confNone:'Το προϊόν που επιβεβαιώσατε δεν έχει καταγεγραμμένη τιμή αυτή τη στιγμή.', userConf:'επιβεβαιώθηκε από εσάς', communityConf:'επιβεβαιώθηκε από αγοραστές', sharedOk:n => `Κοινόχρηστο: επιβεβαιώθηκε από ${n} αγοραστές.`, sharedPending:(n, m) => `Καταχωρήθηκε για όλους: ${n} από ${m} επιβεβαιώσεις. Οι τιμές εμφανίζονται σε όλους όταν το επιβεβαιώσουν ${m} διαφορετικοί αγοραστές.`, sharedOff:'Κρατήθηκε μόνο σε αυτή τη συσκευή: οι κοινές επιβεβαιώσεις δεν έχουν ενεργοποιηθεί ακόμη.', sharedPack:'Δεν κοινοποιήθηκε: αυτό το προϊόν πωλείται σε άλλη συσκευασία από αυτό το barcode.', sharedNo:'Δεν κοινοποιήθηκε: η επιλογή δεν μπόρεσε να ελεγχθεί.', commLine:(n) => `Τιμές του προϊόντος που ${n} αγοραστές επιβεβαίωσαν ως αυτό`, commDispute:'Δεν είναι αυτό', commDisputed:'Ευχαριστούμε. Αν συμφωνήσουν κι άλλοι, οι τιμές παύουν να εμφανίζονται για αυτό το barcode.', addShort:'Προσθήκη τιμής',
-    noData:'Δεν έχει καταγραφεί ακόμη τιμή για αυτό το barcode.', addOwn:'Προσθέστε μια τιμή που είδατε', lastSeen:'Τελευταία καταγραφή', notCurrent:'Όχι τρέχουσα τιμή',
+    noData:'Δεν έχει καταγραφεί ακόμη τιμή για αυτό το barcode.', liveFail:'Η σελίδα του καταστήματος δεν επιβεβαίωσε σήμερα αυτή την τιμή, γι\' αυτό δεν μετράει ως η φθηνότερη. Ελέγξτε στο ράφι.', addOwn:'Προσθέστε μια τιμή που είδατε', lastSeen:'Τελευταία καταγραφή', notCurrent:'Όχι τρέχουσα τιμή',
     elsewhere:c => `Καταγραφή μόνο εκτός Ελλάδας (${c})`, down:'Οι τιμές δεν ελέγχθηκαν τώρα. Η βαθμολογία δεν επηρεάζεται.', retry:'Δοκιμάστε ξανά',
     of:(n, m) => n > 1 ? `Η χαμηλότερη από ${n} τιμές${m > 1 ? ` · ${m} αλυσίδες` : ''}` : 'Η μόνη τρέχουσα τιμή', upTo:x => `οι άλλες έως +${x}`,
     observed:'Καταγραφή', alsoCheaper:'Και φθηνότερο', perKgMore:x => `+${x}`, noPrice:'Τιμή μη διαθέσιμη', vsThis:'από αυτό', row:'Φθηνότερη τιμή', fresh:'Τρέχουσα', older:'Παλαιότερη', historical:'Ιστορική', expired:'Έληξε',
@@ -51,6 +51,177 @@ Object.assign(T.el, {inCountry:(c, cur) => `Τιμές σε ${c}${cur ? ' · ' +
   webWait:'Έλεγχος καταστημάτων online…', webWaitSub:'Το FoodScan διαβάζει σελίδες προϊόντων τοπικών καταστημάτων για αυτό το barcode. Μπορεί να πάρει έως ένα λεπτό· η τιμή εμφανίζεται μόνη της.',
   typical:'Τυπική τιμή', typBasis:(n, m) => `${n} τιμές${m > 1 ? ` σε ${m} αλυσίδες` : ''} · τελευταίες 90 ημέρες`, noneIn:c => `Δεν υπάρχει ακόμη καταγεγραμμένη τιμή για αυτό το barcode σε ${c}. Το FoodScan δεν μαντεύει τιμές. Δεν σημαίνει ότι το προϊόν δεν πωλείται.`,
   elseIn:c => `Καταγραφή μόνο εκτός ${c}`, outsideTag:'άλλη χώρα', online:'Τιμή e-shop', liveShop:'Δείτε ζωντανές τιμές online', liveShopNote:'Ανοίγει αναζήτηση Google για αυτό το barcode. Οι τιμές είναι των καταστημάτων, όχι του FoodScan.'});
+// 101 (fix 14): French, German, Spanish, Italian for the price card, written and checked by hand (the machine translation of
+// this card had errors, e.g. a garbled "prices reported" line). Sentences built from numbers are translated too, so the card never mixes languages.
+const pl = (n, one, many) => (n === 1 ? one : many);
+const NATIVE_L10N = {
+  fr: {
+    eyebrow:'Prix en supermarché', facts:'Comparer les infos de l’étiquette', hideFacts:'Masquer les infos de l’étiquette', show:'Afficher', hide:'Masquer', navPrices:'Prix',
+    update:'Une nouvelle version de FoodScan est prête.', reload:'Actualiser', cheapest:'Prix actuel le plus bas', offer:'promo', checking:'Vérification des prix en supermarché…',
+    na:'Non disponible', allStores:'Tous les magasins', noneRel:'Aucun prix en supermarché n’est encore enregistré pour ce code-barres exact. FoodScan ne devine pas les prix.',
+    relHead:'Prix enregistrés des produits les plus proches · pas ce produit', candHead:'Est-ce l’un de ceux-ci ? Même marque, prix relevés dans chaque enseigne par l’observatoire national des prix',
+    candHeadNow:'Prix actuels : est-ce l’un de ceux-ci ? Même marque, selon l’observatoire national des prix',
+    candSub:'Choisissez-en un seulement si le nom et le format correspondent au produit que vous avez en main. Vous verrez alors ses propres prix datés par enseigne. Vous pourrez annuler.',
+    candBtn:'C’est celui-ci', candOtherSize:'autre format', confLine:'Prix du produit que vous avez confirmé', confChange:'Modifier', otherPackPill:'Autre format',
+    confNone:'Le produit que vous avez confirmé n’a pas de prix enregistré pour le moment.', userConf:'confirmé par vous', communityConf:'confirmé par des clients',
+    sharedOff:'Gardé sur cet appareil uniquement : les confirmations partagées ne sont pas encore activées sur ce site.', sharedPack:'Non partagé : ce produit est vendu dans un autre format que ce code-barres.',
+    sharedNo:'Non partagé : ce choix n’a pas pu être vérifié.', commDispute:'Pas ce produit', commDisputed:'Merci. Si d’autres sont d’accord, ces prix ne s’afficheront plus pour ce code-barres.',
+    addShort:'Ajouter un prix', noData:'Aucun prix en supermarché enregistré pour ce code-barres pour l’instant.',
+    liveFail:'La page du magasin n’a pas pu confirmer ce prix aujourd’hui : il n’est donc pas compté comme le moins cher. Vérifiez en rayon.',
+    addOwn:'Ajouter un prix que vous avez vu', lastSeen:'Vu pour la dernière fois', notCurrent:'Pas un prix actuel', down:'Les prix n’ont pas pu être vérifiés pour le moment. La note ci-dessus n’est pas concernée.',
+    retry:'Réessayer', observed:'Relevé', alsoCheaper:'Aussi moins cher', noPrice:'Prix non disponible', vsThis:'par rapport à celui-ci', row:'Prix le plus bas', fresh:'Actuel', older:'Plus ancien',
+    historical:'Historique', expired:'Expiré', receipt:'ticket de caisse', photo:'photo du rayon', feed:'flux du distributeur', observatory:'prix officiel de l’enseigne', web:'prix de la boutique en ligne de l’enseigne',
+    online:'Prix en ligne', auto:'correspondance exacte automatique', shopper:'signalé par un client', basket:'e-katanalotis', chains:'Prix par enseigne', national:'Prix national de l’enseigne',
+    card:'Prix avec carte de fidélité', multi:'Prix par lot', cond:'Sous conditions', partial:'Certaines sources de prix n’ont pas répondu, et les autres n’ont aucun prix pour ce code-barres.',
+    notComparable:'Unités différentes · aucune économie annoncée', unitNote:'Non comparable au kg/L', last:'Dernier prix enregistré', estBadge:'Estimation', estRough:'Estimation approximative',
+    est:'Prix estimé en rayon', notRecorded:'Pas un prix enregistré', estNone:'Aucun prix n’est enregistré pour ce code-barres exact.', perPack:'pour ce format', how:'Comment est-ce estimé ?',
+    howBody:'Le nom, la marque et le format sont comparés à des produits ayant un prix enregistré en Grèce. La fourchette vient de l’erreur mesurée de cette méthode sur des produits dont le prix est connu.',
+    sim:'correspondance', none:'Aucun prix vérifié pour ce code-barres', noneSub:'Aucun prix en supermarché n’est encore enregistré pour lui. FoodScan ne devine pas les prix. Cela ne veut pas dire qu’il n’est pas vendu.',
+    change:'Modifier', pickLabel:'Pays des prix', pickAuto:'Automatique (là où vous êtes)', pickClose:'Terminé', webWait:'Vérification des boutiques en ligne…',
+    webWaitSub:'FoodScan lit les pages produit des magasins locaux pour ce code-barres. Cela peut prendre jusqu’à une minute ; le prix s’affichera ici tout seul.',
+    typical:'Prix habituel', outsideTag:'autre pays', liveShop:'Voir les prix en ligne', liveShopNote:'Ouvre une recherche Google pour ce code-barres. Ces prix sont ceux des magasins, pas de FoodScan.',
+    moreOpts:n => `Afficher ${n} de plus`, condTitle:k => `${k} actuel`, seeAll:n => n > 1 ? `Voir les ${n} prix` : 'Voir tous les prix', seeAllOld:(c, o) => `Tous les prix · ${c} actuels, ${o} plus anciens`,
+    candChains:n => `prix dans ${n} ${pl(n, 'enseigne', 'enseignes')}`, otherPackLead:p => `Prix le plus bas pour ${p}`,
+    otherPackNote:(a, b) => `Le produit que vous avez confirmé est indiqué en ${a} ; l’étiquette de ce code-barres indique ${b}. Comparez au prix au kg ou au litre.`,
+    otherPackCount:n => `${n} ${pl(n, 'enseigne', 'enseignes')} · pas classé comme prix de ce code-barres`, sharedOk:n => `Partagé avec tous : confirmé par ${n} clients.`,
+    sharedPending:(n, m) => `Enregistré pour tous : ${n} confirmations sur ${m}. Ces prix s’affichent pour tous dès que ${m} clients différents les confirment et après vérification.`,
+    commLine:n => `Prix du produit que ${n} clients ont confirmé comme étant celui-ci`, elsewhere:c => `Vu seulement hors de Grèce (${c})`,
+    of:(n, m) => n > 1 ? `Le plus bas de ${n} prix${m > 1 ? ` · ${m} enseignes` : ''}` : 'Seul prix actuel enregistré', upTo:x => `les autres jusqu’à +${x}`, perKgMore:x => `+${x}`, moreChains:n => `+${n} de plus`,
+    condSub:(k, reg) => `${reg ? `Prix normal ${reg} · ` : ''}Aucun prix actuel sans condition enregistré`, agePill:a => `Relevé ${a}`, stale:a => `Relevé ${a} : il a peut-être changé. Vérifiez en rayon.`,
+    estBasis:n => `D’après ${n} produits similaires avec un prix enregistré en Grèce`, estBasisType:n => `D’après ${n} produits du même type avec un prix enregistré en Grèce`, estPer:(u, b) => `environ ${u}${b}`,
+    valid:(m, n) => `Sur ${n} produits au prix connu, l’erreur habituelle était de ${m} %.`, elseLine:(c, p, s, d) => `Vu ailleurs (${c}) : ${p} · ${s} · ${d}`,
+    inCountry:(c, cur) => `Prix · ${c}${cur ? ' · ' + cur : ''}`, typBasis:(n, m) => `${n} prix${m > 1 ? ` dans ${m} enseignes` : ''} · 90 derniers jours`,
+    noneIn:c => `Aucun prix n’est encore enregistré pour ce code-barres dans ce pays (${c}). FoodScan ne devine pas les prix. Cela ne veut pas dire qu’il n’est pas vendu.`, elseIn:c => `Vu seulement hors de ce pays (${c})`,
+  },
+  de: {
+    eyebrow:'Supermarktpreis', facts:'Etikettangaben vergleichen', hideFacts:'Etikettangaben ausblenden', show:'Anzeigen', hide:'Ausblenden', navPrices:'Preise',
+    update:'Eine neue Version von FoodScan ist bereit.', reload:'Aktualisieren', cheapest:'Günstigster aktueller Preis', offer:'Angebot', checking:'Supermarktpreise werden geprüft…',
+    na:'Nicht verfügbar', allStores:'Alle Geschäfte', noneRel:'Für genau diesen Barcode ist noch kein Supermarktpreis erfasst. FoodScan rät keine Preise.',
+    relHead:'Erfasste Preise der ähnlichsten Produkte · nicht dieses Produkt', candHead:'Ist es eines davon? Gleiche Marke, Preise jeder Kette laut nationaler Preisbeobachtungsstelle',
+    candHeadNow:'Aktuelle Preise: Ist es eines davon? Gleiche Marke, laut nationaler Preisbeobachtungsstelle',
+    candSub:'Wählen Sie nur, wenn Name und Packungsgröße zum Produkt in Ihrer Hand passen. Dann sehen Sie dessen eigene datierte Preise je Kette. Sie können es rückgängig machen.',
+    candBtn:'Das ist es', candOtherSize:'andere Packungsgröße', confLine:'Preise des Produkts, das Sie bestätigt haben', confChange:'Ändern', otherPackPill:'Andere Packungsgröße',
+    confNone:'Für das bestätigte Produkt ist derzeit kein Preis erfasst.', userConf:'von Ihnen bestätigt', communityConf:'von Käufern bestätigt',
+    sharedOff:'Nur auf diesem Gerät gespeichert: Geteilte Bestätigungen sind für diese Seite noch nicht eingeschaltet.', sharedPack:'Nicht geteilt: Dieses Produkt wird in einer anderen Packungsgröße verkauft als dieser Barcode.',
+    sharedNo:'Nicht geteilt: Diese Auswahl konnte nicht geprüft werden.', commDispute:'Nicht dieses Produkt', commDisputed:'Danke. Wenn andere zustimmen, werden diese Preise für diesen Barcode nicht mehr angezeigt.',
+    addShort:'Preis hinzufügen', noData:'Für diesen Barcode ist noch kein Supermarktpreis erfasst.',
+    liveFail:'Die Seite des Geschäfts konnte diesen Preis heute nicht bestätigen, daher zählt er nicht als günstigster. Prüfen Sie das Regal.',
+    addOwn:'Einen gesehenen Preis hinzufügen', lastSeen:'Zuletzt gesehen', notCurrent:'Kein aktueller Preis', down:'Die Preise konnten gerade nicht geprüft werden. Die Bewertung oben ist davon nicht betroffen.',
+    retry:'Erneut versuchen', observed:'Erfasst', alsoCheaper:'Ebenfalls günstiger', noPrice:'Preis nicht verfügbar', vsThis:'im Vergleich zu diesem', row:'Günstigster Preis', fresh:'Aktuell', older:'Älter',
+    historical:'Historisch', expired:'Abgelaufen', receipt:'Kassenbon', photo:'Regalfoto', feed:'Händler-Datenfeed', observatory:'offizieller Kettenpreis', web:'Preis im Onlineshop der Kette',
+    online:'Onlinepreis', auto:'automatische exakte Zuordnung', shopper:'von einem Käufer gemeldet', basket:'e-katanalotis', chains:'Preise je Kette', national:'Landesweiter Kettenpreis',
+    card:'Preis mit Kundenkarte', multi:'Mehrfachkauf-Preis', cond:'Mit Bedingungen', partial:'Einige Preisquellen haben nicht geantwortet, und die anderen haben keinen Preis für diesen Barcode.',
+    notComparable:'Andere Einheiten · keine Ersparnis angegeben', unitNote:'Nicht pro kg/L vergleichbar', last:'Zuletzt erfasster Preis', estBadge:'Schätzung', estRough:'Grobe Schätzung',
+    est:'Geschätzter Regalpreis', notRecorded:'Kein erfasster Preis', estNone:'Für genau diesen Barcode ist kein Preis erfasst.', perPack:'für diese Packung', how:'Wie wird das geschätzt?',
+    howBody:'Name, Marke und Packungsgröße werden mit Produkten verglichen, für die ein Preis in Griechenland erfasst ist. Die Spanne ergibt sich aus dem gemessenen Fehler dieser Methode bei Produkten mit bekanntem Preis.',
+    sim:'Übereinstimmung', none:'Kein geprüfter Preis für diesen Barcode', noneSub:'Dafür ist noch kein Supermarktpreis erfasst. FoodScan rät keine Preise. Das heißt nicht, dass es nicht verkauft wird.',
+    change:'Ändern', pickLabel:'Land für Preise', pickAuto:'Automatisch (wo Sie sind)', pickClose:'Fertig', webWait:'Onlineshops werden geprüft…',
+    webWaitSub:'FoodScan liest die Produktseiten lokaler Geschäfte für diesen Barcode. Das kann bis zu einer Minute dauern; der Preis erscheint dann von selbst hier.',
+    typical:'Üblicher Preis', outsideTag:'anderes Land', liveShop:'Aktuelle Preise online ansehen', liveShopNote:'Öffnet eine Google-Suche nach diesem Barcode. Diese Preise stammen von den Geschäften, nicht von FoodScan.',
+    moreOpts:n => `${n} weitere anzeigen`, condTitle:k => `Aktuell: ${k}`, seeAll:n => n > 1 ? `Alle ${n} Preise ansehen` : 'Alle Preise ansehen', seeAllOld:(c, o) => `Alle Preise · ${c} aktuell, ${o} älter`,
+    candChains:n => `Preise in ${n} ${pl(n, 'Kette', 'Ketten')}`, otherPackLead:p => `Günstigster Preis für ${p}`,
+    otherPackNote:(a, b) => `Das bestätigte Produkt ist als ${a} gelistet; das Etikett dieses Barcodes sagt ${b}. Vergleichen Sie den Preis pro kg oder Liter.`,
+    otherPackCount:n => `${n} ${pl(n, 'Kette', 'Ketten')} · nicht als Preis dieses Barcodes gewertet`, sharedOk:n => `Mit allen geteilt: von ${n} Käufern bestätigt.`,
+    sharedPending:(n, m) => `Für alle gespeichert: ${n} von ${m} Bestätigungen. Diese Preise erscheinen für alle, sobald ${m} verschiedene Käufer bestätigen und sie geprüft sind.`,
+    commLine:n => `Preise des Produkts, das ${n} Käufer als dieses bestätigt haben`, elsewhere:c => `Nur außerhalb Griechenlands gesehen (${c})`,
+    of:(n, m) => n > 1 ? `Günstigster von ${n} Preisen${m > 1 ? ` · ${m} Ketten` : ''}` : 'Einziger erfasster aktueller Preis', upTo:x => `andere bis zu +${x}`, perKgMore:x => `+${x}`, moreChains:n => `+${n} weitere`,
+    condSub:(k, reg) => `${reg ? `Normalpreis ${reg} · ` : ''}Kein aktueller Preis ohne Bedingungen erfasst`, agePill:a => `Erfasst ${a}`, stale:a => `Erfasst ${a}: Er kann sich geändert haben. Prüfen Sie das Regal.`,
+    estBasis:n => `Auf Basis von ${n} ähnlichen Produkten mit erfasstem Preis in Griechenland`, estBasisType:n => `Auf Basis von ${n} Produkten derselben Art mit erfasstem Preis in Griechenland`, estPer:(u, b) => `etwa ${u}${b}`,
+    valid:(m, n) => `Bei ${n} Produkten mit bekanntem Preis lag der übliche Fehler bei ${m} %.`, elseLine:(c, p, s, d) => `Anderswo gesehen (${c}): ${p} · ${s} · ${d}`,
+    inCountry:(c, cur) => `Preise · ${c}${cur ? ' · ' + cur : ''}`, typBasis:(n, m) => `${n} Preise${m > 1 ? ` in ${m} Ketten` : ''} · letzte 90 Tage`,
+    noneIn:c => `Für diesen Barcode ist in diesem Land (${c}) noch kein Preis erfasst. FoodScan rät keine Preise. Das heißt nicht, dass er nicht verkauft wird.`, elseIn:c => `Nur außerhalb dieses Landes gesehen (${c})`,
+  },
+  es: {
+    eyebrow:'Precio en supermercado', facts:'Comparar datos de la etiqueta', hideFacts:'Ocultar datos de la etiqueta', show:'Mostrar', hide:'Ocultar', navPrices:'Precios',
+    update:'Hay una nueva versión de FoodScan lista.', reload:'Actualizar', cheapest:'Precio actual más bajo', offer:'oferta', checking:'Comprobando precios de supermercado…',
+    na:'No disponible', allStores:'Todas las tiendas', noneRel:'Todavía no hay ningún precio de supermercado registrado para este código de barras exacto. FoodScan no adivina precios.',
+    relHead:'Precios registrados de los productos más parecidos · no este producto', candHead:'¿Es uno de estos? Misma marca, con precio en cada cadena según el observatorio nacional de precios',
+    candHeadNow:'Precios actuales: ¿es uno de estos? Misma marca, según el observatorio nacional de precios',
+    candSub:'Elija uno solo si el nombre y el tamaño del envase coinciden con el producto que tiene en la mano. Verá entonces sus propios precios fechados por cadena. Puede deshacerlo.',
+    candBtn:'Es este', candOtherSize:'otro tamaño', confLine:'Precios del producto que confirmó', confChange:'Cambiar', otherPackPill:'Otro tamaño',
+    confNone:'El producto que confirmó no tiene ningún precio registrado en este momento.', userConf:'confirmado por usted', communityConf:'confirmado por compradores',
+    sharedOff:'Guardado solo en este dispositivo: las confirmaciones compartidas aún no están activadas en este sitio.', sharedPack:'No compartido: ese producto se vende en otro tamaño distinto al de este código de barras.',
+    sharedNo:'No compartido: no se pudo comprobar esta elección.', commDispute:'No es este producto', commDisputed:'Gracias. Si otros están de acuerdo, estos precios dejarán de mostrarse para este código de barras.',
+    addShort:'Añadir un precio', noData:'Todavía no hay ningún precio de supermercado registrado para este código de barras.',
+    liveFail:'La página de la tienda no pudo confirmar este precio hoy, así que no cuenta como el más barato. Compruébelo en el lineal.',
+    addOwn:'Añadir un precio que haya visto', lastSeen:'Visto por última vez', notCurrent:'No es un precio actual', down:'No se pudieron comprobar los precios ahora mismo. La nota de arriba no se ve afectada.',
+    retry:'Reintentar', observed:'Registrado', alsoCheaper:'También más barato', noPrice:'Precio no disponible', vsThis:'frente a este', row:'Precio más bajo', fresh:'Actual', older:'Más antiguo',
+    historical:'Histórico', expired:'Caducado', receipt:'ticket de compra', photo:'foto del lineal', feed:'datos del distribuidor', observatory:'precio oficial de la cadena', web:'precio de la tienda online de la cadena',
+    online:'Precio online', auto:'coincidencia exacta automática', shopper:'indicado por un comprador', basket:'e-katanalotis', chains:'Precios por cadena', national:'Precio nacional de la cadena',
+    card:'Precio con tarjeta de cliente', multi:'Precio por compra múltiple', cond:'Con condiciones', partial:'Algunas fuentes de precios no respondieron y las demás no tienen precio para este código de barras.',
+    notComparable:'Unidades distintas · sin ahorro anunciado', unitNote:'No comparable por kg/L', last:'Último precio registrado', estBadge:'Estimación', estRough:'Estimación aproximada',
+    est:'Precio estimado en el lineal', notRecorded:'No es un precio registrado', estNone:'No hay ningún precio registrado para este código de barras exacto.', perPack:'para este envase', how:'¿Cómo se estima?',
+    howBody:'El nombre, la marca y el tamaño se comparan con productos que tienen un precio registrado en Grecia. El rango procede del error medido de este método en productos cuyo precio se conoce.',
+    sim:'coincidencia', none:'Ningún precio verificado para este código de barras', noneSub:'Todavía no hay ningún precio de supermercado registrado. FoodScan no adivina precios. Eso no significa que no se venda.',
+    change:'Cambiar', pickLabel:'País de los precios', pickAuto:'Automático (donde está usted)', pickClose:'Hecho', webWait:'Comprobando tiendas online…',
+    webWaitSub:'FoodScan está leyendo las páginas de producto de tiendas locales para este código de barras. Puede tardar hasta un minuto; el precio aparecerá aquí solo.',
+    typical:'Precio habitual', outsideTag:'otro país', liveShop:'Ver precios online', liveShopNote:'Abre una búsqueda de Google para este código de barras. Esos precios son de las tiendas, no de FoodScan.',
+    moreOpts:n => `Mostrar ${n} más`, condTitle:k => `${k} actual`, seeAll:n => n > 1 ? `Ver los ${n} precios` : 'Ver todos los precios', seeAllOld:(c, o) => `Todos los precios · ${c} actuales, ${o} más antiguos`,
+    candChains:n => `precios en ${n} ${pl(n, 'cadena', 'cadenas')}`, otherPackLead:p => `Precio más bajo para ${p}`,
+    otherPackNote:(a, b) => `El producto que confirmó figura como ${a}; la etiqueta de este código de barras dice ${b}. Compare por el precio por kg o litro.`,
+    otherPackCount:n => `${n} ${pl(n, 'cadena', 'cadenas')} · no se clasifica como precio de este código de barras`, sharedOk:n => `Compartido con todos: confirmado por ${n} compradores.`,
+    sharedPending:(n, m) => `Guardado para todos: ${n} de ${m} confirmaciones. Estos precios se mostrarán a todos cuando ${m} compradores distintos los confirmen y se revisen.`,
+    commLine:n => `Precios del producto que ${n} compradores confirmaron como este`, elsewhere:c => `Visto solo fuera de Grecia (${c})`,
+    of:(n, m) => n > 1 ? `El más bajo de ${n} precios${m > 1 ? ` · ${m} cadenas` : ''}` : 'Único precio actual registrado', upTo:x => `los demás hasta +${x}`, perKgMore:x => `+${x}`, moreChains:n => `+${n} más`,
+    condSub:(k, reg) => `${reg ? `Precio normal ${reg} · ` : ''}No hay ningún precio actual sin condiciones registrado`, agePill:a => `Registrado ${a}`, stale:a => `Registrado ${a}: puede haber cambiado. Compruébelo en el lineal.`,
+    estBasis:n => `Según ${n} productos similares con precio registrado en Grecia`, estBasisType:n => `Según ${n} productos del mismo tipo con precio registrado en Grecia`, estPer:(u, b) => `unos ${u}${b}`,
+    valid:(m, n) => `En ${n} productos con precio conocido, el error habitual fue del ${m} %.`, elseLine:(c, p, s, d) => `Visto en ${c}: ${p} · ${s} · ${d}`,
+    inCountry:(c, cur) => `Precios en ${c}${cur ? ' · ' + cur : ''}`, typBasis:(n, m) => `${n} precios${m > 1 ? ` en ${m} cadenas` : ''} · últimos 90 días`,
+    noneIn:c => `Todavía no hay ningún precio registrado para este código de barras en ${c}. FoodScan no adivina precios. Eso no significa que no se venda.`, elseIn:c => `Visto solo fuera de ${c}`,
+  },
+  it: {
+    eyebrow:'Prezzo al supermercato', facts:'Confronta i dati in etichetta', hideFacts:'Nascondi i dati in etichetta', show:'Mostra', hide:'Nascondi', navPrices:'Prezzi',
+    update:'È pronta una nuova versione di FoodScan.', reload:'Aggiorna', cheapest:'Prezzo attuale più basso', offer:'offerta', checking:'Controllo dei prezzi al supermercato…',
+    na:'Non disponibile', allStores:'Tutti i negozi', noneRel:'Per questo codice a barre esatto non è ancora registrato alcun prezzo al supermercato. FoodScan non indovina i prezzi.',
+    relHead:'Prezzi registrati dei prodotti più simili · non questo prodotto', candHead:'È uno di questi? Stessa marca, con il prezzo di ogni catena secondo l’osservatorio nazionale dei prezzi',
+    candHeadNow:'Prezzi attuali: è uno di questi? Stessa marca, secondo l’osservatorio nazionale dei prezzi',
+    candSub:'Sceglierne uno solo se nome e formato corrispondono al prodotto che ha in mano. Vedrà allora i suoi prezzi datati per catena. Può annullare.',
+    candBtn:'È questo', candOtherSize:'altro formato', confLine:'Prezzi del prodotto che ha confermato', confChange:'Cambia', otherPackPill:'Altro formato',
+    confNone:'Il prodotto che ha confermato non ha prezzi registrati al momento.', userConf:'confermato da lei', communityConf:'confermato dagli acquirenti',
+    sharedOff:'Salvato solo su questo dispositivo: le conferme condivise non sono ancora attive su questo sito.', sharedPack:'Non condiviso: quel prodotto è venduto in un formato diverso da questo codice a barre.',
+    sharedNo:'Non condiviso: non è stato possibile verificare questa scelta.', commDispute:'Non è questo prodotto', commDisputed:'Grazie. Se altri sono d’accordo, questi prezzi non verranno più mostrati per questo codice a barre.',
+    addShort:'Aggiungi un prezzo', noData:'Nessun prezzo al supermercato registrato finora per questo codice a barre.',
+    liveFail:'La pagina del negozio non ha potuto confermare questo prezzo oggi, quindi non conta come il più basso. Verifichi sullo scaffale.',
+    addOwn:'Aggiungi un prezzo che ha visto', lastSeen:'Visto l’ultima volta', notCurrent:'Non è un prezzo attuale', down:'Non è stato possibile verificare i prezzi in questo momento. Il punteggio qui sopra non cambia.',
+    retry:'Riprova', observed:'Rilevato', alsoCheaper:'Anche più economico', noPrice:'Prezzo non disponibile', vsThis:'rispetto a questo', row:'Prezzo più basso', fresh:'Attuale', older:'Meno recente',
+    historical:'Storico', expired:'Scaduto', receipt:'scontrino', photo:'foto dello scaffale', feed:'dati del distributore', observatory:'prezzo ufficiale della catena', web:'prezzo del negozio online della catena',
+    online:'Prezzo online', auto:'corrispondenza esatta automatica', shopper:'segnalato da un acquirente', basket:'e-katanalotis', chains:'Prezzi per catena', national:'Prezzo nazionale della catena',
+    card:'Prezzo con carta fedeltà', multi:'Prezzo per acquisto multiplo', cond:'Con condizioni', partial:'Alcune fonti di prezzo non hanno risposto e le altre non hanno prezzi per questo codice a barre.',
+    notComparable:'Unità diverse · nessun risparmio indicato', unitNote:'Non confrontabile al kg/L', last:'Ultimo prezzo registrato', estBadge:'Stima', estRough:'Stima approssimativa',
+    est:'Prezzo stimato a scaffale', notRecorded:'Non è un prezzo registrato', estNone:'Nessun prezzo registrato per questo codice a barre esatto.', perPack:'per questa confezione', how:'Come viene stimato?',
+    howBody:'Nome, marca e formato vengono confrontati con prodotti che hanno un prezzo registrato in Grecia. L’intervallo deriva dall’errore misurato di questo metodo su prodotti dal prezzo noto.',
+    sim:'corrispondenza', none:'Nessun prezzo verificato per questo codice a barre', noneSub:'Non è ancora registrato alcun prezzo al supermercato. FoodScan non indovina i prezzi. Non significa che non sia in vendita.',
+    change:'Cambia', pickLabel:'Paese dei prezzi', pickAuto:'Automatico (dove si trova)', pickClose:'Fatto', webWait:'Controllo dei negozi online…',
+    webWaitSub:'FoodScan sta leggendo le pagine prodotto dei negozi locali per questo codice a barre. Può richiedere fino a un minuto; il prezzo comparirà qui da solo.',
+    typical:'Prezzo abituale', outsideTag:'altro paese', liveShop:'Vedi i prezzi online', liveShopNote:'Apre una ricerca Google per questo codice a barre. Quei prezzi sono dei negozi, non di FoodScan.',
+    moreOpts:n => `Mostra altri ${n}`, condTitle:k => `${k} attuale`, seeAll:n => n > 1 ? `Vedi tutti i ${n} prezzi` : 'Vedi tutti i prezzi', seeAllOld:(c, o) => `Tutti i prezzi · ${c} attuali, ${o} meno recenti`,
+    candChains:n => `prezzi in ${n} ${pl(n, 'catena', 'catene')}`, otherPackLead:p => `Prezzo più basso per ${p}`,
+    otherPackNote:(a, b) => `Il prodotto che ha confermato è indicato come ${a}; l’etichetta di questo codice a barre riporta ${b}. Confronti il prezzo al kg o al litro.`,
+    otherPackCount:n => `${n} ${pl(n, 'catena', 'catene')} · non classificato come prezzo di questo codice a barre`, sharedOk:n => `Condiviso con tutti: confermato da ${n} acquirenti.`,
+    sharedPending:(n, m) => `Salvato per tutti: ${n} conferme su ${m}. Questi prezzi verranno mostrati a tutti quando ${m} acquirenti diversi li confermeranno e dopo la verifica.`,
+    commLine:n => `Prezzi del prodotto che ${n} acquirenti hanno confermato come questo`, elsewhere:c => `Visto solo fuori dalla Grecia (${c})`,
+    of:(n, m) => n > 1 ? `Il più basso di ${n} prezzi${m > 1 ? ` · ${m} catene` : ''}` : 'Unico prezzo attuale registrato', upTo:x => `gli altri fino a +${x}`, perKgMore:x => `+${x}`, moreChains:n => `altri ${n}`,
+    condSub:(k, reg) => `${reg ? `Prezzo normale ${reg} · ` : ''}Nessun prezzo attuale senza condizioni registrato`, agePill:a => `Rilevato ${a}`, stale:a => `Rilevato ${a}: potrebbe essere cambiato. Verifichi sullo scaffale.`,
+    estBasis:n => `In base a ${n} prodotti simili con prezzo registrato in Grecia`, estBasisType:n => `In base a ${n} prodotti dello stesso tipo con prezzo registrato in Grecia`, estPer:(u, b) => `circa ${u}${b}`,
+    valid:(m, n) => `Su ${n} prodotti dal prezzo noto, l’errore tipico era del ${m} %.`, elseLine:(c, p, s, d) => `Visto altrove (${c}): ${p} · ${s} · ${d}`,
+    inCountry:(c, cur) => `Prezzi · ${c}${cur ? ' · ' + cur : ''}`, typBasis:(n, m) => `${n} prezzi${m > 1 ? ` in ${m} catene` : ''} · ultimi 90 giorni`,
+    noneIn:c => `Per questo codice a barre non è ancora registrato alcun prezzo in questo paese (${c}). FoodScan non indovina i prezzi. Non significa che non sia in vendita.`, elseIn:c => `Visto solo fuori da questo paese (${c})`,
+  },
+};
+/* 102: which country is this? (unknown location, and the "your phone's clock says elsewhere" offer). French, German, Spanish and Italian are hand-written, not machine-translated; a native speaker should still read them. */
+Object.assign(T.en, {whereTitle:'Which country are you in?', whereSub:'FoodScan could not tell where you are, so it shows no prices rather than another country\'s. Choose your country to see local, dated prices.',
+  devHint:c => `Your phone's clock is set to ${c}.`, devUse:c => `Use ${c}`, devKeep:'Keep this country', srcDevice:'from your phone\'s clock', srcLanguage:'guessed from your language'});
+Object.assign(T.el, {whereTitle:'Σε ποια χώρα βρίσκεστε;', whereSub:'Το FoodScan δεν μπόρεσε να καταλάβει πού βρίσκεστε, γι’ αυτό δεν δείχνει τιμές από άλλη χώρα. Επιλέξτε χώρα για να δείτε τοπικές τιμές με ημερομηνία.',
+  devHint:c => `Η ζώνη ώρας της συσκευής σας είναι της χώρας: ${c}.`, devUse:c => `Χρήση: ${c}`, devKeep:'Παραμονή στην τρέχουσα χώρα', srcDevice:'από το ρολόι της συσκευής', srcLanguage:'εκτίμηση από τη γλώσσα σας'});
+Object.assign(NATIVE_L10N.fr, {whereTitle:'Dans quel pays êtes-vous ?', whereSub:'FoodScan n’a pas pu savoir où vous êtes ; il n’affiche donc aucun prix plutôt que ceux d’un autre pays. Choisissez votre pays pour voir des prix locaux et datés.',
+  devHint:c => `L’horloge de votre téléphone est réglée sur : ${c}.`, devUse:c => `Utiliser : ${c}`, devKeep:'Garder ce pays', srcDevice:'d’après l’horloge du téléphone', srcLanguage:'deviné d’après votre langue'});
+Object.assign(NATIVE_L10N.de, {whereTitle:'In welchem Land sind Sie?', whereSub:'FoodScan konnte nicht feststellen, wo Sie sind, und zeigt deshalb lieber keine Preise als die eines anderen Landes. Wählen Sie Ihr Land, um örtliche Preise mit Datum zu sehen.',
+  devHint:c => `Die Uhr Ihres Telefons ist auf dieses Land eingestellt: ${c}.`, devUse:c => `${c} verwenden`, devKeep:'Dieses Land behalten', srcDevice:'nach der Uhr des Telefons', srcLanguage:'aus Ihrer Sprache geschätzt'});
+Object.assign(NATIVE_L10N.es, {whereTitle:'¿En qué país está?', whereSub:'FoodScan no pudo saber dónde está, así que no muestra precios en lugar de mostrar los de otro país. Elija su país para ver precios locales con fecha.',
+  devHint:c => `El reloj de su teléfono está en la zona horaria de: ${c}.`, devUse:c => `Usar ${c}`, devKeep:'Mantener este país', srcDevice:'según el reloj del teléfono', srcLanguage:'deducido de su idioma'});
+Object.assign(NATIVE_L10N.it, {whereTitle:'In quale paese si trova?', whereSub:'FoodScan non ha potuto capire dove si trova, quindi non mostra prezzi invece di quelli di un altro paese. Scelga il suo paese per vedere prezzi locali con data.',
+  devHint:c => `L’orologio del suo telefono è sul fuso orario di: ${c}.`, devUse:c => `Usa ${c}`, devKeep:'Mantieni questo paese', srcDevice:'dall’orologio del telefono', srcLanguage:'dedotto dalla lingua'});
+for (const [l, d] of Object.entries(NATIVE_L10N)) T[l] = Object.setPrototypeOf(d, T.en);
 const lang = () => pageLang();
 const tx = (k, ...a) => { const v = (T[lang()] || T.en)[k]; return typeof v === 'function' ? v(...a) : v; };
 const mHome = () => marketContext().home;
@@ -100,7 +271,7 @@ function chainBadges(r) {
  * 75: the strip is mounted inside article.gradecard, right under the grade, points and A–E scale, for every layout the app
  * renders (graded hero, grade on hold, no grade, catalogue snapshot, demo samples, live). 72 skipped demo samples
  * (?demo=1) and mounted after the card, so the price sat below a tall card or was missing. */
-const fmtShort = (d, L) => new Intl.DateTimeFormat(L === 'el' ? 'el-GR' : 'en-GB', {day:'numeric', month:'short', timeZone:'UTC'}).format(new Date(d + 'T00:00:00Z'));
+const fmtShort = (d, L) => new Intl.DateTimeFormat(({el:'el-GR', fr:'fr-FR', de:'de-DE', es:'es-ES', it:'it-IT'})[L] || 'en-GB', {day:'numeric', month:'short', timeZone:'UTC'}).format(new Date(d + 'T00:00:00Z'));
 function chainRow(r, best) {
   const L = lang(), per = new Map();
   for (const o of r.offers) if (o.rankingEligible && o.retailerId && o.retailerId !== 'other') { const old = per.get(o.retailerId); if (!old || o.price < old.price) per.set(o.retailerId, o); }
@@ -135,9 +306,9 @@ function relatedStrip(r, head, link) {
 }
 /** 82: same-brand observatory products the shopper can confirm as this one. Their prices are NOT shown here: only after "This is it"
  *  does the card show that product's own dated chain prices, under a line saying whose choice it was (with "Change"). */
-const packLabel = (p, L) => { if (!p) return ''; if (p.unit === 'pcs') return `${p.amount} ${L === 'el' ? 'τεμ.' : 'pcs'}`;
+const packLabel = (p, L) => { if (!p) return ''; if (p.unit === 'pcs') return `${p.amount} ${({el:'τεμ.', fr:'pcs', de:'Stk.', es:'uds.', it:'pz.'})[L] || 'pcs'}`;
   const small = p.amount < 1, v = small ? Math.round(p.amount * 1000) : Math.round(p.amount * 100) / 100;
-  return `${String(v).replace('.', L === 'el' ? ',' : '.')}\u00a0${p.unit === 'kg' ? (small ? 'g' : 'kg') : (small ? 'ml' : 'L')}`; };
+  return `${String(v).replace('.', ['el', 'fr', 'de', 'es', 'it'].includes(L) ? ',' : '.')}\u00a0${p.unit === 'kg' ? (small ? 'g' : 'kg') : (small ? 'ml' : 'L')}`; };
 const otherPack = (a, b) => Boolean(a && b && (a.unit !== b.unit || Math.abs(a.amount - b.amount) / a.amount > 0.05));
 function candList(code, r) {
   const L = lang();
@@ -163,9 +334,14 @@ function pickerHTML(home, L) {
     <button type="button" class="fp83-change" data-fs-market-close>${esc(tx('pickClose'))}</button></div></div>`;
 }
 function marketLine(r, L) {
-  const home = r?.home || detectMarket().code; if (!home) return '';
+  const d = detectMarket(), home = r?.home || d.code; if (!home) return '';
   if (ui.picker) return pickerHTML(home, L);
-  return `<p class="fp83-market"><span class="fp83-market__name">${esc(marketFlag(home))} ${esc(tx('inCountry', marketName(home, L), r?.currency || ''))}</span><button type="button" class="fp83-change" data-fs-market-open>${esc(tx('change'))}</button></p>`;
+  // 102: say where the country came from when it is not the shopper's own choice or the network's (the phone's clock, or only the browser language)
+  const note = d.source === 'device' ? tx('srcDevice') : d.source === 'language' ? tx('srcLanguage') : '';
+  // 102: the network says one country, the phone's clock another (a roaming SIM, a VPN): offer the phone's country, never switch silently
+  const sg = d.suggest && d.code === home ? d.suggest : '';
+  return `<p class="fp83-market"><span class="fp83-market__name">${esc(marketFlag(home))} ${esc(tx('inCountry', marketName(home, L), r?.currency || ''))}${note ? ` <small class="fp102-src">${esc(note)}</small>` : ''}</span><button type="button" class="fp83-change" data-fs-market-open>${esc(tx('change'))}</button></p>`
+    + (sg ? `<p class="fp102-suggest"><span>${esc(tx('devHint', marketName(sg, L)))}</span><button type="button" class="fp83-change" data-fs-loc-use="${sg}">${esc(tx('devUse', marketName(sg, L)))}</button><button type="button" class="fp83-change" data-fs-loc-keep="${home}>${sg}">${esc(tx('devKeep'))}</button></p>` : '');
 }
 const typicalLine = (r, L) => { const y = r?.typical; if (!y) return '';
   return `<p class="fp83-typ"><span><b>${esc(tx('typical'))}</b> ${esc(money(y.price, L, y.currency, r.home))}</span><small>${esc(money(y.low, L, y.currency, r.home))} – ${esc(money(y.high, L, y.currency, r.home))} · ${esc(tx('typBasis', y.n, y.retailers))}</small></p>`; };
@@ -179,6 +355,8 @@ function stripHTML0(code, r) {
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>${r ? marketLine(r, L) : ''}`;
   const link = (label, cta) => `<a class="fp75__all${cta ? ' fp75__all--cta' : ''}" href="${pricesURL(code)}">${esc(label)}${chev}</a>`;
   if (!r) return `${head('')}<div class="fp75__skel" aria-hidden="true"><i class="fp75__sk fp75__sk--price"></i><span><i class="fp75__sk"></i><i class="fp75__sk fp75__sk--short"></i></span></div><p class="fp75__sr">${esc(tx('checking'))}</p>`;
+  // 102: nobody can tell which country this is (no choice, no network country, no phone clock, no language region): no prices, and the shopper chooses a country
+  if (r.status === 'market_unknown') return `${head('')}<div class="fp75__none"><div><b>${esc(tx('whereTitle'))}</b><span>${esc(tx('whereSub'))}</span></div></div>${pickerHTML('', L)}`;
   // 84: the shops' web search is still running (the app asks again by itself and replaces this when it finishes)
   if (r.webPending && !r.best && !r.latest) return `${head('')}<div class="fp75__none"><div><b>${esc(tx('webWait'))}</b><span>${esc(tx('webWaitSub'))}</span></div></div>`;
   if (r.status === 'temporarily_unavailable') return `${head('')}<div class="fp75__none"><div><b>${esc(tx('na'))}</b><span>${esc(tx('down'))}</span></div><button type="button" class="fp75__all" data-fp71-retry="${esc(code)}">${esc(tx('retry'))}</button></div>`;
@@ -208,7 +386,7 @@ function stripHTML0(code, r) {
   if (last) return `${head(`<span class="fp75__pill fp75__pill--stale">${esc(tx('agePill', whenText(last, L)))}</span>`)}
       <div class="fp75__main"><div class="fp75__price"><small class="fp80-lead">${esc(tx('last'))}</small><strong>${esc($(last, L))}</strong>${last.unitPrice != null ? `<em>${esc(unitText(last, L))}</em>` : ''}</div>
         <div class="fp75__store"><b>${where(last)}</b><span>${esc(fmtShort(last.date, L))} · ${esc(whenText(last, L))}</span><span class="fp75__src">${esc(last.storeScope === 'national' ? tx('national') : last.storeScope === 'online' ? tx('online') : last.source)}</span></div></div>
-      <p class="fp80-stale">${esc(tx('stale', whenText(last, L)))}</p>${typicalLine(r, L)}${confLine(code, r)}${r.candidates?.length ? `<p class="fp81-rel__head fp82-cands__head">${esc(tx('candHeadNow'))}</p>${candList(code, r)}` : ''}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
+      <p class="fp80-stale">${esc(last.liveUnconfirmed ? tx('liveFail') : tx('stale', whenText(last, L)))}</p>${typicalLine(r, L)}${confLine(code, r)}${r.candidates?.length ? `<p class="fp81-rel__head fp82-cands__head">${esc(tx('candHeadNow'))}</p>${candList(code, r)}` : ''}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
   if (r.confirmed) return `${head('')}${confLine(code, r)}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
   if (r.candidates?.length) return candStrip(code, r, head, link);
   if (r.related?.length) return relatedStrip(r, head, link);
@@ -229,7 +407,7 @@ function paintStandalone(code, view) {
   const page = view.querySelector('#instant-calc')?.closest('.page'); if (!page) return;
   let box = page.querySelector(':scope > .fp75.fp80-standalone');
   if (box && box.dataset.code !== code) { box.remove(); box = null; }
-  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
   if (!box) { box = document.createElement('section'); box.className = 'fp75 fp80-standalone'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); page.prepend(box); }
   if (box.dataset.state === state) return;
   box.dataset.state = state; box.setAttribute('aria-label', tx('eyebrow')); box.setAttribute('aria-busy', r ? 'false' : 'true');
@@ -251,7 +429,7 @@ function paintProduct() {
   const all = [...view.querySelectorAll('.fp75')];
   let box = all.find(n => n.parentElement === at.parent && n.dataset.code === code) || null;
   all.forEach(n => { if (n !== box) n.remove(); });
-  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
   if (!box) { box = document.createElement('section'); box.className = 'fp75'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); }
   const placed = at.after ? at.after.nextElementSibling === box : (at.before ? at.before.previousElementSibling === box : at.parent.lastElementChild === box);
   if (!placed) { if (at.after) at.after.after(box); else at.parent.insertBefore(box, at.before); }
@@ -448,6 +626,8 @@ document.addEventListener('change', e => { const sel = e.target.closest?.('[data
 document.addEventListener('click', e => {
   if (e.target.closest?.('[data-fs-market-open]')) { ui.picker = true; schedule(); setTimeout(() => document.getElementById('fp83-sel')?.focus(), 80); return; }
   if (e.target.closest?.('[data-fs-market-close]')) { ui.picker = false; schedule(); return; }
+  const lu = e.target.closest?.('[data-fs-loc-use]'); if (lu) { setMarket(lu.getAttribute('data-fs-loc-use')); return; }   // 102: the phone's country, on the shopper's tap
+  const lk = e.target.closest?.('[data-fs-loc-keep]'); if (lk) { const [from, to] = String(lk.getAttribute('data-fs-loc-keep')).split('>'); dismissSuggestion(from, to); schedule(); return; }
   const c = e.target.closest?.('[data-fs-confirm]');
   if (c) { const code = c.dataset.fsConfirm; setConfirmed(code, {id:c.dataset.id, name:c.dataset.name}); want(code, {fresh:true}); schedule();
     shareConfirmation(code, c.dataset.id, 1).then(a => { shared.set(code, a); schedule(); }); return; } // 91: also a vote for everyone
@@ -471,7 +651,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-100.1.0';
+export const BUILD = 'foodscan-102.1.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

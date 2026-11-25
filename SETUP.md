@@ -50,11 +50,17 @@ The daily GitHub job (`.github/workflows/refresh-prices.yml`) looks up every cat
 - `ANTHROPIC_API_KEY`: your Anthropic API key (Claude reads the page text).
 Optional (plain text): `FS_WEB_PRICES_MODEL` (default `claude-opus-5-5`; `claude-haiku-5-5` is about 40 times cheaper and, because every price is verified by code, loses recall rather than accuracy), `FS_WEB_DAILY_LIMIT` (new lookups per UTC day, default 300).
 
+## 4c. Signed price data (101): why the daily refresh does nothing until you do this once
+Since 101 the site uses a price file from the `prices-data` branch only if a **signed manifest** lists it (anyone who can push to that branch can change files, but not sign them). Without the two steps below the site shows the prices bundled with its last release (the release notes say how old they are) and ignores the daily refresh. `/api/prices/status` reports it: `remote.status` is `disabled_no_key` until step 2 is done.
+1. On your computer, in the repository folder: `node scripts/sign-price-data.mjs keygen --out price-data-key.pem`. It writes the private key and prints one line, `FOODSCAN_PRICE_DATA_PUBKEY=…` (the public key). Add the **private key** (the whole file, including the BEGIN/END lines) as the GitHub repository secret `PRICE_DATA_SIGNING_KEY` (Settings → Secrets and variables → Actions), then delete the file.
+2. Add the public key as the Cloudflare Pages environment variable `FOODSCAN_PRICE_DATA_PUBKEY` (Production), then **Retry deployment**.
+The next run of the *Refresh prices* workflow signs everything it publishes (`integrity.json`). A manifest older than 10 days is ignored, so a refresh that stops for 10 days falls back to the bundled prices on its own. Check a published branch: `node scripts/sign-price-data.mjs verify <checkout of prices-data> --pub <public key>`.
+
 ## 5. Redeploy, then check
 Bindings and secrets apply to the **next deployment**: Deployments → the latest → **Retry deployment**. Then:
 ```bash
 curl -s https://YOUR-SITE/api/prices/status | grep -o '"webSearch":"[^"]*"'
-node verify-deploy.mjs https://YOUR-SITE 100.1.0
+node verify-deploy.mjs https://YOUR-SITE 102.1.0
 ```
 
 ## What the web search does, and what it costs

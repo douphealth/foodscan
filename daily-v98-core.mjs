@@ -161,23 +161,44 @@ const GENERIC = {
 };
 /** One-tap portions for a product, in the unit of its nutrition basis (g or ml): the product's own serving, one unit or the whole pack, then
  *  common sizes (30, 50, 100, 150 g, or a glass, cup, can, bottle). Same amount twice is shown once; at most 6. Each is { kind, amount, unit }. */
-export function presetsFor(p) {
+/* 102: the usual drink sizes differ by country. A can is 355 ml (12 fl oz) in the US, Canada and Mexico, 350 ml in Japan and Brazil, 375 ml in Australia and
+ * 330 ml in most of Europe and the UK; a US cup is 240 ml (the size nutrition labels use there), elsewhere 250 ml. The product's own pack size always comes first. */
+const ML_US = [{ kind: 'cup', amount: 240 }, { kind: 'can', amount: 355 }, { kind: 'bottle', amount: 500 }];
+const ML_BY_MARKET = {
+  US: ML_US, PR: ML_US, GU: ML_US, VI: ML_US, AS: ML_US, MP: ML_US,
+  CA: [{ kind: 'glass', amount: 200 }, { kind: 'cup', amount: 250 }, { kind: 'can', amount: 355 }, { kind: 'bottle', amount: 500 }],
+  MX: [{ kind: 'glass', amount: 200 }, { kind: 'cup', amount: 250 }, { kind: 'can', amount: 355 }, { kind: 'bottle', amount: 500 }],
+  JP: [{ kind: 'glass', amount: 200 }, { kind: 'cup', amount: 250 }, { kind: 'can', amount: 350 }, { kind: 'bottle', amount: 500 }],
+  BR: [{ kind: 'glass', amount: 200 }, { kind: 'cup', amount: 250 }, { kind: 'can', amount: 350 }, { kind: 'bottle', amount: 500 }],
+  AU: [{ kind: 'glass', amount: 200 }, { kind: 'cup', amount: 250 }, { kind: 'can', amount: 375 }, { kind: 'bottle', amount: 500 }]
+};
+export function presetsFor(p, market = '') {
   const unit = p?.basis === 'ml' ? 'ml' : 'g', out = [], seen = new Set();
   const add = (kind, amount) => { const a = Math.round(amount * 10) / 10; if (a >= AMOUNT_MIN && a <= AMOUNT_MAX && !seen.has(a)) { seen.add(a); out.push({ kind, amount: a, unit }); } };
   const sa = num(p?.servingAmount);
   if (sa && (p.servingUnit || unit) === unit) add('serving', sa);
   const pk = packOf(p);
   if (pk && pk.unit === unit && pk.amount <= PACK_ONE_TAP_MAX) add(pk.count > 1 ? 'unit' : 'pack', pk.amount);   // a 1.5 L bottle is never one accidental tap (typing it still works)
-  for (const g of GENERIC[unit]) add(g.kind, g.amount);
+  for (const g of (unit === 'ml' && ML_BY_MARKET[String(market || '').toUpperCase()]) || GENERIC[unit]) add(g.kind, g.amount);
   return out.slice(0, 6);
 }
 
+/** 102.1: a value no food can have is a data-entry mistake: it is held back (null, "not reported") instead of being multiplied into the day.
+ *  A spring water recorded with 3.45 g salt per 100 ml would otherwise add 17 g of salt for half a litre. Same bounds as the grade engine's check. */
+export function plausibleNumbers(n, drink = false) {
+  const out = { ...n };
+  for (const k of ['sugars', 'salt', 'sat', 'protein', 'carbs', 'fat', 'fiber']) if (out[k] != null && out[k] > 100.5) out[k] = null;
+  if (out.kcal != null && out.kcal > 910) out.kcal = null;
+  if (drink && out.salt != null && out.salt > 2) out.salt = null;
+  if (out.sugars != null && out.carbs != null && out.sugars > out.carbs + 0.5) out.sugars = null;
+  return out;
+}
 /* ---- 99.0: what was eaten ------------------------------------------------------------------------------------ */
 /** The stored check-in: the food's per-100 g (or per-100 ml) numbers and the amount eaten. null when the amount is not a valid number. */
 export function logEntry(prod, amount, kind, { day, at, grade = null } = {}) {
   const a = num(amount), key = gtin14(prod?.barcode);
   if (a == null || a < AMOUNT_MIN || a > AMOUNT_MAX || !key) return null;
-  const n = numbers(prod);
+  const n = plausibleNumbers(numbers(prod), prod.basis === 'ml');
   return {
     day, at, barcode: String(prod.barcode), gtin: key, name: String(prod.name || prod.barcode).slice(0, 80), grade,
     basis: prod.basis === 'ml' ? 'ml' : 'g', grams: Math.round(a * 10) / 10, portion: String(kind || 'custom').slice(0, 12),

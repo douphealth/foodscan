@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href), Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href), S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href), P = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href), Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href), S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href), P = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
 const W = await import(pathToFileURL(path.join(here, '../prices/swaps-v88.mjs')).href), SW = await import(pathToFileURL(path.join(here, 'build-swaps.mjs')).href);
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));
 export const fileFor = rev => path.join(here, `../assets/estimates-${rev}.json`);

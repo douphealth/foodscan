@@ -10,7 +10,7 @@
  *   (96 % of graded products are below it); with a missing unfavourable nutrient there is no "most likely" letter, only the band.
  * The result is an ESTIMATE, labelled as such, and never feeds rankings or "better choice". It is measured against Open Food Facts' own published letters on
  * every graded Greek product (tools/quick-grade-validate.mjs, qa/quick-grade.test.mjs). Pure functions, no DOM. */
-import { ns23Tier, ns23Inputs, ns23Kinds, ns23Sweeteners, ns23Fold, ns23Score, ns23GradeOfScore, ns23Data, ns23NoPlantEvidence } from '../assets/domain-v8500.mjs';
+import { ns23Tier, ns23Inputs, ns23Kinds, ns23Sweeteners, ns23Fold, ns23Score, ns23GradeOfScore, ns23Data, ns23NoPlantEvidence } from '../assets/domain-v101.mjs';
 
 const fold = ns23Fold;
 const L = words => new RegExp(`(?<![\\p{L}])(?:${words})(?![\\p{L}])`, 'u');

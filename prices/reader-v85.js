@@ -3,6 +3,9 @@
  * The result is shown as the shopper's own calculation, never as the manufacturer's or the database's grade, and is kept on the device only.
  * Overlay: it watches the product page like the price strip does and adds one card under the grade card when the grade is missing. */
 import { esc, pageLang } from './price-core-v83.mjs';
+import { detectMarket } from './market-v83.mjs';
+// 101: the bundled catalogue behind swaps and similar-product estimates is GREEK: used only for a shopper in Greece (their own choice first, else the server's answer)
+const greekMarket = res => { try { const own = detectMarket().code; if (own) return own === 'GR'; } catch {} const h = res?.headers?.get?.('x-foodscan-market'); return h === 'greece'; };   // 102: no known market is not Greece
 
 const T = {
   en: {
@@ -166,7 +169,7 @@ const inputsOf = p => { const n = p?.nutrition || {}; return { kj: n.kj ?? (n.kc
 async function loadQuick(code) {
   quick.set(code, { state: 'loading' });
   try {
-    const [D, Q, S] = await Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
+    const [D, Q, S] = await Promise.all([import('../assets/domain-v101.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
     const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error('http ' + res.status);
     const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p), alcohol = body?.product?.nutriments?.alcohol_100g;
@@ -176,7 +179,7 @@ async function loadQuick(code) {
     if (a.grade || a.status === 'withheld') { quick.set(code, { state: 'ready', ...meta, kind: 'none', q: { ok: false, reason: 'app-has-grade' } }); schedule(); return; }
     let q = Q.quickGrade(p, { alcohol }), entry = { state: 'ready', ...meta, kind: q.ok ? 'quick' : 'none', q };
     if (!q.ok && (q.reason === 'exempt' || q.reason === 'excluded')) entry = { ...entry, kind: 'exempt', exempt: { why: q.why || 'other', inputs: inputsOf(p) } };
-    else if (!q.ok && ['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason)) {
+    else if (!q.ok && ['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason) && greekMarket(res)) {
       const prep = await peers(S);
       if (prep) {
         // too uncertain: first the table from similar products; if that does not settle it, the missing number is borrowed from them (87.1: this step was skipped)

@@ -4,6 +4,9 @@
  * Never a drink for a food. A swap's grade is either published by Open Food Facts or calculated by FoodScan from the swap's own complete numbers, and says which. */
 import { esc, pageLang } from './price-core-v83.mjs';
 import { SWAP_RELIABILITY } from './swaps-v88.mjs';
+import { detectMarket } from './market-v83.mjs';
+// 101: the bundled catalogue behind swaps and similar-product estimates is GREEK: used only for a shopper in Greece (their own choice first, else the server's answer)
+const greekMarket = res => { try { const own = detectMarket().code; if (own) return own === 'GR'; } catch {} const h = res?.headers?.get?.('x-foodscan-market'); return h === 'greece'; };   // 102: no known market is not Greece
 
 const INDEX_URL = '/assets/swaps-off-csv-2026-10-30.json';
 const T = {
@@ -36,16 +39,17 @@ const route = () => (location.hash.startsWith('#/') ? location.hash.slice(1) : l
 const productCode = () => route().match(/^\/p\/(\d{8}|\d{12,14})(?:[/?]|$)/)?.[1] || null;
 
 let mods = null, prepP = null;
-const load = () => mods || (mods = Promise.all([import('../assets/domain-v8500.mjs'), import('./quick-grade-v85.mjs'), import('./swaps-v88.mjs')]).then(([D, Q, W]) => ({ D, Q, W })));
+const load = () => mods || (mods = Promise.all([import('../assets/domain-v101.mjs'), import('./quick-grade-v85.mjs'), import('./swaps-v88.mjs')]).then(([D, Q, W]) => ({ D, Q, W })));
 const index = W => prepP || (prepP = fetch(INDEX_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
 const results = new Map(); // code -> { state, res, target }
 
 async function compute(code) {
   results.set(code, { state: 'loading' });
   try {
-    const { D, Q, W } = await load(), prep = await index(W);
     const res0 = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
-    if (!prep || !res0.ok) throw new Error('unavailable');
+    if (!res0.ok || !greekMarket(res0)) throw new Error('unavailable');   // 101: abroad the Greek catalogue is not this shopper's shelf
+    const { D, Q, W } = await load(), prep = await index(W);
+    if (!prep) throw new Error('unavailable');
     const body = await res0.json(), raw = body?.product || {}, p = D.parseProduct(body, code), a = D.assessGrade(p);
     const kinds = D.ns23Kinds(p), grade = a.grade && /^[A-E]$/.test(a.grade) ? a.grade : null;
     // no grade: use the grade card's own result (prices/reader-v85.js), so the table and the estimate are the same ones the shopper sees

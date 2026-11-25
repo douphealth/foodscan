@@ -46,9 +46,21 @@ function fsMarketCode(v) {
   if (!/^[A-Z]{2}$/.test(c)) return '';
   return c === 'UK' ? 'GB' : c === 'EL' ? 'GR' : c === 'XX' || c === 'T1' || c === 'ZZ' ? '' : c;
 }
-/** The shopper's market for one request (see the block comment above). */
+/** The shopper's market for one request (see the block comment above): the explicit ?market=, else the network country.
+ *  102: when Cloudflare itself says the country is unknown (XX, Tor's T1, an unusable code) the answer is '' and the price routes say so: they never assume Greece.
+ *  Only a runtime that gives no geolocation at all (a local preview, the unit tests) keeps the old Greek default; on Cloudflare `request.cf.country` is always present. */
 function fsMarketOf(request, url) {
-  return fsMarketCode(url.searchParams.get('market')) || fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry')) || FS_MARKET_DEFAULT;
+  const chosen = fsMarketCode(url.searchParams.get('market')); if (chosen) return chosen;
+  const seen = request.cf?.country ?? request.headers.get('CF-IPCountry');
+  if (seen === undefined || seen === null || seen === '') return FS_MARKET_DEFAULT;
+  return fsMarketCode(seen) || fsMarketCode(request.headers.get('CF-IPCountry')) || '';
+}
+/** 102: the answer for a visitor whose country nobody knows: no prices, a clear reason, and the app asks the shopper to choose a country. */
+function fsMarketUnknownPayload(code) {
+  return {version:FS_PRICE_VERSION, barcode:code, country:'', currency:'', scope:'market', checkedAt:new Date().toISOString(), market:{code:'', currency:'', currencies:null, source:'unknown'},
+    status:'market_unknown', transport:'pages_worker', product:null, productName:'', pack:null, offers:[], elsewhere:[], estimate:null, related:[], candidates:[], confirmed:null, community:null, data:null,
+    providers:{}, providerSummary:{active:0, unavailable:0, disabled:0}, summary:{bestOfferId:null, lowestCurrentPrice:null, currentOffers:0, retailers:0, stores:0, perChain:[], typical:null, suspect:0},
+    limitations:['FoodScan could not tell which country you are in, so it shows no prices for any country. Choose your country (the "Change" button) to see local, dated prices.']};
 }
 const fsMarketCurrencies = market => FS_MARKET_CURRENCY[market] || null;
 /** Currencies whose everyday prices are large numbers (a 1 kg pack can cost 25,000 VND or 8,000 HUF): the sanity ceiling is higher. */
@@ -121,7 +133,13 @@ function fsPriceScope(url, request) {
  * No estimates, category benchmarks, chain multipliers or scraped name matches. Missing prices stay missing.
  * Freshness: current <= 7 days (only these can be "the cheapest"), older 8-90 days, historical > 90 days.
  * Greece and elsewhere are kept apart: an observation outside Greece is never shown as a Greek shelf price. */
-const FS_PRICE_CURRENT_DAYS = 7, FS_PRICE_OLDER_DAYS = 90;
+/* 101 per-source freshness ("current" = may rank as the cheapest):
+ *   - a shop's own product page read live at scan time: current (today);
+ *   - a stored web-shop price whose live check failed or was not possible: never current ("last seen", see fsShopSeedTrusted);
+ *   - official observatory prices (posokanei.gov.gr): current for 7 days;
+ *   - Open Prices with a receipt / shelf-photo proof: current for 30 days, with its age shown; without a proof: never ranked;
+ *   - licensed feeds and mandated price files (D1, per-country registry): current for 7 days. */
+const FS_PRICE_CURRENT_DAYS = 7, FS_PRICE_OLDER_DAYS = 90, FS_PRICE_PROOF_CURRENT_DAYS = 30;
 const FS_PRICE_RESTRICTED_PROMOS = ['LOYALTY_PROGRAM','QUANTITY','PICK_IT_YOURSELF','EXPIRES_SOON','SECOND_HAND'];
 /** 94: a shop's product page, not its home, search, cart or account page (those prove nothing about one product). */
 function fsPriceProductPage(url) {
@@ -133,7 +151,7 @@ function fsPriceProductPage(url) {
   if (/(?:^|[?&])(?:q|s|search|query|keyword)=/i.test(u.search) && !/(?:product_id|sku|id|code|gtin)=/i.test(u.search)) return false;
   return !/(?:^|\/(?:el|en|gr))\/(?:search|catalogsearch|cart|checkout|login|account|contact|about|terms|privacy)(?:\/|$)/i.test(p);
 }
-function fsPriceFreshness(age) { return age <= FS_PRICE_CURRENT_DAYS ? 'current' : age <= FS_PRICE_OLDER_DAYS ? 'older' : 'historical'; }
+function fsPriceFreshness(age, currentDays = FS_PRICE_CURRENT_DAYS) { return age <= currentDays ? 'current' : age <= FS_PRICE_OLDER_DAYS ? 'older' : 'historical'; }
 /** Country of an Open Prices location, from its own address fields only. A Greek-language shop name is not evidence
  *  of Greece: Σκλαβενίτης, Lidl and others trade in Cyprus too (Open Prices has Λεμεσός observations). */
 function fsPriceLocationCountry(location) {
@@ -203,14 +221,17 @@ function fsPriceNormalizeOpen(item, code, scope, now=Date.now()) {
   const discountType = fsPriceText(item.discount_type, 50).toUpperCase();
   const discounted = item.price_is_discounted === true || Boolean(discountType);
   const regular = fsPriceNumber(item.price_without_discount);
-  const freshness = fsPriceFreshness(age);
+  // 101: per-source freshness. An Open Prices observation with a receipt or shelf-photo proof stays 'current' for up to
+  // FS_PRICE_PROOF_CURRENT_DAYS (30) days, with its age always shown; without a proof it never ranks anyway.
+  const currentDays = proofType ? FS_PRICE_PROOF_CURRENT_DAYS : FS_PRICE_CURRENT_DAYS;
+  const freshness = fsPriceFreshness(age, currentDays);
   const conditional = FS_PRICE_RESTRICTED_PROMOS.includes(discountType);
   const file = String(item.proof?.file_path || '');
   const currencies = fsMarketCurrencies(home);
   return {
     id:'op:'+id, barcode:code, price:Math.round(price*100)/100,
     regularPrice:discounted && regular!==null && regular>price ? Math.round(regular*100)/100 : null,
-    currency, basis, date:dateStr, ageDays:age, validUntil:null, freshness,
+    currency, basis, date:dateStr, ageDays:age, validUntil:null, freshness, currentDays,
     // 78: only observations with a proof (receipt / shelf photo) rank; unproven ones are listed, never "the cheapest".
     // 83: and only in the shopper's own market and that market's currency (the final currency check for countries without a known currency is in fsPriceBuildPayload).
     rankingEligible:inMarket && (!currencies || currencies.includes(currency)) && freshness === 'current' && basis === 'item' && !conditional && Boolean(proofType),
@@ -258,9 +279,14 @@ function fsPriceNormalizeLicensed(row, code, scope, now=Date.now()) {
   const regular=row.regular_price_cents ? Number(row.regular_price_cents)/100 : null;
   return {
     id:'lf:'+fsPriceText(row.offer_key,180),barcode:code,price,regularPrice:regular!==null&&regular>price?regular:null,
-    currency:'EUR',basis,date,ageDays:age,validUntil:expiration,freshness,
-    rankingEligible:freshness==='current'&&basis==='item'&&!conditional,
-    countryCode:'GR',market:'GR',
+    // 101: rows of the per-country registry carry their own country and currency (HU/HUF, IL/ILS, HR/EUR); a chain's price RANGE
+    // (rank_ok = 0: its stores charge different prices) is listed with its range and never ranked as the cheapest.
+    currency:/^[A-Z]{3}$/.test(String(row.currency||''))?row.currency:'EUR',basis,date,ageDays:age,validUntil:expiration,freshness,
+    rankingEligible:freshness==='current'&&basis==='item'&&!conditional&&Number(row.rank_ok??1)!==0,
+    countryCode:/^[A-Z]{2}$/.test(String(row.country_code||''))?row.country_code:'GR',market:/^[A-Z]{2}$/.test(String(row.country_code||''))?row.country_code:'GR',
+    ...(Number(row.price_max_cents)>Number(row.price_cents)?{priceRange:{low:price,high:Number(row.price_max_cents)/100,stores:Number(row.stores_n)||null}}:{}),
+    ...(Number(row.stores_n)>0?{storesSampled:Number(row.stores_n)}:{}),
+    match:'barcode',
     retailer:fsPriceText(row.retailer,100),retailerId:fsPriceText(row.retailer_id,50),storeName:fsPriceText(row.store_name,120),
     storeId:'licensed:'+fsPriceText(row.store_id,100),storeScope:row.store_scope,city:fsPriceText(row.city,60),
     discounted:row.discounted===1,discountType:fsPriceText(row.discount_type,50),offerConditions:fsPriceText(row.offer_conditions,140),
@@ -295,7 +321,8 @@ const FS_PRICE_SCHEMA = `CREATE TABLE IF NOT EXISTS foodscan_price_offers (
  price_basis TEXT NOT NULL DEFAULT 'item', discounted INTEGER NOT NULL DEFAULT 0, discount_type TEXT NOT NULL DEFAULT '',
  offer_conditions TEXT NOT NULL DEFAULT '', observed_at TEXT NOT NULL, valid_until TEXT,
  source_id TEXT NOT NULL, source_label TEXT NOT NULL, source_url TEXT NOT NULL, license_ref TEXT NOT NULL,
- updated_at TEXT NOT NULL
+ updated_at TEXT NOT NULL,
+ country_code TEXT NOT NULL DEFAULT 'GR', currency TEXT NOT NULL DEFAULT 'EUR', rank_ok INTEGER NOT NULL DEFAULT 1, price_max_cents INTEGER, stores_n INTEGER
 );`;
 const FS_PRICE_INDEX = 'CREATE INDEX IF NOT EXISTS foodscan_price_barcode ON foodscan_price_offers (barcode, observed_at DESC);';
 async function fsPriceLicensedOffers(env, code, scope) {
@@ -424,10 +451,7 @@ function fsOpShard(request, env, code) {
   const base = fsV80Base(env); if (!base) return Promise.resolve(null);
   const id = fsOpShardId(code);
   return fsV80Cached(new URL(request?.url || 'https://food-scan.gearuptofit.com').origin + '|op|' + base + '|' + id, async () => {
-    const res = await fetch(base + '/op/' + id + '.json', {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':1800, '404':60, '500-599':0}}});
-    if (!res.ok) throw new Error('op_shard_' + res.status);
-    const raw = await res.text(); if (raw.length > 2 * 1024 * 1024) throw new Error('op_shard_too_large');
-    const d = JSON.parse(raw);
+    const d = await fsRemoteJSON(env, 'op/' + id + '.json', 2 * 1024 * 1024); if (!d) throw new Error('op_shard_unverified'); // 101: signed + hashed
     if (d?.schema !== 1 || !d.products || !d.locations || !Number.isFinite(Date.parse(d.cutoff))) throw new Error('op_shard_invalid');
     return d;
   }).catch(() => null);
@@ -537,7 +561,12 @@ function fsPricePickMeta(p) {
   };
 }
 /** The validated Open Food Facts product record (identity, quantity, grade). Never a price source. */
-async function fsPriceOffRecord(code) {
+async function fsPriceOffRecord(code, request = null) {
+  // 101: the product lookup of the same scan has usually just cached this record: reuse it (fresh or saved copy) instead of a
+  // second Open Food Facts request, which doubled the load and hit its rate limit.
+  try { const cache = globalThis.caches?.default; if (cache && request) { const origin = new URL(request.url).origin, k14 = String(code).padStart(14, '0');
+    for (const k of [`${origin}/api/cache/${CACHE_SCHEMA}/product/${k14}`, `${origin}/api/cache/${CACHE_SCHEMA}/stale/product/${k14}`]) {
+      const hit = await cache.match(new Request(k)); if (hit?.status === 200) { const b = await hit.json().catch(() => null); if (b?.product) return {...fsPricePickMeta(b.product), source:'open_food_facts', via:'product_cache'}; } } } } catch {}
   const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_el,brands,quantity,product_quantity,product_quantity_unit,nutriscore_grade,image_front_small_url`, {
     headers:{'Accept':'application/json','User-Agent':`FoodScan/${FS_PRICE_VERSION} (https://food-scan.gearuptofit.com)`}, signal:AbortSignal.timeout(2600)});
   if (!res.ok) return null;
@@ -556,13 +585,13 @@ async function fsPriceLocalCatalogueMeta(request, env, code, localOnly = false) 
       const p = data.products.find(x => String(x.code).padStart(14, '0') === key);
       if (p) { const cat = {...fsPricePickMeta(p), source:'catalogue'};
         // The bundled catalogue sometimes omits the pack size; the validated Open Food Facts record may complete it (skipped on list peeks so lists stay fast and local).
-        if (!localOnly && !cat.quantity && !cat.productAmount) { const off = await fsPriceOffRecord(code).catch(()=>null);
+        if (!localOnly && !cat.quantity && !cat.productAmount) { const off = await fsPriceOffRecord(code, request).catch(()=>null);
           if (off && (off.quantity || off.productAmount)) Object.assign(cat, {quantity:off.quantity, productAmount:off.productAmount, productAmountUnit:off.productAmountUnit, quantitySource:'open_food_facts'}); }
         return cat; }
     }
   } catch {}
   if (localOnly) return null;
-  try { return await fsPriceOffRecord(code); } catch { return null; }
+  try { return await fsPriceOffRecord(code, request); } catch { return null; }
 }
 
 /* FoodScan 72/73: Greek prices from dated, public sources.
@@ -737,6 +766,12 @@ async function fsGrLiveHtml(def, path, code, now=Date.now()) {
       ...(available ? {} : {available:false, rankingEligible:false}), id:def.prefix + [date, def.chain, key].join(':')}};
   } catch { return {status:'unavailable'}; }
 }
+/** 101: a stored web-shop price ranks without today's live confirmation only if the crawl that recorded it is younger than
+ *  FS_SHOP_SEED_TRUST_HOURS (default 0 = never: only a price the shop's own page confirmed today can be "the cheapest"). */
+function fsShopSeedTrusted(o, env, now=Date.now()) {
+  const h = Math.max(0, Math.min(48, Number(env?.FS_SHOP_SEED_TRUST_HOURS) || 0)); if (!h) return false;
+  const t = Date.parse(o?.fetchedAt || ''); return Number.isFinite(t) && now - t >= 0 && now - t <= h * 3600e3;
+}
 /** Seed offers for one barcode, plus what the payload needs to name the product and its real pack size. */
 async function fsGrSeedOffers(request, env, code, now=Date.now()) {
   const key = fsPriceKey(code), out = {items:[], providers:{}, product:null, pack:null}, pending = [];
@@ -762,13 +797,21 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
         ...(typeof p.c === 'string' && p.c ? {extraOffer:fsPriceText(p.c, 40)} : {})});
       // 79: the live checks of the shops run in parallel (each at most 2.5 s); see fsGrLiveCheck / fsGrLiveHtml.
       const liveOn = def.live && items.length && path && env?.FS_SHOP_LIVE !== '0' && !(id === 'kritikos' && env?.FS_KRITIKOS_LIVE === '0');
-      if (liveOn) { pending.push(fsGrLiveCheck(def, path, code, now).then(r => {
-        if (r.status === 'confirmed') Object.assign(items[0], r.offer);
+      if (liveOn) { pending.push(fsGrLiveCheck(def, path, code, now).then(async r => {
+        // 101: one retry, after a short pause, when the shop did not answer (timeout, 5xx, 429, network); never on a clear answer.
+        if (r.status === 'unavailable' && !(r.http >= 400 && r.http < 429) && !r.reason) { await new Promise(ok => setTimeout(ok, 250)); r = await fsGrLiveCheck(def, path, code, now); r.retried = true; }
+        return r; }).then(r => {
+        // 101: a price the shop's page confirmed today ranks (unless the shop says out of stock; pack checks still follow in the payload).
+        // v100 kept the stored copy's ranking flag, so a live-confirmed price from an older bundled snapshot was never ranked.
+        if (r.status === 'confirmed') Object.assign(items[0], r.offer, {rankingEligible:r.offer.available !== false, available:r.offer.available !== false, liveUnconfirmed:false, lastSeen:false, liveConfirmed:true});
+        // 101: the shop's page could not confirm today's price. The stored price stays visible as "last seen (date)" and is
+        // NEVER ranked as the cheapest (the review measured 3 of 15 stale shop prices shown as current when the check failed).
+        else if (items.length && r.status === 'unavailable' && !fsShopSeedTrusted(items[0], env, now)) Object.assign(items[0], {rankingEligible:false, liveUnconfirmed:true, lastSeen:true});
         else if (r.status === 'barcode_not_on_page' || r.status === 'gone') items.length = 0; // the shop no longer sells it under this barcode
-        const pv = out.providers[id]; pv.live = r.status; if (r.status !== 'confirmed') pv.liveReason = r.reason || (r.http ? 'http_' + r.http : undefined);
+        const pv = out.providers[id]; pv.live = r.status; if (r.retried) pv.liveRetried = true; if (r.status !== 'confirmed') pv.liveReason = r.reason || (r.http ? 'http_' + r.http : undefined);
         pv.count = items.length; pv.status = items.length ? 'ok_with_data' : 'ok_empty';
         out.items.push(...items);
-      })); } else out.items.push(...items);
+      })); } else { if (items.length && !fsShopSeedTrusted(items[0], env, now) && items[0].rankingEligible !== false) Object.assign(items[0], {rankingEligible:false, liveUnconfirmed:true, lastSeen:true}); out.items.push(...items); }
       out.providers[id] = {status:items.length?'ok_with_data':'ok_empty', snapshot:seed.source.snapshot, fetchedAt:fsPriceStamp(seed.source.fetched_at), count:items.length, source:new URL(def.url).hostname.replace(/^www\./,''), license:def.license};
       continue; // 78: the shop's product name is never used as the product identity
     }
@@ -815,9 +858,11 @@ const fsPriceMedian = xs => { const a = xs.slice().sort((x, y) => x - y), m = a.
  *  the non-suspect, unconditional shelf prices of the last 90 days, one per store, when at least 3 stores recorded one. It is a statistic
  *  of this barcode's own recorded prices, never an estimate from other products. */
 function fsPriceFlagSuspects(items) {
-  const live = items.filter(o => !o.otherCurrency && o.basis === 'item' && o.freshness !== 'historical' && o.freshness !== 'expired');
+  const live = items.filter(o => !o.otherCurrency && !o.packMismatch && o.basis === 'item' && o.freshness !== 'historical' && o.freshness !== 'expired');
   return items.map(o => {
-    if (!o.id.startsWith('op:') || o.otherCurrency || o.basis !== 'item' || o.freshness === 'historical') return o;
+    // 102.1: every source is checked, not only community prices: a web shop listing another pack under this barcode (Lidl's e-shop had a
+    // 194 g coffee at €14.85 while the official observatory recorded €4.76 at Lidl and four other chains) was shown with a €74.25/kg unit price.
+    if (o.otherCurrency || o.packMismatch || o.basis !== 'item' || o.freshness === 'historical') return o;
     const peers = live.filter(x => x.storeId !== o.storeId && x.currency === o.currency).map(x => x.price);
     if (peers.length < 3) return o;
     const med = fsPriceMedian(peers);
@@ -878,7 +923,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   };
   // 79: every offer says which tier it is in; only 'current' can be the cheapest.
   const tierOf = o => o.rankingEligible ? 'current' : o.packMismatch ? 'otherSize' : o.packUnconfirmed ? 'packUnconfirmed' : o.available === false ? 'outOfStock'
-    : o.suspect ? 'suspect' : o.otherCurrency ? 'otherCurrency' : o.freshness !== 'current' ? 'older' : 'notRanked';
+    : o.suspect ? 'suspect' : o.otherCurrency ? 'otherCurrency' : o.liveUnconfirmed ? 'lastSeen' : o.freshness !== 'current' ? 'older' : 'notRanked';
   // 83: "local" = this shopper's market (Greece: the official and shop sources plus Open Prices; elsewhere: Open Prices). Everything else is "elsewhere".
   const guard = fsPriceMarketGuard(fsPriceDeduplicate(all.filter(o => o.market === home).map(checkLink)), home);
   const greek = guard.offers.slice().sort(fsPriceOrder);
@@ -941,7 +986,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       tiers:Object.fromEntries(['current','otherSize','packUnconfirmed','older','outOfStock','notRanked','suspect','otherCurrency'].map(t => [t, offers.filter(o => o.tier === t).length]))},
     limitations:greekMarket ? [
       `Only real, dated prices are shown, each with its own source and licence: the Ministry of Development price observatory (posokanei.gov.gr, national chain prices), e-katanalotis (history only), Open Prices (community receipts and shelf photos, ODbL), the chains' own web shops (${FS_GR_RETAILER_WEB.filter(id => official.providers?.[id]?.status !== 'disabled').map(id => new URL(FS_GR_SOURCES[id].url).hostname.replace(/^www\./, '')).join(', ')}) and licensed retailer feeds when configured. No price is ever estimated (81). When a barcode has no recorded price, "related" may list up to 3 close products (same brand, similar name and size) with THEIR OWN recorded price, source and date; they are never presented as this product's price.`,
-      'Only observations from the last 7 days, with no expired promotion and a dated proof, can be "the cheapest". Older prices are still shown, as the last recorded price, with their age. Future-dated observations are rejected.',
+      'Only observations from the last 7 days (30 days for an Open Prices receipt or shelf photo; a web-shop price only when the shop\'s own page confirms it at scan time), with no expired promotion and a dated proof, can be "the cheapest". Older prices are still shown, as the last recorded price, with their age. Future-dated observations are rejected.',
       'The observatory publishes no barcodes. Its prices appear only for barcodes linked to its products by a reviewed link, an automatic exact match, or (81) a price-anchored match (a chain web shop and the observatory report the same chain\'s regular price to the cent, same brand and size, one product only); each price says which. If its pack size disagrees with the label, its prices never rank.',
       'Web-shop prices found by FoodScan\'s web search (84) come from shops\' own product pages in your country. An AI model reads the page, then every price is checked: it must appear on that page, in your currency, for this barcode or the exact same name, brand and size. Each shows the shop, the link and when it was read.',
       'Lidl prices can vary by region; lidl.gr shows its default (national) price. Web-shop prices are the shop\'s online price; shelf prices in stores may differ.',
@@ -949,7 +994,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
       'A store with no observation shows "Not available". Shelf prices change and offers expire: check the price in store or at checkout.',
     ] : [
       'Only real, dated prices are shown, each with its own source, store and date. They come from Open Prices (community receipts and shelf photos of Open Food Facts contributors, ODbL). No price is ever converted from another currency, estimated or guessed.',
-      'Only prices recorded in the last 7 days, in this country\'s currency, with a dated receipt or shelf-photo proof and no loyalty-card or multi-buy condition can be "the cheapest". Older prices stay visible as the last recorded price, with their age. Future-dated observations are rejected.',
+      'Only prices recorded in the last 30 days, in this country\'s currency, with a dated receipt or shelf-photo proof and no loyalty-card or multi-buy condition can be "the cheapest". Older prices stay visible as the last recorded price, with their age. Future-dated observations are rejected.',
       'A price far from what at least three other stores recorded for the same barcode (below half or above 2.5 times their median) is shown as unusual and is never ranked or counted. The typical price is the median of the unconditional prices of the last 90 days, when at least three stores recorded one.',
       'Shop prices found by web search come from shops\' own product pages in this country. Each price was read from the page, checked to appear there in this country\'s currency, and only an exact barcode or exact name, brand and size match in stock can be the cheapest. Each shows the shop, a link and when it was read.',
       'Prices recorded in other countries are listed separately with their own currency; they are reference only, not prices in your country.',
@@ -995,7 +1040,8 @@ async function fsPriceHealthV79(request, env, now=Date.now()) {
           crawl:S[id] ? {targets:S[id].targets, position:S[id].position, cycle:S[id].cycle, progress:S[id].targets ? Math.round(1000*S[id].position/S[id].targets)/10 : null,
             lastCycleDoneAt:S[id].last_cycle_done_at, lastStatus:S[id].last_status, consecutiveFailures:S[id].consecutive_failures} : null,
           priceChanges7d:X[id]?.n || 0};
-        out.sources[id].state = !lastOk ? (R[id] ? 'failing' : young ? 'awaiting_first_run' : 'never_ran') : hours > lim ? 'stale' : (S[id]?.consecutive_failures || 0) >= 3 ? 'failing' : 'ok';
+        // 101: 'upstream_unchanged' = the updater ran but the publisher has nothing newer (e-katanalotis file unchanged since 16 Jun 2026)
+        out.sources[id].state = !lastOk ? (R[id]?.status === 'stale' ? 'upstream_unchanged' : R[id] ? 'failing' : young ? 'awaiting_first_run' : 'never_ran') : hours > lim ? 'stale' : (S[id]?.consecutive_failures || 0) >= 3 ? 'failing' : 'ok';
       }
     } catch { out.mode = 'seed'; out.database = 'not_ready'; }
   }
@@ -1020,8 +1066,63 @@ async function fsPriceHealthV79(request, env, now=Date.now()) {
  *    reachable, the NEWER of the bundled and the remote copy is used; a missing, older, invalid or unreachable remote copy is ignored.
  *    FOODSCAN_PRICE_DATA_URL=off switches it off. Every observation keeps its own date. */
 const FS_V80_REMOTE = 'https://raw.githubusercontent.com/douphealth/foodscan/prices-data';
+/* ===== FoodScan 101: signed manifest for the remote price data =====
+ * v100 let any newer file on the prices-data branch replace the bundled data, with no integrity check: whoever could push to that
+ * branch controlled every price. Now a remote file is used ONLY when
+ *   1. FOODSCAN_PRICE_DATA_PUBKEY (base64 of a raw 32-byte Ed25519 public key) is set on the deployment, and
+ *   2. <base>/integrity.json carries `signed` (a JSON text: {v:1, built, files:{"<path>":"<sha256 hex>"}}) and `sig` (base64 Ed25519
+ *      signature of the UTF-8 bytes of `signed`) that verify with that key, `built` is not in the future and at most
+ *      FS_REMOTE_MAX_AGE_DAYS old, and
+ *   3. the SHA-256 of the downloaded file equals the hash listed for its path.
+ * Anything else (no key, no manifest, bad signature, stale manifest, unlisted file, hash mismatch) uses the BUNDLED copy.
+ * Regenerate with `node scripts/sign-price-data.mjs sign <prices-data checkout> --key <private.pem>` (see RELEASE-101.0.0.md). */
+const FS_REMOTE_MAX_AGE_DAYS = 10, FS_REMOTE_MANIFEST_TTL = 10 * 60 * 1000;
+const fsRemoteState = {status:'not_checked', built:null, files:0, mismatches:0, checkedAt:null, reason:null};
+let fsRemoteManifestEntry = null;
+const fsB64 = s => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+const fsHex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+async function fsRemoteManifestLoad(env, base) {
+  const fail = (status, reason) => { Object.assign(fsRemoteState, {status, reason:reason || null, built:null, files:0, checkedAt:new Date().toISOString()}); return null; };
+  const pub = String(env?.FOODSCAN_PRICE_DATA_PUBKEY || '').trim();
+  if (!pub) return fail('disabled_no_key', 'FOODSCAN_PRICE_DATA_PUBKEY is not set: only the bundled price data is used');
+  let res; try { res = await fetch(base + '/integrity.json', {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':300, '404':60, '500-599':0}}}); } catch { return fail('unreachable'); }
+  if (!res.ok) return fail(res.status === 404 ? 'no_manifest' : 'unreachable', 'http_' + res.status);
+  let m; try { const raw = await res.text(); if (raw.length > 512 * 1024) return fail('invalid', 'too_large'); m = JSON.parse(raw); } catch { return fail('invalid', 'json'); }
+  if (typeof m?.signed !== 'string' || typeof m?.sig !== 'string') return fail('invalid', 'unsigned');
+  let ok = false;
+  try {
+    const key = await crypto.subtle.importKey('raw', fsB64(pub), {name:'Ed25519'}, false, ['verify']);
+    ok = await crypto.subtle.verify({name:'Ed25519'}, key, fsB64(m.sig), new TextEncoder().encode(m.signed));
+  } catch { return fail('invalid', 'key_or_signature_format'); }
+  if (!ok) return fail('bad_signature');
+  let body; try { body = JSON.parse(m.signed); } catch { return fail('invalid', 'signed_json'); }
+  const built = Date.parse(body?.built || '');
+  if (body?.v !== 1 || !body.files || typeof body.files !== 'object' || !Number.isFinite(built)) return fail('invalid', 'fields');
+  if (built > Date.now() + 3600e3) return fail('invalid', 'built_in_future');
+  if (Date.now() - built > FS_REMOTE_MAX_AGE_DAYS * 864e5) return fail('stale', 'manifest older than ' + FS_REMOTE_MAX_AGE_DAYS + ' days');
+  const files = Object.fromEntries(Object.entries(body.files).filter(([k, v]) => /^[a-z0-9][a-z0-9\-_/.]*\.json$/i.test(k) && !k.includes('..') && /^[0-9a-f]{64}$/.test(String(v))));
+  Object.assign(fsRemoteState, {status:'ok', reason:null, built:body.built, files:Object.keys(files).length, checkedAt:new Date().toISOString()});
+  return {base, built:body.built, files};
+}
+function fsRemoteManifest(env) {
+  const base = fsV80Base(env); if (!base) { fsRemoteState.status = 'off'; return Promise.resolve(null); }
+  const keyed = base + '|' + String(env?.FOODSCAN_PRICE_DATA_PUBKEY || '');
+  if (fsRemoteManifestEntry && fsRemoteManifestEntry.key === keyed && Date.now() - fsRemoteManifestEntry.at < FS_REMOTE_MANIFEST_TTL) return fsRemoteManifestEntry.task;
+  const task = fsRemoteManifestLoad(env, base).catch(() => null);
+  fsRemoteManifestEntry = {key:keyed, at:Date.now(), task};
+  return task;
+}
+/** One remote JSON file, used only if the signed manifest lists it and its SHA-256 matches. null otherwise (=> bundled copy). */
+async function fsRemoteJSON(env, name, maxBytes = 4 * 1024 * 1024, ttl = 1800) {
+  const m = await fsRemoteManifest(env); if (!m) return null;
+  const want = m.files[name]; if (!want) return null;
+  const res = await fetch(m.base + '/' + name, {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':ttl, '404':60, '500-599':0}}});
+  if (!res.ok) { await res.body?.cancel(); return null; }
+  const buf = await res.arrayBuffer(); if (buf.byteLength > maxBytes) return null;
+  if (fsHex(await crypto.subtle.digest('SHA-256', buf)) !== want) { fsRemoteState.mismatches++; return null; }
+  return JSON.parse(new TextDecoder().decode(buf));
+}
 const FS_V80_TTL = 30 * 60 * 1000;
-const FS_EST_ROOT = '/assets/gr-est-v80/';
 const FS_EST_SHARDS = 64;
 const fsV80Base = env => { const v = env?.FOODSCAN_PRICE_DATA_URL; if (v === 'off') return ''; return typeof v === 'string' && /^https:\/\/[^\s]+$/.test(v) ? v.replace(/\/+$/, '') : FS_V80_REMOTE; };
 const fsV80Cache = new Map();
@@ -1041,44 +1142,40 @@ async function fsV80Read(request, env, bundledPath, remoteName, validate, stamp,
     const raw = await res.text(); if (raw.length > 4 * 1024 * 1024) throw new Error('too_large');
     const data = JSON.parse(raw); if (!validate(data)) throw new Error('invalid'); return data;
   };
-  const remote = async () => {
-    const base = fsV80Base(env); if (!base) return null;
-    const res = await fetch(base + '/' + remoteName, {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':1800, '404':60, '500-599':0}}});
-    if (!res.ok) return null;
-    const raw = await res.text(); if (raw.length > 4 * 1024 * 1024) return null;
-    const data = JSON.parse(raw); return validate(data) ? data : null;
+  const remote = async () => { // 101: signed manifest + SHA-256 per file (fsRemoteJSON)
+    const data = await fsRemoteJSON(env, remoteName, 4 * 1024 * 1024); return data && validate(data) ? data : null;
   };
   const [a, b] = await Promise.all([own().catch(() => null), remote().catch(() => null)]);
   if (!a && !b) throw new Error('unavailable');
   if (a && b) return (stamp(b) || 0) > (stamp(a) || 0) && accept(b, a) ? Object.assign(b, {origin:'remote'}) : Object.assign(a, {origin:'bundled'});
   return b ? Object.assign(b, {origin:'remote'}) : Object.assign(a, {origin:'bundled'});
 }
+/* 101: NO ESTIMATES. The v80 estimator shards (gr-est-v80, ~11,700 "≈ €x–€y" ranges with a 12–18 % typical error) are no longer shipped
+ * or read for prices. What is kept, in /assets/gr-cand-v101/c-N.json (8 files), is only:
+ *   k - the "Is this your product?" observatory candidates (never shown as this barcode's price), and
+ *   r - for close same-brand matches (class A/B), up to 3 OTHER products with THEIR OWN recorded prices, listed as "not this product".
+ * A remote e-NN.json (old layout, signed + hashed) may refresh the candidates; any estimate it still carries is ignored. */
+const FS_CAND_ROOT = '/assets/gr-cand-v101/';
 const fsEstShardId = code => String(Number(String(code).padStart(14, '0').slice(-6)) % FS_EST_SHARDS).padStart(2, '0');
-const fsEstShard = (request, env, code) => fsV80Cached(new URL(request.url).origin + '|e-' + fsEstShardId(code), () =>
-  fsV80Read(request, env, FS_EST_ROOT + 'e-' + fsEstShardId(code) + '.json', 'e-' + fsEstShardId(code) + '.json', d => d && d.v === 80 && d.items && typeof d.items === 'object', d => Date.parse(d.built),
-    // 82: a newer remote shard from a build without candidates must not hide the bundled candidates
-    (remote, own) => fsEstHasK(remote) || !fsEstHasK(own)));
-const fsEstHasK = d => Object.values(d.items).some(x => Array.isArray(x?.k) && x.k.length);
-const fsEstManifest = (request, env) => fsV80Cached(new URL(request.url).origin + '|e-manifest', () =>
-  fsV80Read(request, env, FS_EST_ROOT + 'manifest.json', 'manifest.json', d => d && d.version === 80 && d.estimator, d => Date.parse(d.built)));
-/** Estimate record from a shard -> the payload object (checked again by the client). */
-function fsEstObject(e, manifest) {
-  if (!e || typeof e !== 'object' || !['kg', 'l', 'pcs'].includes(e.u) || !(e.m > 0) || !(e.a > 0) || !(e.b >= e.m) || !['A', 'B', 'C', 'D', 'E'].includes(e.c)) return null;
-  const cal = manifest?.estimator?.classes?.[e.c];
-  const label = s => /^pk\d+$/.test(s) ? 'Παρατηρητήριο Τιμών' : s === 'bz' ? 'bazaar-online.gr' : s === 'li' ? 'lidl.gr' : '';
-  return {
-    unit:e.u, unitLow:e.a, unitMid:e.m, unitHigh:e.b, pack:Array.isArray(e.p) && e.p.length === 3 ? e.p : null, n:e.n, cls:e.c, category:fsPriceText(e.g || '', 60),
-    examples:(Array.isArray(e.x) ? e.x : []).slice(0, 3).map(x => ({name:fsPriceText(x[0], 90), price:Number(x[1]), source:label(String(x[2])), date:fsPriceISO(x[3]), similarity:Number(x[4]) || 0})),
-    validation:cal && cal.usable ? {medianErrorPct:cal.medianAbsPctError, coverage80:manifest.estimator?.holdout?.[e.c]?.coverage80 ?? null, tested:cal.n} : null,
-    builtAt:fsPriceISO(String(manifest?.built || '')),
-  };
-}
+const fsCandBundledId = code => String(Number(String(code).padStart(14, '0').slice(-6)) % 8);
+const fsEstShard = (request, env, code) => fsV80Cached(new URL(request.url).origin + '|cand-' + fsEstShardId(code), async () => {
+  const own = await env.ASSETS.fetch(new Request(new URL(FS_CAND_ROOT + 'c-' + fsCandBundledId(code) + '.json', request.url))).then(r => r.ok ? r.json() : null).catch(() => null);
+  const ownOk = own && own.v === 101 && own.items && typeof own.items === 'object' ? own : null;
+  const remote = await fsRemoteJSON(env, 'e-' + fsEstShardId(code) + '.json', 4 * 1024 * 1024).catch(() => null);
+  const remoteOk = remote && remote.v === 80 && remote.items && typeof remote.items === 'object' && Object.values(remote.items).some(x => Array.isArray(x?.k) && x.k.length) ? remote : null;
+  if (remoteOk && (!ownOk || Date.parse(remoteOk.built) > Date.parse(ownOk.built))) return Object.assign(remoteOk, {origin:'remote'});
+  if (ownOk) return Object.assign(ownOk, {origin:'bundled'});
+  throw new Error('unavailable');
+});
 async function fsEstimateFor(request, env, code) {
-  const [shard, manifest] = await Promise.all([fsEstShard(request, env, code), fsEstManifest(request, env).catch(() => null)]);
-  const e = shard.items[fsPriceKey(code)]; if (!e?.e && !e?.k) return null;
-  const estimate = e.e ? fsEstObject(e.e, manifest) : null, candidates = fsObsCandidates(e.k);
-  if (!estimate && !candidates.length) return null;
-  return {estimate, candidates, name:fsPriceText(e.n || '', 120), meta:{builtAt:manifest?.built || shard.built || null, origin:shard.origin || 'bundled'}};
+  const shard = await fsEstShard(request, env, code);
+  const e = shard.items[fsPriceKey(code)]; if (!e) return null;
+  const candidates = fsObsCandidates(e.k);
+  const rel = e.r || (e.e && ['A', 'B'].includes(e.e.c) ? {c:e.e.c, x:e.e.x} : null);
+  const label = s => /^pk\d+$/.test(s) ? 'Παρατηρητήριο Τιμών' : s === 'bz' ? 'bazaar-online.gr' : s === 'li' ? 'lidl.gr' : '';
+  const near = rel && Array.isArray(rel.x) ? {cls:rel.c, examples:rel.x.slice(0, 3).map(x => ({name:fsPriceText(x[0], 90), price:Number(x[1]), source:label(String(x[2])), date:fsPriceISO(x[3]), similarity:Number(x[4]) || 0}))} : null;
+  if (!near && !candidates.length) return null;
+  return {estimate:near, candidates, name:fsPriceText(e.n || '', 120), meta:{builtAt:shard.built || null, origin:shard.origin || 'bundled'}};
 }
 /* 82: "Is this your product?" The observatory (posokanei.gov.gr) prices ~10,000 products in every chain but publishes no barcodes.
  * For a barcode with no recorded price, the daily build lists up to 4 same-brand observatory products that no barcode is linked to
@@ -1089,8 +1186,10 @@ const FS_OBS_ROOT = '/assets/gr-obs-v82/';
 const FS_OBS_SHARDS = 64;
 const fsObsId = v => /^[0-9a-f]{32}$/.test(String(v || '')) ? String(v) : '';
 const fsObsShardId = id => String(parseInt(id.slice(0, 6), 16) % FS_OBS_SHARDS).padStart(2, '0');
+// 101: bundled copy packed in 8 files (p-N.json); the remote copy keeps its 64 (o-NN.json)
+const fsObsBundledId = id => String(parseInt(id.slice(0, 6), 16) % 8);
 const fsObsShard = (request, env, id) => fsV80Cached(new URL(request.url).origin + '|o-' + fsObsShardId(id), () =>
-  fsV80Read(request, env, FS_OBS_ROOT + 'o-' + fsObsShardId(id) + '.json', 'o-' + fsObsShardId(id) + '.json', d => d && d.v === 82 && d.items && typeof d.items === 'object', d => Date.parse(d.built)));
+  fsV80Read(request, env, FS_OBS_ROOT + 'p-' + fsObsBundledId(id) + '.json', 'o-' + fsObsShardId(id) + '.json', d => d && d.v === 82 && d.items && typeof d.items === 'object', d => Date.parse(d.built)));
 function fsObsCandidates(k) {
   if (!Array.isArray(k)) return [];
   return k.slice(0, 4).map(x => Array.isArray(x) && fsObsId(x[0]) ? {id:x[0], name:fsPriceText(x[1], 90), chains:Math.max(0, Math.min(20, Number(x[2]) || 0)), date:fsPriceISO(x[3]), similarity:Math.max(0, Math.min(100, Number(x[4]) || 0)),
@@ -1111,13 +1210,15 @@ async function fsObsConfirmed(request, env, code, id, now=Date.now()) {
  * (POST /api/prices/confirm, stored in FOODSCAN_PRICES_DB). A barcode is linked to an observatory product for EVERYONE when:
  *  - the product is one of the candidates FoodScan itself offered for that barcode (same brand, unlinked, from the daily build),
  *  - the barcode has no observatory link of its own, and the observatory pack size matches the label (when both are known),
- *  - at least FS_CONFIRM_MIN (default 2, at most 10) different voters confirmed it; a voter is a salted hash of the network (/24 IPv4,
+ *  - at least FS_CONFIRM_MIN (101: default 5, at least 5, at most 20) different voters confirmed it, and (101) an admin approved it; a voter is a salted hash of the network (/24 IPv4,
  *    /48 IPv6), so one household counts once; each voter has at most FS_CONFIRM_DAILY votes a day,
  *  - disputes ("Not this product") stay under half of the confirmations, and no other product of that barcode has as many confirmations.
  * The linked product's own dated chain prices then appear for that barcode on the product page and in lists, labelled
  * match:'community-confirmed', and go through every check of the payload (a pack-size mismatch never ranks). */
 const FS_CONFIRM_DAILY = 30;
-const fsConfirmMin = env => Math.max(2, Math.min(10, Math.round(Number(env?.FS_CONFIRM_MIN)) || 2));
+// 101 (fix 10): at least 5 independent confirmations (v100: 2), a matching pack size, and an admin review before a link is shared.
+const fsConfirmMin = env => Math.max(5, Math.min(20, Math.round(Number(env?.FS_CONFIRM_MIN)) || 5));
+const fsConfirmReview = env => String(env?.FS_CONFIRM_REVIEW ?? '1') !== '0';
 async function fsVoter(request, env) {
   const ip = String(request.headers.get('CF-Connecting-IP') || '');
   const net = ip.includes(':') ? ip.split(':').slice(0, 3).join(':') : ip.split('.').slice(0, 3).join('.');
@@ -1128,13 +1229,33 @@ async function fsVoter(request, env) {
 async function fsCommunityLinks(env, codes) {
   const db = env?.FOODSCAN_PRICES_DB, keys = [...new Set(codes.map(fsPriceKey))], out = new Map();
   if (!db || !keys.length) return out;
-  try { const r = await db.prepare(`SELECT ean, pk_id, confirmations FROM foodscan_obs_links WHERE status='active' AND ean IN (${keys.map(() => '?').join(',')})`).bind(...keys).all();
+  // 101: links shared before 101 with fewer confirmations than the new minimum are no longer used.
+  try { const r = await db.prepare(`SELECT ean, pk_id, confirmations FROM foodscan_obs_links WHERE status='active' AND confirmations >= ? AND ean IN (${keys.map(() => '?').join(',')})`).bind(fsConfirmMin(env), ...keys).all();
     for (const x of r.results || []) if (fsObsId(x.pk_id)) out.set(x.ean, {pk_id:x.pk_id, confirmations:Number(x.confirmations) || 0}); } catch {}
   return out;
 }
 async function fsCommunityOffers(request, env, code, link) {
   const c = await fsObsConfirmed(request, env, code, link.pk_id);
   return {...c, items:c.items.map(o => ({...o, match:'community-confirmed'})), confirmations:link.confirmations};
+}
+/** 101: GET /api/prices/links/review lists links waiting for review; POST {barcode, approve:true|false} approves or rejects one.
+ *  Both need Authorization: Bearer <FOODSCAN_PRICES_ADMIN_TOKEN>. */
+async function fsPriceLinkReview(request, env) {
+  if (!(await fsPriceAdminOk(request, env))) return fsPriceJson({error:'unauthorized'}, 401);
+  const db = env?.FOODSCAN_PRICES_DB; if (!db) return fsPriceJson({error:'not_configured'}, 503);
+  try {
+    if (request.method === 'GET') { const r = await db.prepare("SELECT ean, pk_id, confirmations, disputes, updated_at FROM foodscan_obs_links WHERE status='pending_review' ORDER BY updated_at DESC LIMIT 200").all();
+      return fsPriceJson({pending:r.results || [], min:fsConfirmMin(env)}); }
+    if (request.method !== 'POST') return fsPriceJson({error:'method_not_allowed'}, 405, {Allow:'GET, POST'});
+    let body = null; try { body = await request.json(); } catch {}
+    const code = String(body?.barcode || ''); if (!fsPriceValidBarcode(code) || typeof body?.approve !== 'boolean') return fsPriceJson({error:'invalid_query', message:'Send {barcode, approve: true | false}.'}, 400);
+    const key = fsPriceKey(code), cur = await db.prepare('SELECT status, confirmations FROM foodscan_obs_links WHERE ean=?').bind(key).first();
+    if (!cur || cur.status !== 'pending_review') return fsPriceJson({error:'not_pending', status:cur?.status || null}, 409);
+    if (body.approve && Number(cur.confirmations) < fsConfirmMin(env)) return fsPriceJson({error:'below_minimum'}, 409);
+    // 101.1: only columns the deployed schema has (the 101.0 statement wrote reviewed_by/reviewed_at, which no database had: every approval failed with a 503). `updated_at` is the review time.
+    await db.prepare('UPDATE foodscan_obs_links SET status=?, updated_at=? WHERE ean=?').bind(body.approve ? 'active' : 'rejected', Date.now(), key).run();
+    return fsPriceJson({barcode:code, status:body.approve ? 'active' : 'rejected'});
+  } catch { return fsPriceJson({error:'temporarily_unavailable'}, 503); }
 }
 async function fsPriceConfirm(request, env) {
   if (request.method !== 'POST') return fsPriceJson({error:'method_not_allowed'}, 405, {Allow:'POST'});
@@ -1167,10 +1288,15 @@ async function fsPriceConfirm(request, env) {
       .map(r => ({pk_id:r.pk_id, yes:Number(r.yes) || 0, no:Number(r.no) || 0})).sort((a, b) => b.yes - a.yes);
     const min = fsConfirmMin(env), best = rows[0] || null, tie = best && rows.filter(r => r.yes === best.yes).length > 1;
     const active = Boolean(best && best.yes >= min && best.no * 2 < best.yes && !tie);
-    if (active) await db.prepare("INSERT INTO foodscan_obs_links(ean, pk_id, confirmations, disputes, status, updated_at) VALUES (?,?,?,?,'active',?) ON CONFLICT(ean) DO UPDATE SET pk_id=excluded.pk_id, confirmations=excluded.confirmations, disputes=excluded.disputes, status='active', updated_at=excluded.updated_at").bind(key, best.pk_id, best.yes, best.no, now).run();
+    // 101: reaching the threshold puts the link in 'pending_review'; an admin approval makes it 'active'. An approved link that
+    // later loses its majority, or another product overtaking it, sends it back to review.
+    const prev = await db.prepare('SELECT pk_id, status FROM foodscan_obs_links WHERE ean=?').bind(key).first().catch(() => null);
+    const keepApproved = active && prev?.status === 'active' && prev.pk_id === best.pk_id;
+    const status = !active ? 'inactive' : (fsConfirmReview(env) && !keepApproved ? 'pending_review' : 'active');
+    if (active) await db.prepare("INSERT INTO foodscan_obs_links(ean, pk_id, confirmations, disputes, status, updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(ean) DO UPDATE SET pk_id=excluded.pk_id, confirmations=excluded.confirmations, disputes=excluded.disputes, status=excluded.status, updated_at=excluded.updated_at").bind(key, best.pk_id, best.yes, best.no, status, now).run();
     else await db.prepare("UPDATE foodscan_obs_links SET status='inactive', updated_at=? WHERE ean=?").bind(now, key).run();
     const mine = rows.find(r => r.pk_id === pk) || {yes:0, no:0};
-    return fsPriceJson({barcode:code, pk, status:active && best.pk_id === pk ? 'shared' : 'pending', confirmations:mine.yes, disputes:mine.no, needed:min});
+    return fsPriceJson({barcode:code, pk, status:active && best.pk_id === pk ? (status === 'active' ? 'shared' : 'pending_review') : 'pending', confirmations:mine.yes, disputes:mine.no, needed:min, review:fsConfirmReview(env)});
   } catch { return fsPriceJson({error:'temporarily_unavailable', message:'Please try again shortly.'}, 503); }
 }
 /** The four source seeds (observatory, e-katanalotis, Bazaar, Lidl) are SHARDED (see tools/lib/shard-seeds.mjs): the manifest is ~2 KB, a
@@ -1189,12 +1315,8 @@ function fsGrSeedLegacy(request, env, id) {
       const raw = await res.text(); if (raw.length > 4 * 1024 * 1024) throw new Error('seed_too_large');
       const data = JSON.parse(raw); if (!valid(data)) throw new Error('seed_invalid'); return data;
     };
-    const remote = async () => {
-      const base = fsV80Base(env); if (!base) return null;
-      const res = await fetch(base + '/seeds/' + def.file, {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':1800, '404':60, '500-599':0}}});
-      if (!res.ok) return null;
-      const raw = await res.text(); if (raw.length > 4 * 1024 * 1024) return null;
-      const data = JSON.parse(raw); return valid(data) ? data : null;
+    const remote = async () => { // 101: signed manifest + SHA-256 per file
+      const data = await fsRemoteJSON(env, 'seeds/' + def.file, 4 * 1024 * 1024); return data && valid(data) ? data : null;
     };
     const [a, b] = await Promise.all([own().catch(() => null), remote().catch(() => null)]);
     if (!a && !b) throw new Error('unavailable');
@@ -1209,16 +1331,16 @@ async function fsGrSeed(request, env, id, code=null) {
   try {
     let man = await fsGrSeedLegacy(request, env, id); if (!man) return null;
     if (!man.sharded || code === null) return man;
-    const origin = new URL(request.url).origin, shardId = fsPriceKey(code).slice(-2);
+    // 101: the bundled shards are packed 10 per source (d0..d9, last digit of the key); the remote copies keep 100 (00..99).
+    const origin = new URL(request.url).origin, key14 = fsPriceKey(code), remoteId = key14.slice(-2), bundledId = 'd' + key14.slice(-1);
     const read = m => {
       const dir = /^[a-z0-9-]+\/$/.test(m.sharded) ? m.sharded : null; if (!dir) return Promise.resolve(null);
+      const shardId = m.origin === 'remote' ? remoteId : bundledId;
       const name = dir + shardId + '.json', ok = d => d?.schema === 2 && d.products && Array.isArray(d.rows) && d.source?.snapshot === m.source.snapshot;
       return fsV80Cached(origin + '|seedshard|' + id + '|' + m.origin + '|' + m.source.snapshot + '|' + shardId, async () => {
         if (m.origin === 'remote') {
-          const res = await fetch(fsV80Base(env) + '/seeds/' + name, {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':1800, '404':60, '500-599':0}}});
-          if (!res.ok) throw new Error('remote_shard');
-          const raw = await res.text(); if (raw.length > 1024 * 1024) throw new Error('shard_too_large');
-          const d = JSON.parse(raw); if (!ok(d)) throw new Error('seed_invalid'); return d;
+          const d = await fsRemoteJSON(env, 'seeds/' + name, 1024 * 1024); if (!d) throw new Error('remote_shard');
+          if (!ok(d)) throw new Error('seed_invalid'); return d;
         }
         const res = await env.ASSETS.fetch(new Request(new URL(FS_GR_SEED_ROOT + name, request.url)));
         if (res.status === 404) return {products:{}, rows:[]};
@@ -1236,11 +1358,10 @@ async function fsGrSeed(request, env, id, code=null) {
 /** GET /api/prices/health: the v79 report plus the estimator and the data origin. */
 async function fsPriceHealth(request, env, now=Date.now()) {
   const res = await fsPriceHealthV79(request, env, now); let body; try { body = await res.clone().json(); } catch { return res; }
-  try {
-    const m = await fsEstManifest(request, env);
-    body.estimator = {builtAt:m.built, origin:m.origin || 'bundled', referenceItems:m.estimator?.referenceItems || 0, estimates:m.withEstimate || 0, byClass:m.estimatesByClass || {}, validation:m.estimator?.classes || null, holdout:m.estimator?.holdout || null};
-  } catch { body.estimator = null; }
-  body.remote = {url:fsV80Base(env) || null, note:'The newer of the bundled and the remote copy is used for the seed files and the estimates.'};
+  body.estimator = {status:'removed', note:'101: no price is estimated; estimates are neither shipped nor shown.'};
+  await fsRemoteManifest(env).catch(() => null);
+  body.remote = {url:fsV80Base(env) || null, integrity:{...fsRemoteState, maxAgeDays:FS_REMOTE_MAX_AGE_DAYS, keyConfigured:Boolean(String(env?.FOODSCAN_PRICE_DATA_PUBKEY || '').trim())},
+    note:'101: a remote file replaces the bundled copy only when the signed manifest (integrity.json, Ed25519) lists it with a matching SHA-256 and it is newer; otherwise the bundled copy is used.'};
   return fsPriceJson(body, res.status);
 }
 /* ===== end FoodScan 80 ===== */
@@ -1289,7 +1410,7 @@ async function fsPriceWebOffers(env, code, scope, meta, fresh) {
  * and refreshed daily on the prices-data branch (web/); the newer copy wins. Each price is offered to the payload exactly like a live web price. */
 const FS_WEBPRE_ROOT = '/assets/gr-web-v93/';
 const fsWebPreShard = (request, env, code) => { const id = fsPriceKey(code).slice(-2); return fsV80Cached(new URL(request.url).origin + '|web-' + id, () =>
-  fsV80Read(request, env, FS_WEBPRE_ROOT + id + '.json', 'web/' + id + '.json', d => d && d.schema === 1 && d.products && typeof d.products === 'object', d => Date.parse(d.built))); };
+  fsV80Read(request, env, FS_WEBPRE_ROOT + 'd' + id.slice(-1) + '.json', 'web/' + id + '.json', d => d && d.schema === 1 && d.products && typeof d.products === 'object', d => Date.parse(d.built))); };
 async function fsWebPrefill(request, env, code) {
   const shard = await fsWebPreShard(request, env, code).catch(() => null), e = shard?.products?.[fsPriceKey(code)];
   if (!e || !Array.isArray(e.o) || !e.o.length) return null;
@@ -1297,7 +1418,10 @@ async function fsWebPrefill(request, env, code) {
     productTitle:fsPriceText(o.n, 140), packSize:fsPriceText(o.k, 40), checkedAt:String(o.c || e.t || ''), countryCode:'GR', countryEvidence:'', evidenceVersion:2}));
   return items.length ? {status:'ok_with_data', items, checkedAt:String(e.t || ''), cached:true, prefilled:true} : null;
 }
-const fsWebPreOffers = (pre, code, scope, meta) => fsPriceWebOffers({FS_WEB_PRICES:{lookup:async () => pre}}, code, scope, meta, false);
+// 101: a web-shop price crawled AHEAD of the scan is not re-read on the shop's page at scan time, so it is shown as "last seen (date)"
+// and never ranked as the cheapest (same rule as a stored shop price whose live check failed).
+const fsWebPreOffers = (pre, code, scope, meta) => fsPriceWebOffers({FS_WEB_PRICES:{lookup:async () => pre}}, code, scope, meta, false)
+  .then(r => ({...r, items:(r.items || []).map(o => ({...o, rankingEligible:false, liveUnconfirmed:true, lastSeen:true}))}));
 /* 90: prices for LISTS (search, categories, healthier swaps). GET /api/prices/peek?codes=a,b,c (at most FS_PEEK_MAX barcodes, the subrequest budget of a
  * Worker on the free plan) answers each barcode from the DAILY data only: the Open Prices snapshot (no live delta), the Greek observatory and web-shop seeds (no
  * live re-read of the shop page), e-katanalotis history. Every price goes through the same payload builder as the product page (fsPriceBuildPayload: pack
@@ -1327,15 +1451,20 @@ async function fsPricePeekOne(request, env, code, scope, links = new Map()) {
   return {code, status:p.status, currency:p.currency, best:pick(best), latest:pick(latest), current:p.summary.currentOffers, retailers:p.summary.retailers, typical:p.summary.typical?.price ?? p.summary.typical ?? null};
 }
 async function fsPricePeek(request, env, ctx, url) {
-  const codes = [...new Set(String(url.searchParams.get('codes') || '').split(',').map(c => c.trim()).filter(Boolean))];
+  const asked = [...new Set(String(url.searchParams.get('codes') || '').split(',').map(c => c.trim()).filter(Boolean))];
   const scope = fsPriceScope(url, request);
-  if (!codes.length || codes.length > FS_PEEK_MAX || !codes.every(fsPriceValidBarcode) || !scope || scope.nearby) return fsPriceJson({error:'invalid_query', message:`Provide 1 to ${FS_PEEK_MAX} valid barcodes and an optional two-letter market.`}, 400);
+  // 102.1: one malformed barcode (Open Food Facts holds many with a wrong check digit) used to fail the whole batch with a 400, and the client then showed
+  // "no price" for the valid barcodes beside it for half an hour. Now each invalid code is answered on its own and only the valid ones are looked up.
+  const codes = asked.filter(fsPriceValidBarcode), invalid = asked.filter(c => !fsPriceValidBarcode(c)).map(c => ({code:c, status:'invalid_barcode'}));
+  if (!asked.length || asked.length > FS_PEEK_MAX || !scope || scope.nearby) return fsPriceJson({error:'invalid_query', message:`Provide 1 to ${FS_PEEK_MAX} barcodes and an optional two-letter market.`}, 400);
+  if (!codes.length) return fsPriceJson({version:FS_PRICE_VERSION, market:scope.market || '', items:invalid}, 200, {'Cache-Control':'public, max-age=3600'});
+  if (!scope.market) return fsPriceJson({version:FS_PRICE_VERSION, market:'', status:'market_unknown', source:'country unknown: choose a country to see prices', items:[...codes.map(c => ({code:c, status:'market_unknown'})), ...invalid]}, 200, {'Cache-Control':'no-store'});   // 102
   const cache = typeof caches !== 'undefined' ? caches.default : null;
   const key = new Request(url.origin + '/prices/cache/peek/v' + FS_PRICE_VERSION + '/' + scope.market + '/' + codes.map(fsPriceKey).sort().join('-'));
   if (cache) { try { const hit = await cache.match(key); if (hit) return hit; } catch {} }
   if (!fsPriceCanFetch(request.headers.get('CF-Connecting-IP') || 'unknown')) return fsPriceJson({error:'rate_limited', message:'Please retry shortly.'}, 429, {'Retry-After':'60'});
   const links = scope.market === 'GR' ? await fsCommunityLinks(env, codes) : new Map();
-  const items = await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope, links).catch(() => ({code:c, status:'temporarily_unavailable'}))));
+  const items = [...await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope, links).catch(() => ({code:c, status:'temporarily_unavailable'})))), ...invalid];
   const out = fsPriceJson({version:FS_PRICE_VERSION, market:scope.market, source:'daily data (Open Prices snapshot, observatory, web-shop seeds); the product page re-checks live', items}, 200, {'Cache-Control':'public, max-age=0, s-maxage=600'});
   if (cache && items.every(i => i.status !== 'temporarily_unavailable')) { try { const copy = out.clone(); ctx?.waitUntil?.(cache.put(key, new Response(copy.body, {status:200, headers:{...Object.fromEntries(copy.headers), 'Cache-Control':'public, max-age=600'}})).catch(() => {})); } catch {} }
   return out;
@@ -1393,13 +1522,58 @@ async function fsPriceOutcome(request, env, url) {
   } catch { return done({recorded:false, reason:'database_error'}); }
   return done({recorded:true});
 }
+/* ===== FoodScan 101: per-country price-source registry =====
+ * One entry per source: which country, what it covers, its licence or legal basis, how often it is refreshed, how FoodScan reads it,
+ * and whether it is ON. GET /api/prices/sources[?market=XX] adds each source's HEALTH: for database-fed sources the last run recorded
+ * by the updater (D1 foodscan_price_ingest_runs): 'ok', 'stale' (older than twice its cadence), 'failing', or 'awaiting_first_run'.
+ * Adapters: ingest/adapters/*.py (one per feed), loaded into D1 by `npm run prices:update` (see RELEASE-101.0.0.md). A source is only
+ * marked enabled after its legal basis AND a working download were verified (25 Nov 2026); the others are documented and stay off. */
+const FS_PRICE_SOURCE_REGISTRY = [
+  {id:'open-prices', countries:['*'], name:'Open Prices (Open Food Facts)', kind:'community', enabled:true, via:'live API + daily dump snapshot', cadenceHours:24,
+    license:'ODbL 1.0', coverage:'receipts and shelf photos uploaded by contributors, worldwide; rank only with a proof, current for 30 days'},
+  {id:'posokanei', countries:['GR'], name:'Παρατηρητήριο Τιμών (posokanei.gov.gr)', kind:'official', enabled:true, via:'bundled seed + signed remote refresh', cadenceHours:24,
+    license:FS_GR_SOURCES.posokanei.license, coverage:'~10,000 products in 8+ chains; barcodes only through reviewed links'},
+  {id:'ekatanalotis', countries:['GR'], name:'e-katanalotis', kind:'official', enabled:true, via:'bundled seed', cadenceHours:0, license:FS_GR_SOURCES.ekatanalotis.license, coverage:'history only (file unchanged since 16 Jun 2026)'},
+  {id:'bazaar', countries:['GR'], name:'bazaar-online.gr', kind:'retailer', enabled:true, via:'daily crawl + live check of the product page at scan time', cadenceHours:24, license:FS_GR_SOURCES.bazaar.license, coverage:'online prices; rank only when confirmed live'},
+  {id:'lidl', countries:['GR'], name:'lidl.gr', kind:'retailer', enabled:true, via:'daily crawl + live check of the product page at scan time', cadenceHours:24, license:FS_GR_SOURCES.lidl.license, coverage:'default-region prices of listed products; rank only when confirmed live'},
+  {id:'kritikos', countries:['GR'], name:'kritikos-sm.gr', kind:'retailer', enabled:false, via:'needs written permission (terms forbid copying)', cadenceHours:24, license:'not licensed', coverage:'switch FS_KRITIKOS=1 only with written permission'},
+  {id:'hu-arfigyelo', countries:['HU'], name:'GVH Árfigyelő (arfigyelo.gvh.hu)', kind:'official', enabled:true, via:'ingest/adapters/hu_arfigyelo.py -> D1', cadenceHours:24,
+    license:'Hungarian statutory price monitor; consumer-information use (Árfigyelő visitor terms XIV.2)', coverage:'every product of the obliged chains, by GTIN; chain price or range across its stores, HUF'},
+  {id:'il-shufersal', countries:['IL'], name:'Shufersal price-transparency files', kind:'mandated', enabled:true, via:'ingest/adapters/il_shufersal.py -> D1', cadenceHours:24,
+    license:'Promotion of Competition in the Food Sector Law 2014, price-transparency regulations (public files)', coverage:'full price files of a sample of stores (default 12), modal price per GTIN, ILS'},
+  {id:'hr-konzum', countries:['HR'], name:'Konzum cjenici (konzum.hr)', kind:'mandated', enabled:true, via:'ingest/adapters/hr_konzum.py -> D1', cadenceHours:24,
+    license:'Pravilnik o načinu objave cjenika proizvoda, NN 132/2026 (in force 17 Nov 2026; automated collection allowed, art. 5)', coverage:'store price lists with EAN, modal price over a sample of stores (default 12), EUR'},
+  {id:'il-other-chains', countries:['IL'], name:'Other Israeli chains (Rami Levy, Victory, Yochananof, ...)', kind:'mandated', enabled:false, via:'not built: each chain uses its own portal (some need a login form); add one adapter per chain', cadenceHours:24, license:'same regulations as Shufersal', coverage:'—'},
+  {id:'hr-other-chains', countries:['HR'], name:'Other Croatian chains (Plodine, Spar, Lidl, Kaufland, Studenac, Tommy, ...)', kind:'mandated', enabled:false, via:'not built yet: same rule, per-chain file formats (Plodine: daily ZIP of ~140 MB; Spar: daily JSON index)', cadenceHours:24, license:'NN 132/2026', coverage:'—'},
+  {id:'ro-monitorul-preturilor', countries:['RO'], name:'Monitorul Prețurilor (Romania)', kind:'official', enabled:false, via:'not built: lookups by name/category, no verified barcode key', cadenceHours:24, license:'unverified', coverage:'—'},
+  {id:'us-kroger', countries:['US'], name:'Kroger Products API', kind:'retailer', enabled:false, via:'rejected: developer terms restrict this use', cadenceHours:0, license:'not usable', coverage:'—'},
+  {id:'gb-none', countries:['GB','FR','DE','ES','IT','BR'], name:'No open or mandated barcode price feed found', kind:'none', enabled:false, via:'Open Prices only', cadenceHours:0, license:'—', coverage:'needs licensed retailer feeds'},
+];
+async function fsPriceSources(request, env, url) {
+  const market = fsMarketCode(url.searchParams.get('market')) || null;
+  const list = FS_PRICE_SOURCE_REGISTRY.filter(s => !market || s.countries.includes('*') || s.countries.includes(market));
+  let runs = new Map(), dbState = env?.FOODSCAN_PRICES_DB ? 'bound' : 'not_bound';
+  if (env?.FOODSCAN_PRICES_DB) { try { const r = await env.FOODSCAN_PRICES_DB.prepare("SELECT source_id, MAX(run_at) last_run, MAX(CASE WHEN status IN ('ok','cycle_done','unchanged') THEN run_at END) last_ok, SUM(CASE WHEN status IN ('ok','cycle_done','unchanged') THEN 0 ELSE 1 END) failures FROM foodscan_price_ingest_runs GROUP BY source_id").all();
+    for (const x of r.results || []) runs.set(x.source_id, x); } catch { dbState = 'not_migrated'; } }
+  const now = Date.now();
+  const sources = list.map(s => {
+    let health = s.enabled ? 'ok' : 'disabled';
+    if (s.enabled && /-> D1/.test(s.via)) { const r = runs.get(s.id);
+      health = dbState !== 'bound' ? (dbState === 'not_bound' ? 'database_not_bound' : 'database_not_migrated') : !r ? 'awaiting_first_run' : !r.last_ok ? 'failing'
+        : now - Date.parse(r.last_ok) > 2 * s.cadenceHours * 3600e3 ? 'stale' : 'ok';
+      return {...s, health, lastRun:r?.last_run || null, lastOk:r?.last_ok || null}; }
+    return {...s, health};
+  });
+  return fsPriceJson({version:FS_PRICE_VERSION, release:VERSION, market, database:dbState, sources}, 200, {'Cache-Control':'public, max-age=300'});
+}
 async function fsPricesRoute(request,env,ctx) {
   const url=new URL(request.url);
   const publicPath=url.pathname.startsWith('/prices/service/') ? url.pathname.slice('/prices/service/'.length) :
     url.pathname.startsWith('/api/prices/') ? url.pathname.slice('/api/prices/'.length) : null;
   if(publicPath===null)return null;
-  if(!fsPriceSameOrigin(request))return fsPriceJson({error:'origin_not_allowed'},403);
+  if(!fsPriceSameOrigin(request))return request.method==='POST'&&publicPath==='outcome' ? new Response(null,{status:204,headers:{'Cache-Control':'no-store','X-FoodScan-Dropped':'origin'}}) : fsPriceJson({error:'origin_not_allowed'},403);
   if(url.pathname==='/api/prices/admin/import')return fsPriceAdminImport(request,env);
+  if(publicPath==='links/review')return fsPriceLinkReview(request,env); // 101: admin review of shopper links (token-protected)
   const canPost=publicPath==='compare'||publicPath==='confirm'||publicPath==='outcome';
   if(!['GET','HEAD',...(canPost?['POST']:[])].includes(request.method))return fsPriceJson({error:'method_not_allowed'},405,{Allow:canPost?'GET, HEAD, POST':'GET, HEAD'});
   if(request.method==='HEAD')return new Response(null,{status:200,headers:{'Cache-Control':'no-store','X-FoodScan-Version':FS_PRICE_VERSION}});
@@ -1415,12 +1589,14 @@ async function fsPricesRoute(request,env,ctx) {
       sourceLicenses:{openPrices:FS_PRICE_LICENSES['op:'],observatory:FS_GR_SOURCES.posokanei.license,ekatanalotis:FS_GR_SOURCES.ekatanalotis.license,bazaar:FS_GR_SOURCES.bazaar.license,lidl:FS_GR_SOURCES.lidl.license,kritikos:FS_GR_SOURCES.kritikos.license,licensedFeeds:'per feed (license_ref on every row)'}});
   }
   if(publicPath==='peek')return fsPricePeek(request,env,ctx,url);
+  if(publicPath==='sources')return fsPriceSources(request,env,url);
   if(publicPath==='confirm')return fsPriceConfirm(request,env);
   if(publicPath==='outcome')return fsPriceOutcome(request,env,url);
   if(publicPath!=='compare')return fsPriceJson({error:'not_found'},404);
   const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url, request);
   if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN, an optional two-letter market (country) and an optional latitude, longitude and radius (1–50 km).'},400);
-  scope.marketSource = fsMarketCode(url.searchParams.get('market')) ? 'choice' : (fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry'))) ? 'network' : 'default';
+  scope.marketSource = fsMarketCode(url.searchParams.get('market')) ? 'choice' : (fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry'))) ? 'network' : scope.market ? 'default' : 'unknown';
+  if (!scope.market) return fsPriceJson(fsMarketUnknownPayload(code), 200, {'Cache-Control':'no-store'});   // 102: never Greek prices for a visitor nobody can place
   const greekMarket = scope.market === 'GR';
   const cache = typeof caches!=='undefined' ? caches.default : null;
   const cacheURL=new URL(url.origin+'/prices/cache/v'+FS_PRICE_VERSION+'/'+scope.market+'/'+fsPriceKey(code));

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, makeEnv, compare, peek, json } from './helpers.mjs';
+import { ROOT, makeEnv, compare, peek, json, signedRemote } from './helpers.mjs';
 const P = await import(pathToFileURL(path.join(ROOT, 'price-refresh/tools/webclaw-prefill.mjs')).href);
 const DAY = 864e5, now = Date.parse('2026-11-11T12:00:00Z');
 
@@ -29,12 +29,13 @@ test('shards round-trip, 100 files by the last two digits, with a manifest', () 
 test('the worker shows a prefilled web-shop price on the product page and in lists, with no live search', async () => {
   const code = '5201024005438', today = new Date().toISOString(), url = 'https://data-webpre.test/prices-data';
   const shard = { schema: 1, built: today, products: { [P.key14(code)]: { t: today, o: [{ r: 'Kiosk Example', p: 1.8, u: 'https://www.kiosk-example.gr/p/3605', n: "LAY'S CHORIZO & ONION 95gr", k: '95gr', c: today }] } } };
-  const remote = [new RegExp('^' + url.replace(/\./g, '\\.') + '/web/(\\d{2})\\.json'), u => u.endsWith('/web/38.json') ? json(shard) : new Response('', { status: 404 })];
+  const sr = signedRemote(url, { 'web/38.json': shard }); // 101: a remote shard is used only when a signed manifest lists it
   const live = [/api\.webclaw\.io|api\.anthropic|api\.firecrawl/, () => { throw new Error('no live search when a prefilled current price exists'); }];
-  const env = makeEnv({ FOODSCAN_PRICE_DATA_URL: url });
-  const r = await compare(code, { market: 'GR', env, extra: [remote, live] });
+  const env = makeEnv(sr.env), remote = sr.handlers;
+  const r = await compare(code, { market: 'GR', env, extra: [...remote, live] });
   const ws = r.body.offers.filter(o => String(o.id).startsWith('ws:'));
-  assert.equal(ws.length, 1); assert.equal(ws[0].price, 1.8); assert.equal(ws[0].tier, 'current');
-  const p = await peek([code], { market: 'GR', env, extra: [remote, live] });
-  assert.equal(p.body.items[0].best?.price, 1.8, 'lists show it too');
+  // 101: a price crawled ahead of the scan was not re-read on the shop's page today: it is shown as "last seen (date)" and never ranked as the cheapest
+  assert.equal(ws.length, 1); assert.equal(ws[0].price, 1.8); assert.equal(ws[0].tier, 'lastSeen'); assert.equal(ws[0].rankingEligible, false);
+  const p = await peek([code], { market: 'GR', env, extra: [...remote, live] });
+  assert.equal(p.body.items[0].best?.price ?? null, null, 'a list never offers an unconfirmed shop price as the lowest current price');
 });

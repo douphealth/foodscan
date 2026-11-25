@@ -40,7 +40,11 @@ var worker_default = {
         const out = docs.has(url.pathname) ? await siteDocument(request, env) : await env.ASSETS.fetch(request);
         return request.method === "HEAD" ? new Response(null, { status: out.status, headers: out.headers }) : out;
       }
-      if (request.headers.get("Sec-Fetch-Site") === "cross-site" || request.headers.get("Origin") && request.headers.get("Origin") !== url.origin) return error("origin_not_allowed", "Use this API from the FoodScan site.", 403);
+      if (request.headers.get("Sec-Fetch-Site") === "cross-site" || request.headers.get("Origin") && request.headers.get("Origin") !== url.origin) {
+        // 101 (fix 13): fire-and-forget beacons from another origin (a preview host, a proxy) are dropped quietly: 204, no console error
+        if (request.method === "POST" && (url.pathname === "/api/events" || url.pathname === "/api/prices/outcome")) return new Response(null, { status: 204, headers: { "Cache-Control": "no-store", "X-FoodScan-Dropped": "origin" } });
+        return error("origin_not_allowed", "Use this API from the FoodScan site.", 403);
+      }
       
       if (url.pathname === "/api/sync") return await fs63Sync(request, env);
 
@@ -80,7 +84,9 @@ var worker_default = {
       const match = url.pathname.match(/^\/api\/product\/(\d+)$/);
       if (!match) return error("route_not_found", "Unknown API route.", 404);
       if (!validBarcode2(match[1])) return error("invalid_barcode", "The barcode length or check digit is invalid.", 400);
-      const productResult = (url.searchParams.get("refresh")!=="1" ? await fs60LocalProduct(request,env,match[1]) : null) || await productResponse(request, env, ctx, match[1]);
+      const productResult0 = await fs101Product(request, env, ctx, match[1]);
+      // 101: tell the page which market answered, so Greek-catalogue features (healthier swaps, similar-product estimates) stay in Greece
+      const productResult = (() => { try { const h = new Headers(productResult0.headers); h.set('X-FoodScan-Market', fs101Greek(request) ? 'greece' : (marketCountry(request) || 'other')); return new Response(productResult0.body, {status:productResult0.status, statusText:productResult0.statusText, headers:h}); } catch { return productResult0; } })();
       if (FSC_AUTO_ENABLED(env) && productResult.status === 200 && typeof ctx?.waitUntil === 'function')
         ctx.waitUntil(fscIngestFromScan(productResult.clone(),env));
       return productResult;
@@ -250,7 +256,7 @@ async function recordFor(request, env, ctx, code) {
   // 62.0: when the upstream food database is busy, a shared link still opens with the bundled, dated catalogue record (never indexed).
   if (out.status === 503) {
     try {
-      const local = await fs60LocalProduct(request, env, code);
+      const local = fs101Greek(request) ? await fs60LocalProduct(request, env, code) : null; // 101: never the Greek catalogue abroad
       const product = local?.ok ? (await local.json())?.product : null;
       if (product) return { status: 200, raw: product, cache: "DATED-CATALOGUE" };
     } catch { /* keep the 503 */ }

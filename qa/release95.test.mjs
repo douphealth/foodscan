@@ -3,16 +3,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, makeEnv, compare, json, fakeD1, loadWorker } from './helpers.mjs';
+import { ROOT, makeEnv, compare, json, fakeD1, loadWorker, signedRemote } from './helpers.mjs';
 const P = await import(pathToFileURL(path.join(ROOT, 'price-refresh/tools/webclaw-prefill.mjs')).href);
 
 const CODES = ['5201024005483', '5201024005490', '5201024005476']; let n = 0;
 async function webOffers(u) {
   const code = CODES[n], url = `https://data-webpre95-${++n}.test/prices-data`, today = new Date().toISOString();
   const shard = { schema: 1, built: today, products: { [P.key14(code)]: { t: today, o: [{ r: 'Kiosk Example', p: 1.8, u, n: "LAY'S 95gr", k: '95gr', c: today }] } } };
-  const remote = [new RegExp('^' + url.replace(/\./g, '\\.') + '/web/(\\d{2})\\.json'), x => x.endsWith(`/web/${code.slice(-2)}.json`) ? json(shard) : new Response('', { status: 404 })];
+  const sr = signedRemote(url, { [`web/${code.slice(-2)}.json`]: shard }); // 101: a remote shard is used only when a signed manifest lists it
   const live = [/api\.webclaw\.io|api\.anthropic|api\.firecrawl/, () => { throw new Error('no live search in this test'); }];
-  const r = await compare(code, { market: 'GR', env: makeEnv({ FOODSCAN_PRICE_DATA_URL: url }), extra: [remote, live] });
+  const r = await compare(code, { market: 'GR', env: makeEnv(sr.env), extra: [...sr.handlers, live] });
   return r.body.offers.filter(x => String(x.id).startsWith('ws:'));
 }
 test('a shop search-result page (?q=… or /el/search) is not a product page, a product page with ?id= still is', async () => {

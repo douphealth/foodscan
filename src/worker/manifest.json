@@ -14,8 +14,8 @@
   },
   {
    "file": "src/domain/model.js",
-   "lines": 202,
-   "bytes": 13551
+   "lines": 210,
+   "bytes": 14474
   },
   {
    "file": "src/domain/estimate.js",
@@ -30,7 +30,7 @@
   {
    "file": "src/domain/grade.js",
    "lines": 215,
-   "bytes": 20607
+   "bytes": 20720
   },
   {
    "file": "src/domain/allergens.js",
@@ -79,13 +79,13 @@
   },
   {
    "file": "src/worker/core.js",
-   "lines": 665,
-   "bytes": 35957
+   "lines": 678,
+   "bytes": 37703
   },
   {
    "file": "src/worker/prices.js",
-   "lines": 1473,
-   "bytes": 136719
+   "lines": 1649,
+   "bytes": 159203
   },
   {
    "file": "src/worker/webprices.js",
@@ -94,13 +94,13 @@
   },
   {
    "file": "src/worker/routes.js",
-   "lines": 918,
-   "bytes": 61433
+   "lines": 924,
+   "bytes": 62286
   },
   {
    "file": "src/worker/catalog-extension.js",
-   "lines": 395,
-   "bytes": 40711
+   "lines": 400,
+   "bytes": 41383
   },
   {
    "file": "src/worker/og-render.js",
@@ -114,9 +114,9 @@
   },
   {
    "file": "src/worker/tail.js",
-   "lines": 105,
-   "bytes": 9942
+   "lines": 133,
+   "bytes": 12086
   }
  ],
- "sha256": "5013ac93073bbf386b8182aca5321a69c86bb76963fa286f3c9867a64bc37e19"
+ "sha256": "c4488b064d309cff4fce5c62278dcd7eb02aeaaaacc3afa8c2dbd8a683777c69"
 }

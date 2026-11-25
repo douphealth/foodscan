@@ -74,6 +74,25 @@ export async function compare(code, { items = [], market, country, nearby, opts 
   return withNetwork([...fake.handlers, ...extra], async () => { const res = await worker.fetch(request, env, { waitUntil() {} }); return { res, body: await res.json(), calls: fake.calls }; });
 }
 
+/** 101: a fake `prices-data` branch the worker WILL use. FoodScan 101 reads a remote price file only when a signed manifest (integrity.json: Ed25519 over
+ *  {v:1, built, files:{name: sha256}}) lists it and the deployment has the public key, so the fixture signs what it serves with a throw-away test key.
+ *  files: { 'op/012.json': object | string, ... }. Returns { env (ready for makeEnv(env)), handlers, sign(), files }; anything not listed answers 404. */
+import crypto from 'node:crypto';
+const TEST_KEY = crypto.generateKeyPairSync('ed25519');
+export const TEST_PUBKEY = Buffer.from(TEST_KEY.publicKey.export({ format: 'jwk' }).x, 'base64url').toString('base64');
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function signedRemote(url, files, { built = new Date().toISOString(), tamper = {}, pubkey = TEST_PUBKEY } = {}) {
+  const text = Object.fromEntries(Object.entries(files).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)]));
+  const hashes = Object.fromEntries(Object.entries(text).map(([k, t]) => [k, crypto.createHash('sha256').update(t).digest('hex')]));
+  const signed = JSON.stringify({ v: 1, built, files: hashes });
+  const sig = crypto.sign(null, Buffer.from(signed, 'utf8'), TEST_KEY.privateKey).toString('base64');
+  const at = n => new RegExp('^' + reEsc(url) + '/' + reEsc(n) + '(?:\\?.*)?$');
+  const handlers = [[at('integrity.json'), () => json({ signed, sig })],
+    ...Object.entries(text).map(([n, t]) => [at(n), () => new Response(tamper[n] ?? t, { headers: { 'Content-Type': 'application/json' } })]),
+    [new RegExp('^' + reEsc(url) + '/'), () => json({}, 404)]];
+  return { env: { FOODSCAN_PRICE_DATA_URL: url, FOODSCAN_PRICE_DATA_PUBKEY: pubkey }, handlers, signed, sig, files: hashes };
+}
+
 /** A D1-compatible database over real SQLite (node:sqlite): prepare(sql).bind(...).first()/run()/all(), like Cloudflare's binding. */
 import { DatabaseSync } from 'node:sqlite';
 export function fakeD1() {

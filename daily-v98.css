@@ -211,3 +211,16 @@
 }
 .fs100-hint { font-weight: 500; color: var(--ink3, #52625A); }
 .fs100-bits { margin-top: 2px; }
+
+
+/* 102: where the shopper is: the country the prices and the drink sizes follow, one tap to change, and an offer (never a silent switch) when the phone's clock says elsewhere */
+.fs102-loc { margin-top: 10px; }
+.fs102-loc__row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.fs102-loc__txt { font-size: .86rem; color: var(--ink2, #36463D); min-width: 0; }
+.fs102-loc__txt b { color: var(--ink, #0D1F16); }
+.fs102-loc__sel { font: inherit; font-size: .84rem; max-width: 100%; min-height: 40px; padding: 6px 30px 6px 12px; border: 1px solid var(--line, #E0D8C2); border-radius: 999px; background: var(--surface, #fff); color: var(--ink, #0D1F16); }
+.fs102-loc__sel:focus-visible { outline: 2px solid var(--brand, #0A5C3C); outline-offset: 2px; }
+.fs102-loc--ask { border: 1px solid var(--warn, #8A5200); border-radius: 12px; padding: 12px; }
+.fs102-loc--ask .fs102-loc__sel { width: 100%; margin-top: 6px; border-radius: 10px; }
+.fs102-loc__sug { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft, #DBEDDD); }
+.fs102-loc__sug .fs98-sub { margin: 0 0 8px; color: var(--ink, #0D1F16); }

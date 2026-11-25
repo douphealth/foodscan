@@ -1,6 +1,6 @@
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "100.1.0";
+var VERSION = "102.1.0";
 var BUILD = "9900-daily-portions";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
@@ -24,6 +24,15 @@ var FRESH = { product: 43200, category: 7200, search: 3600 };
 var inflight = /* @__PURE__ */ new Map();
 var cooldown = { off: 0, index: 0 };
 var providerCooldown = 0;
+/* 101: one "too busy" answer from Open Food Facts no longer pauses every scan on this server (v100 set a server-wide pause on
+ * the first 429/503, so every non-Greek scan failed until it ended). Now: that lookup is retried once after a short random
+ * pause; only 3 or more throttled answers within 30 s open a short server-wide pause (at most 30 s); the phone then reads
+ * Open Food Facts directly, and saved copies (up to 30 days) are served meanwhile. */
+var throttleTimes = [];
+function noteThrottle(wait) {
+  const now = Date.now(); throttleTimes = throttleTimes.filter((t2) => t2 > now - 3e4); throttleTimes.push(now);
+  if (throttleTimes.length >= 3) providerCooldown = now + Math.min(30, Math.max(1, wait)) * 1e3;
+}
 function validBarcode2(code) {
   if (!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(code) || /^0+$/.test(code)) return false;
   let sum = 0;
@@ -197,7 +206,7 @@ async function fetchProduct(request, env, code) {
   const site = new URL(request.url).origin, contact = contactFor(env, site);
   const requestId = globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   const attempts = [], ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  let redirects = 0, compatibility = false, paddedTried = false;
+  let redirects = 0, compatibility = false, paddedTried = false, throttleRetried = false;
   let url = new URL(`${ORIGIN}/api/v3/product/${code}`);
   url.searchParams.set("fields", FIELDS);
   const fail = (type, message, status, extra = {}, headers = {}) => error(type, message, status, { requestId, attempts, ...extra }, headers);
@@ -233,12 +242,13 @@ async function fetchProduct(request, env, code) {
       }
       if (response.status === 429) {
         const wait = retrySeconds(response.headers.get("Retry-After"));
-        providerCooldown = Date.now() + wait * 1e3;
         try {
           await response.body?.cancel();
         } catch {
         }
-        await idxApplyUpstreamCooldown(env, "product", wait);
+        if (!throttleRetried) { throttleRetried = true; await new Promise((ok) => setTimeout(ok, 400 + Math.random() * 600)); hop--; continue; }
+        noteThrottle(wait);
+        if (providerCooldown > Date.now()) await idxApplyUpstreamCooldown(env, "product", Math.min(30, wait));
         return fail(
           "rate_limited",
           "Open Food Facts is limiting requests. Your saved foods still work.",
@@ -248,22 +258,23 @@ async function fetchProduct(request, env, code) {
         );
       }
       if ([401, 403].includes(response.status)) {
-        providerCooldown = Date.now() + 3e5;
+        noteThrottle(60);
         try {
           await response.body?.cancel();
         } catch {
         }
-        await idxApplyUpstreamCooldown(env, "product", 300);
+        if (providerCooldown > Date.now()) await idxApplyUpstreamCooldown(env, "product", 60);
         return fail("upstream_blocked", "Open Food Facts refused this server request. The site operator should check API identification and access.", 502, { upstreamStatus: response.status });
       }
       if (response.status === 503) {
         const wait = retrySeconds(response.headers.get("Retry-After"));
-        providerCooldown = Date.now() + wait * 1e3;
         try {
           await response.body?.cancel();
         } catch {
         }
-        await idxApplyUpstreamCooldown(env, "product", wait);
+        if (!throttleRetried) { throttleRetried = true; await new Promise((ok) => setTimeout(ok, 400 + Math.random() * 600)); hop--; continue; }
+        noteThrottle(wait);
+        if (providerCooldown > Date.now()) await idxApplyUpstreamCooldown(env, "product", Math.min(30, wait));
         return fail(
           "upstream_busy",
           "The food database is busy or unavailable. Please wait before retrying.",
@@ -563,7 +574,9 @@ function categorySearch(request,env,ctx) {
  const viaOff=()=>offSearch(env,url.origin,{categories_tags:category,sort_by:"nutriscore_score",...(country?{countries_tags:`en:${country}`}:{})},24,false,ip,page);
  return cachedSearch(request,ctx,"category",`${encodeURIComponent(category)}/${country||"any"}/${full?"full":"fast"}/${page}`,async()=>{
    const batch=await firstWorking(full?[viaOff,viaIndex]:[viaIndex,viaOff]);
-   const products=batch.products.filter(p=>!country||(p.countries_tags||[]).includes(`en:${country}`));
+   // 101: abroad, a record named only in Greek script (an OFF import tag on a Greek product) is no use on that shelf: left out
+   const greekOnly=p=>{const str=v=>typeof v==="string"?v:"",latin=[p.product_name_en,p.product_name,p.product_name_fr,p.product_name_de,p.product_name_es,p.product_name_it,p.product_name_pt,p.generic_name_en,p.abbreviated_product_name].map(str).join(" ").replace(/[\u0370-\u03ff]+/g," "),greek=[p.product_name,p.product_name_el,p.generic_name_el,p.generic_name,p.brands].map(str).join(" ");return /[\u0370-\u03ff]/.test(greek)&&!/[A-Za-z\u00c0-\u024f]{3}/.test(latin);};
+   const products=batch.products.filter(p=>!country||((p.countries_tags||[]).includes(`en:${country}`)&&(country==="greece"||!greekOnly(p))));
    return {...batch,products,category,country:country||null,page,
     coverage:"Country-filtered paginated source records, including imports. Not all supermarket products, retailer availability, stock or price. Complete primary-source records are checked with the same grading kernel as product reports; partial index hints require enrichment."};
  });

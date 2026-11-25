@@ -11,7 +11,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v8500.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href);
 const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const KIND = { general: 'g', beverage: 'b', water: 'w', cheese: 'c', fat: 'f' };
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));
