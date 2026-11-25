@@ -2,8 +2,8 @@
  * comes from and the shopper's own label numbers), My Lens, a 3-product compare tray and a local backup.
  * Local-first: everything stays in this browser's localStorage, no tracking, no network. English and Greek.
  * Logic (and what was checked) lives in daily-v98-core.mjs; this file only draws it.
- * Uses the same engine module as the app (domain-v8400.mjs), so grades match and the app's own translated messages are reused. */
-import { assessGrade, dataQuality } from './assets/domain-v8400.mjs';
+ * Uses the same engine module as the app (domain-v101.mjs), so grades match and the app's own translated messages are reused. */
+import { assessGrade, dataQuality } from './assets/domain-v101.mjs';
 import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, parseBackup, BACKUP_KEY, gtin14, presetsFor, logEntry, dayIntake, LIMITS, progress, parseAmount, rememberPortion, AMOUNT_MIN, AMOUNT_MAX, labelCode, mergeLabel, provenance, weekPulse, listAdd, listRemove, gradeGain, listSummary, gtinCheckOk, weekReady } from './daily-v98-core.mjs';
 import { detectMarket } from './prices/market-v83.mjs';
 
@@ -672,7 +672,7 @@ function openCompareModal() {
 function exportBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BACKUP_KEY.test(k)) data[k] = localStorage.getItem(k); }
-  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '100.1.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '101.0.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `foodscan-backup-${todayKey()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }

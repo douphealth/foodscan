@@ -29,10 +29,11 @@ export function setMarket(code) {
   try { globalThis.dispatchEvent?.(new CustomEvent('foodscan:market', {detail:{code:c}})); } catch {}
   return c;
 }
-export const marketName = (code, lang = 'en') => { try { return new Intl.DisplayNames([lang === 'el' ? 'el' : 'en'], {type:'region'}).of(norm(code)) || code; } catch { return code; } };
+const UI_LANGS = ['el', 'en', 'fr', 'de', 'es', 'it'];   // 101: country names in the six app languages
+export const marketName = (code, lang = 'en') => { try { return new Intl.DisplayNames([UI_LANGS.includes(lang) ? lang : 'en'], {type:'region'}).of(norm(code)) || code; } catch { return code; } };
 /** Flag emoji from the two letters (regional indicator symbols); '' where the platform draws none (then the letters are shown). */
 export const marketFlag = code => { const c = norm(code); return c ? String.fromCodePoint(...[...c].map(ch => 0x1F1A5 + ch.charCodeAt(0))) : ''; };
-export const marketsSorted = (lang = 'en') => ALL_MARKETS.map(c => ({code:c, name:marketName(c, lang)})).sort((a, b) => a.name.localeCompare(b.name, lang === 'el' ? 'el' : 'en'));
+export const marketsSorted = (lang = 'en') => ALL_MARKETS.map(c => ({code:c, name:marketName(c, lang)})).sort((a, b) => a.name.localeCompare(b.name, UI_LANGS.includes(lang) ? lang : 'en'));
 
 /** Country -> currencies (same table as the worker's FS_CURRENCY_COUNTRIES; qa/ checks they are identical). */
 const CURRENCY_COUNTRIES = {
@@ -59,6 +60,8 @@ const formatters = new Map();
 export function moneyLocale(lang, market) {
   if (lang === 'el') return 'el-GR';
   const m = norm(market);
+  // 101: French, German, Spanish, Italian number style, in that language's own country where the market is one (fr-BE, de-AT, it-CH, es-MX...)
+  if (['fr', 'de', 'es', 'it'].includes(lang)) return lang + '-' + (/^[A-Z]{2}$/.test(m) ? m : lang.toUpperCase());
   return ENGLISH_REGIONS.has(m) ? 'en-' + m : 'en-IE';
 }
 export function money(n, lang = 'en', currency = 'EUR', market = '') {

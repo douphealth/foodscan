@@ -30,7 +30,7 @@ export const todayAthens = (now = Date.now()) => { try { const p = Object.fromEn
 export const todayFor = (market = HOME, now = Date.now()) => market === 'GR' ? todayAthens(now) : new Date(now).toISOString().slice(0, 10);
 export const ageDays = (date, now = Date.now(), market = HOME) => { const d = isoDate(date); if (!d) return null;
   const age = Math.round((Date.parse(todayFor(market, now) + 'T00:00:00Z') - Date.parse(d + 'T00:00:00Z')) / DAY); return market !== 'GR' && age === -1 ? 0 : age; };
-export const freshnessOf = age => age === null ? null : age <= CURRENT_DAYS ? 'current' : age <= OLDER_DAYS ? 'older' : 'historical';
+export const freshnessOf = (age, currentDays = CURRENT_DAYS) => age === null ? null : age <= currentDays ? 'current' : age <= OLDER_DAYS ? 'older' : 'historical';
 export const validBarcode = s => {
   s = String(s || '');
   if (!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(s) || /^0+$/.test(s)) return false;
@@ -92,7 +92,9 @@ export function checkOffer(o, pack, now = Date.now()) {
   const countryCode0 = text(o.countryCode, 10).toUpperCase() || 'UNKNOWN';
   const age = ageDays(date, now, countryCode0 === 'UNKNOWN' ? HOME : countryCode0); if (age < 0) return null; // 78: future-dated observations are rejected
   const expired = Boolean(o.validUntil && isoDate(o.validUntil) && isoDate(o.validUntil) < todayFor(countryCode0 === 'UNKNOWN' ? HOME : countryCode0, now)) || o.freshness === 'expired';
-  const freshness = expired ? 'expired' : freshnessOf(age);
+  // 101: per-source window sent by the server (Open Prices with a proof: 30 days); anything else keeps 7. Never more than 30.
+  const window = Number.isInteger(o.currentDays) && o.currentDays >= 1 && o.currentDays <= 30 && (kind === 'community' ? Boolean(o.proofType) : o.currentDays <= CURRENT_DAYS) ? o.currentDays : CURRENT_DAYS;
+  const freshness = expired ? 'expired' : freshnessOf(age, window);
   const countryCode = text(o.countryCode, 10).toUpperCase() || 'UNKNOWN';
   const basis = ['item', 'kg', 'l'].includes(o.basis) ? o.basis : 'item';
   const conditional = RESTRICTED.has(String(o.discountType || '').toUpperCase());
@@ -163,7 +165,7 @@ export function summarize(r) {
   const retailers = new Set(current.map(o => o.retailer.toLowerCase()));
   const spread = current.length > 1 && best && !best.conditional ? Math.round((Math.max(...current.map(o => o.price)) - best.price) * 100) / 100 : 0;
   // What the price card leads with, in order of evidence: a current price, the last recorded price (with its age), a labelled estimate, nothing.
-  const lead = best ? {kind:'current', offer:best} : latest ? {kind:latest.freshness === 'older' ? 'older' : 'historical', offer:latest} : r.estimate ? {kind:'estimate', estimate:r.estimate} : {kind:'none'};
+  const lead = best ? {kind:'current', offer:best} : latest ? {kind:latest.liveUnconfirmed || latest.freshness === 'current' ? 'lastSeen' : latest.freshness === 'older' ? 'older' : 'historical', offer:latest} : r.estimate ? {kind:'estimate', estimate:r.estimate} : {kind:'none'};
   return {...r, best, latest, latestAny, lead, currentCount:current.length, retailerCount:retailers.size, spread};
 }
 
@@ -249,12 +251,20 @@ const L = {
   en:{current:'Current', older:'Older', historical:'Historical', expired:'Expired', today:'today', yesterday:'yesterday', days:n => n < 60 ? `${n} days ago` : n < 700 ? `${Math.round(n / 30)} months ago` : `${Math.round(n / 365)} years ago`,
     na:'Not available', kg:'/kg', l:'/L', pcs:'/item'},
 };
-export const pageLang = () => (globalThis.document?.documentElement?.lang || globalThis.navigator?.language || 'en').toLowerCase().startsWith('el') ? 'el' : 'en';
+// 101 (fix 14): French, German, Spanish and Italian. Anything a language lacks falls back to English.
+Object.assign(L, {
+  fr:Object.setPrototypeOf({current:'Actuel', older:'Plus ancien', historical:'Historique', expired:'Expiré', today:"aujourd'hui", yesterday:'hier', days:n => n < 60 ? `il y a ${n} jours` : n < 700 ? `il y a ${Math.round(n / 30)} mois` : `il y a ${Math.round(n / 365)} ans`, na:'Non disponible', kg:'/kg', l:'/L', pcs:'/pièce'}, L.en),
+  de:Object.setPrototypeOf({current:'Aktuell', older:'Älter', historical:'Historisch', expired:'Abgelaufen', today:'heute', yesterday:'gestern', days:n => n < 60 ? `vor ${n} Tagen` : n < 700 ? `vor ${Math.round(n / 30)} Monaten` : `vor ${Math.round(n / 365)} Jahren`, na:'Nicht verfügbar', kg:'/kg', l:'/L', pcs:'/Stück'}, L.en),
+  es:Object.setPrototypeOf({current:'Actual', older:'Anterior', historical:'Histórico', expired:'Caducado', today:'hoy', yesterday:'ayer', days:n => n < 60 ? `hace ${n} días` : n < 700 ? `hace ${Math.round(n / 30)} meses` : `hace ${Math.round(n / 365)} años`, na:'No disponible', kg:'/kg', l:'/L', pcs:'/unidad'}, L.en),
+  it:Object.setPrototypeOf({current:'Attuale', older:'Precedente', historical:'Storico', expired:'Scaduto', today:'oggi', yesterday:'ieri', days:n => n < 60 ? `${n} giorni fa` : n < 700 ? `${Math.round(n / 30)} mesi fa` : `${Math.round(n / 365)} anni fa`, na:'Non disponibile', kg:'/kg', l:'/L', pcs:'/pezzo'}, L.en),
+});
+export const PAGE_LANGS = ['en', 'el', 'fr', 'de', 'es', 'it'];
+export const pageLang = () => { const c = String(globalThis.document?.documentElement?.lang || globalThis.navigator?.language || 'en').slice(0, 2).toLowerCase(); return PAGE_LANGS.includes(c) ? c : 'en'; };
 export const t = (lang, k, ...a) => { const v = (L[lang] || L.en)[k]; return typeof v === 'function' ? v(...a) : v ?? k; };
 /** 83: money(n, lang, currency): the offer's own currency. euro(n, lang) formats in the current market's currency (every call site that has no offer at hand). */
 export { money };
 export const euro = (n, lang = 'en', currency = CURRENCY) => money(n, lang, currency, HOME);
 export const unitText = (o, lang = 'en') => o && o.unitPrice != null ? money(o.unitPrice, lang, o.currency || CURRENCY, HOME) + t(lang, o.unitBasis) : '';
 export const whenText = (o, lang = 'en') => o.ageDays === 0 ? t(lang, 'today') : o.ageDays === 1 ? t(lang, 'yesterday') : t(lang, 'days', o.ageDays);
-export const dateText = (d, lang = 'en') => new Intl.DateTimeFormat(lang === 'el' ? 'el-GR' : 'en-GB', {day:'numeric', month:'short', year:'numeric', timeZone:'UTC'}).format(new Date(d + 'T00:00:00Z'));
+export const dateText = (d, lang = 'en') => new Intl.DateTimeFormat(({el:'el-GR', fr:'fr-FR', de:'de-DE', es:'es-ES', it:'it-IT'})[lang] || 'en-GB', {day:'numeric', month:'short', year:'numeric', timeZone:'UTC'}).format(new Date(d + 'T00:00:00Z'));
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));

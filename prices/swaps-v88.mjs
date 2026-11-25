@@ -5,7 +5,7 @@
  * category tags (rare tags count more), the same PNNS group, a similar name (Greek and Greeklish spellings count as the same), the same catalogue family, and always
  * the same Nutri-Score table (a drink is never offered for a food). Measured on the catalogue: tools/swaps-validate.mjs, qa/swaps.test.mjs. Pure functions, no DOM. */
 import { tokens } from './similar-v86.mjs';
-import { ns23Fold } from '../assets/domain-v8500.mjs';
+import { ns23Fold } from '../assets/domain-v101.mjs';
 
 const KIND = { g: 'general', b: 'beverage', w: 'water', c: 'cheese', f: 'fat' };
 export const RANK = { A: 0, B: 1, C: 2, D: 3, E: 4 };

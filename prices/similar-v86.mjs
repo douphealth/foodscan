@@ -6,7 +6,7 @@
  *             letters that results.
  * Neither is shown as a calculated grade: the card says what it is, lists the similar products it used, and quotes how often this kind of estimate has contained the
  * published letter (tools/similar-validate.mjs, qa/similar.test.mjs). Pure functions; the peers come from assets/peers-<revision>.json (tools/build-peers.mjs). */
-import { ns23Score, ns23Fold } from '../assets/domain-v8500.mjs';
+import { ns23Score, ns23Fold } from '../assets/domain-v101.mjs';
 import { inferKinds } from './quick-grade-v85.mjs';
 
 const KIND = { g: 'general', b: 'beverage', w: 'water', c: 'cheese', f: 'fat' };

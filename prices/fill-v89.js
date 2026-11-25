@@ -11,7 +11,9 @@ const TXT = {
   en: { est: (g, band) => `Estimated Nutri-Score ${g}${band ? ` (${band})` : ''}: FoodScan's estimate, not a published grade`, nr: 'Not rated: the Nutri-Score method does not cover this product', photo: 'Photo from Open Food Facts' },
   el: { est: (g, band) => `Εκτιμώμενο Nutri-Score ${g}${band ? ` (${band})` : ''}: εκτίμηση του FoodScan, όχι δημοσιευμένος βαθμός`, nr: 'Χωρίς βαθμό: η μέθοδος Nutri-Score δεν καλύπτει αυτό το προϊόν', photo: 'Φωτογραφία από το Open Food Facts' },
 };
-const t = () => TXT[pageLang() === 'el' ? 'el' : 'en'];
+// 101 (fix 14): French, German, Spanish, Italian: machine-translated plain strings (needs native review); sentences built by functions stay English.
+for (const [l, d] of Object.entries({"fr":{"nr":"Non noté: la méthode Nutri-Score ne couvre pas ce produit","photo":"Photo de Open Food Facts"},"de":{"nr":"Nicht bewertet: Die Nutri-Score-Methode deckt dieses Produkt nicht ab","photo":"Foto von Open Food Facts"},"es":{"nr":"No calificado: el método Nutri-Score no cubre este producto","photo":"Foto de Open Food Facts"},"it":{"nr":"Non valutato: il metodo Nutri-Score non copre questo prodotto","photo":"Foto di Open Food Facts"}})) TXT[l] = Object.setPrototypeOf(d, TXT.en);
+const t = () => TXT[TXT[pageLang()] ? pageLang() : 'en'];
 const route = () => (location.hash.startsWith('#/') ? location.hash.slice(1) : location.pathname);
 const routeCode = () => route().match(/^\/p\/(\d{8}|\d{12,14})(?:[/?]|$)/)?.[1] || null;
 
