@@ -1,31 +1,65 @@
-/* FoodScan market 83: which country's prices does this shopper want, and how is a price in any currency written.
- * Only EXPLICIT signals are used here, so every page of the app asks for the same country:
- *   1. the shopper's own choice on the price card or the Prices page ("Change"), kept on this device;
- *   2. the country chosen for food choices in the app profile (the "Market" in Food comparisons).
- * Otherwise nothing is sent and FoodScan's server decides from the visitor's network country (Cloudflare), which is the same answer on the product card
- * and on the Prices page. 83.2: the browser language and the device time zone are NOT used any more: an English-language phone in Athens was shown Greek
- * prices on the card and "United States" on the Prices page. The market is only ever sent as ?market=XX with a price request. */
+/* FoodScan market 83 (rewritten in 102): which country's prices does this shopper want, and how is a price in any currency written.
+ * Every page asks `detectMarket()`, so the product card, the Prices page, the swaps and the Home hub always agree (83.2 had found an English-language phone in
+ * Athens shown Greek prices on the card and "United States" on the Prices page, because each page guessed differently). The order is written below, at detectMarket.
+ * The market is only ever sent as ?market=XX with a price request. */
+import { countryOfZone, deviceZone } from './tz-country-v102.mjs';
 export const MARKET_KEY = 'foodscan:market:v83';
 const TABLE = 'AD:andorra,AE:united-arab-emirates,AF:afghanistan,AG:antigua-and-barbuda,AI:anguilla,AL:albania,AM:armenia,AO:angola,AQ:antarctic,AR:argentina,AS:american-samoa,AT:austria,AU:australia,AW:aruba,AX:aland-islands,AZ:azerbaijan,BA:bosnia-and-herzegovina,BB:barbados,BD:bangladesh,BE:belgium,BF:burkina-faso,BG:bulgaria,BH:bahrain,BI:burundi,BJ:benin,BL:saint-barthelemy,BM:bermuda,BN:brunei,BO:bolivia,BQ:caribbean-netherlands,BR:brazil,BS:the-bahamas,BT:bhutan,BV:bouvet-island,BW:botswana,BY:belarus,BZ:belize,CA:canada,CC:cocos-keeling-islands,CD:democratic-republic-of-the-congo,CF:central-african-republic,CG:republic-of-the-congo,CH:switzerland,CI:cote-d-ivoire,CK:cook-islands,CL:chile,CM:cameroon,CN:china,CO:colombia,CR:costa-rica,CU:cuba,CV:cape-verde,CW:curacao,CX:christmas-island,CY:cyprus,CZ:czech-republic,DE:germany,DJ:djibouti,DK:denmark,DM:dominica,DO:dominican-republic,DZ:algeria,EC:ecuador,EE:estonia,EG:egypt,EH:western-sahara,ER:eritrea,ES:spain,ET:ethiopia,FI:finland,FJ:fiji,FK:falkland-islands,FM:federated-states-of-micronesia,FO:faroe-islands,FR:france,GA:gabon,GB:united-kingdom,GD:grenada,GE:georgia,GF:french-guiana,GG:guernsey,GH:ghana,GI:gibraltar,GL:greenland,GM:gambia,GN:guinea,GP:guadeloupe,GQ:equatorial-guinea,GR:greece,GT:guatemala,GU:guam,GW:guinea-bissau,GY:guyana,HK:hong-kong,HM:heard-island-and-mcdonald-islands,HN:honduras,HR:croatia,HT:haiti,HU:hungary,ID:indonesia,IE:ireland,IL:israel,IM:isle-of-man,IN:india,IO:british-indian-ocean-territory,IQ:iraq,IR:iran,IS:iceland,IT:italy,JE:jersey,JM:jamaica,JO:jordan,JP:japan,KE:kenya,KG:kyrgyzstan,KH:cambodia,KI:kiribati,KM:comoros,KN:saint-kitts-and-nevis,KP:north-korea,KR:south-korea,KW:kuwait,KY:cayman-islands,KZ:kazakhstan,LA:laos,LB:lebanon,LC:saint-lucia,LI:liechtenstein,LK:sri-lanka,LR:liberia,LS:lesotho,LT:lithuania,LU:luxembourg,LV:latvia,LY:libya,MA:morocco,MC:monaco,MD:moldova,ME:montenegro,MF:saint-martin,MG:madagascar,MH:marshall-islands,MK:north-macedonia,ML:mali,MM:myanmar,MN:mongolia,MO:macau,MP:northern-mariana-islands,MQ:martinique,MR:mauritania,MS:montserrat,MT:malta,MU:mauritius,MV:maldives,MW:malawi,MX:mexico,MY:malaysia,MZ:mozambique,NA:namibia,NC:new-caledonia,NE:niger,NF:norfolk-island,NG:nigeria,NI:nicaragua,NL:netherlands,NO:norway,NP:nepal,NR:nauru,NU:niue,NZ:new-zealand,OM:oman,PA:panama,PE:peru,PF:french-polynesia,PG:papua-new-guinea,PH:philippines,PK:pakistan,PL:poland,PM:saint-pierre-and-miquelon,PN:pitcairn,PR:puerto-rico,PS:state-of-palestine,PT:portugal,PW:palau,PY:paraguay,QA:qatar,RE:reunion,RO:romania,RS:serbia,RU:russia,RW:rwanda,SA:saudi-arabia,SB:solomon-islands,SC:seychelles,SD:sudan,SE:sweden,SG:singapore,SH:saint-helena,SI:slovenia,SJ:svalbard-and-jan-mayen,SK:slovakia,SL:sierra-leone,SM:san-marino,SN:senegal,SO:somalia,SR:suriname,SS:south-sudan,ST:sao-tome-and-principe,SV:el-salvador,SX:sint-maarten,SY:syria,SZ:swaziland,TC:turks-and-caicos-islands,TD:chad,TF:french-southern-and-antarctic-lands,TG:togo,TH:thailand,TJ:tajikistan,TK:tokelau,TL:timor-leste,TM:turkmenistan,TN:tunisia,TO:tonga,TR:turkey,TT:trinidad-and-tobago,TV:tuvalu,TW:taiwan,TZ:tanzania,UA:ukraine,UG:uganda,UM:united-states-minor-outlying-islands,US:united-states,UY:uruguay,UZ:uzbekistan,VA:vatican-city,VC:saint-vincent-and-the-grenadines,VE:venezuela,VG:british-virgin-islands,VI:virgin-islands-of-the-united-states,VN:vietnam,VU:vanuatu,WF:wallis-and-futuna,WS:samoa,XK:kosovo,YE:yemen,YT:mayotte,YU:yugoslavia,ZA:south-africa,ZM:zambia,ZW:zimbabwe';
 const SLUG = Object.fromEntries(TABLE.split(',').map(p => p.split(':')));
 const ISO_BY_SLUG = Object.fromEntries(Object.entries(SLUG).map(([k, v]) => [v, k]));
-export const ALL_MARKETS = Object.freeze(Object.keys(SLUG).filter(c => !['AQ', 'BV', 'HM', 'GS', 'TF', 'UM'].includes(c)));
+export const ALL_MARKETS = Object.freeze(Object.keys(SLUG).filter(c => !['AQ', 'BV', 'HM', 'GS', 'TF', 'UM', 'YU'].includes(c)));   // 102: no shops there; YU is the retired code of Yugoslavia (Intl names it "Serbia", which made Serbia appear twice)
 const store = (() => { try { return globalThis.localStorage; } catch { return null; } })();
 const norm = v => { const c = String(v || '').trim().toUpperCase(); return !/^[A-Z]{2}$/.test(c) ? '' : c === 'UK' ? 'GB' : c === 'EL' ? 'GR' : c === 'XX' || c === 'T1' ? '' : c; };
 export const validMarket = c => Object.hasOwn(SLUG, norm(c)) ? norm(c) : '';
 
-/** The market in use, and where it came from. '' means "let the server decide from the network country". */
+/* 102: ONE answer to "which country is this shopper in?", used by the price card, the Prices page, the swaps, the label reader and the Home hub.
+ * In order: (1) the shopper's own choice, kept on this device (also written to the food-choice profile, so prices and food choices always agree);
+ * (2) the country of the network, from the edge's <meta name="fs-country"> (remembered: a cached page shell has none);
+ * (3) the country of the device time zone, when the network country is unknown (Tor, a privacy relay);
+ * (4) the region of the browser language, labelled as a guess; (5) nothing: the app asks, it never assumes Greece.
+ * A roaming SIM or a VPN makes (2) wrong while the time zone a phone sets from its own location is right, so when (3) names another country than (2)
+ * the answer carries `suggest`: the app offers that country, one tap, and never switches silently. */
+const NET_KEY = 'foodscan:net:v102', DISMISS_KEY = 'foodscan:locdismiss:v102';
+const readKey = k => { try { return store?.getItem(k) || ''; } catch { return ''; } };
+const writeKey = (k, v) => { try { if (v) store?.setItem(k, v); else store?.removeItem(k); } catch {} };
+/** The network's country ('' when unknown). A meta tag added by the time-zone hint (data-source) is not a network answer. */
+export function networkCountry() {
+  let c = '';
+  try { const m = globalThis.document?.querySelector?.('meta[name="fs-country"]'); if (m && !m.getAttribute('data-source')) c = validMarket(m.content); } catch {}
+  if (c) { if (readKey(NET_KEY) !== c) writeKey(NET_KEY, c); return c; }
+  return validMarket(readKey(NET_KEY));
+}
+/** The country of the device's own time zone ('' for UTC, an unknown zone or a browser that hides it). */
+export function deviceCountry(zone = deviceZone()) { return validMarket(countryOfZone(zone)); }
+/** The region of the first browser language that has one (en-US -> US, el-GR -> GR); a bare "en" or "de" says nothing about a country. */
+export function languageCountry(langs = globalThis.navigator?.languages || [globalThis.navigator?.language]) {
+  for (const l of langs || []) { const m = /^[A-Za-z]{2,3}(?:[-_][A-Za-z]{4})?[-_]([A-Za-z]{2})(?:$|[-_])/.exec(String(l || '')); const c = m ? validMarket(m[1]) : ''; if (c) return c; }
+  return '';
+}
+/** The country to offer instead of `net` (the device time zone says the phone is elsewhere), or '' (agree, unknown, or already declined for this pair). */
+export function suggestionFor(net, dev = deviceCountry()) { return net && dev && dev !== net && readKey(DISMISS_KEY) !== net + '>' + dev ? dev : ''; }
+export const dismissSuggestion = (from, to) => writeKey(DISMISS_KEY, validMarket(from) + '>' + validMarket(to));
+
+/** The market in use, and where it came from: choice | profile | network | device | language | unknown ('' code: nothing is known, the app asks). */
 export function detectMarket() {
-  try { const own = validMarket(store?.getItem(MARKET_KEY)); if (own) return {code:own, source:'choice'}; } catch {}
+  const own = validMarket(readKey(MARKET_KEY)); if (own) return {code:own, source:'choice'};
   try {
     const slug = JSON.parse(store?.getItem('fs13:profile') || '{}')?.country;
     if (slug && slug !== 'any' && ISO_BY_SLUG[slug]) return {code:ISO_BY_SLUG[slug], source:'profile'};
   } catch {}
-  return {code:'', source:'server'};
+  const net = networkCountry();
+  if (net) { const suggest = suggestionFor(net); return suggest ? {code:net, source:'network', suggest} : {code:net, source:'network'}; }
+  const dev = deviceCountry(); if (dev) return {code:dev, source:'device'};
+  const lang = languageCountry(); if (lang) return {code:lang, source:'language'};
+  return {code:'', source:'unknown'};
 }
+/** Chooses the country (or '' = back to automatic). A country is also written to the food-choice profile, so "healthier choices" follow the same country as the prices. */
 export function setMarket(code) {
   const c = validMarket(code);
-  try { if (c) store?.setItem(MARKET_KEY, c); else store?.removeItem(MARKET_KEY); } catch {}
+  writeKey(MARKET_KEY, c);
+  if (c && SLUG[c]) { try { const p = JSON.parse(store?.getItem('fs13:profile') || '{}'); store?.setItem('fs13:profile', JSON.stringify({avoids:[], diet:'none', ...(p && typeof p === 'object' ? p : {}), country:SLUG[c]})); } catch {} }
+  // 102: "automatic" must really be automatic: the profile's country (which the line above mirrors from a choice) would otherwise win over the network and the phone's clock for ever
+  else if (!c) { try { const p = JSON.parse(store?.getItem('fs13:profile') || 'null'); if (p && typeof p === 'object' && p.country && p.country !== 'any') store?.setItem('fs13:profile', JSON.stringify({...p, country:'any'})); } catch {} }
   try { globalThis.dispatchEvent?.(new CustomEvent('foodscan:market', {detail:{code:c}})); } catch {}
   return c;
 }

@@ -53,9 +53,20 @@ function invalidNutritionValue(value) {
 }
 var CHECKED_NUTRIENTS = ["energy-kcal", "energy-kj", "fat", "saturated-fat", "carbohydrates", "sugars", "fiber", "proteins", "salt", "sodium"];
 var INGREDIENT_LANGS = ["fr", "el", "de", "it", "es", "pt", "nl"];
+// 102.1: how many items an ingredient list names (commas outside brackets)
+var ingredientCount = (s) => String(s || "").split(/[,;،、，](?![^()[\]（）]*[)\]）])/).filter((x) => x.trim().length > 1).length;
 function ingredientText(p) {
   const main = String(p?.ingredients_text || p?.ingredients_text_en || "").trim();
-  if (main) return main;
+  // 102.1: a cut-short translation must not stand in for the label. Nutella's English list in Open Food Facts reads "sugar, palm oil" while its
+  // French, German and Italian lists name all 7-10 ingredients (hazelnuts, milk, soy lecithin): the short one hid allergens from the text check.
+  // When the main list names at most half the items of the fullest one (and that one names 4 or more), the fullest list is used.
+  if (main) {
+    // on a tie the usual label languages win (Nutella's French list is also filed under the Abkhaz code "ab")
+    const rank = (k) => { const i = ["en", ...INGREDIENT_LANGS].indexOf(k.slice(-2)); return i < 0 ? 99 : i; };
+    const others = Object.keys(p).filter((k) => /^ingredients_text_[a-z]{2}$/.test(k) && typeof p[k] === "string" && p[k].trim().length > 1).sort((a, b) => rank(a) - rank(b)).map((k) => p[k].trim());
+    const fullest = others.reduce((a, b) => ingredientCount(b) > ingredientCount(a) ? b : a, main);
+    return ingredientCount(fullest) >= 4 && ingredientCount(main) * 2 <= ingredientCount(fullest) ? fullest : main;
+  }
   const own = /^[a-z]{2}$/.test(String(p?.lang || "")) ? `ingredients_text_${p.lang}` : null;
   const key = [own, ...INGREDIENT_LANGS.map((l) => `ingredients_text_${l}`)].find((k) => k && typeof p[k] === "string" && p[k].trim().length > 1);
   return key ? p[key].trim() : "";
@@ -634,6 +645,12 @@ function dataQuality(p) {
   if (!["g", "ml"].includes(p.basis) || fieldCount(p) < 2) return { state: "limited", short: t("Partial source"), title: t("Some label facts are missing"), detail: t("The record is incomplete, so only the facts it reports are shown."), reasons: [] };
   return { state: "usable", short: t("Source-reported"), title: t("Source-reported nutrition"), detail: t("Numbers come from a community database and are not laboratory-verified."), reasons: [] };
 }
+/* 102.1: unflavoured, unsweetened bottled water (no sugar, no energy) by its categories */
+function plainWater(p) {
+  const cats = p?.categories || [], n = p?.nutrition || {};
+  return NS23_WATER_TAGS.some((t2) => cats.includes(t2)) && !cats.some((t2) => /^en:(?:flavou?red-waters|sweetened-beverages|sodas|soft-drinks|energy-drinks|tonic-waters)$/.test(t2))
+    && !(Number(n.sugars) > 0) && !(Number(n.kcal) >= 5) && !(Number(n.kj) >= 21);
+}
 function assessGrade(p, { estimate = true } = {}) {
   const none = (status, why, extra = {}) => ({ status, grade: null, score: null, confidence: null, caveats: [], reasons: [why], anatomy: null, method: null, ...extra });
   if (!p) return none("missing", t("No product"));
@@ -643,6 +660,12 @@ function assessGrade(p, { estimate = true } = {}) {
     return estimate?calculated(p,quality,said):none("local",said,{quality});
   }
   const quality = dataQuality(p);
+  // 102.1: plain water is grade A under the Nutri-Score 2023 rules whatever its minerals, so a mistyped salt line (a spring water recorded with
+  // 3.45 g salt per 100 ml, mg per litre typed as mg per 100 ml) must not withhold the source's A. The salt warning stays on the result.
+  if (quality.state === "blocked" && p.nutriScore === "A" && plainWater(p) && implausible(p).every((x) => x.key === "salt")) {
+    const r = assessGrade({ ...p, nutrition: { ...p.nutrition, salt: 0, sodium: 0 } }, { estimate });   // salt does not enter a water grade
+    if (r.grade === "A") return { ...r, caveats: [...(r.caveats || []), ...quality.reasons] };
+  }
   if (quality.state === "blocked") return none("withheld", quality.reasons.join(". ") + ".", { quality });
   if (p.partial) return none("preview", t("Search preview: open the full record before comparing grades."), {quality});
   if (!isGrade(p.nutriScore)) {

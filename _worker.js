@@ -1716,7 +1716,7 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "101.0.0";
+var VERSION = "102.1.0";
 var BUILD = "9900-daily-portions";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
@@ -2440,9 +2440,21 @@ function fsMarketCode(v) {
   if (!/^[A-Z]{2}$/.test(c)) return '';
   return c === 'UK' ? 'GB' : c === 'EL' ? 'GR' : c === 'XX' || c === 'T1' || c === 'ZZ' ? '' : c;
 }
-/** The shopper's market for one request (see the block comment above). */
+/** The shopper's market for one request (see the block comment above): the explicit ?market=, else the network country.
+ *  102: when Cloudflare itself says the country is unknown (XX, Tor's T1, an unusable code) the answer is '' and the price routes say so: they never assume Greece.
+ *  Only a runtime that gives no geolocation at all (a local preview, the unit tests) keeps the old Greek default; on Cloudflare `request.cf.country` is always present. */
 function fsMarketOf(request, url) {
-  return fsMarketCode(url.searchParams.get('market')) || fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry')) || FS_MARKET_DEFAULT;
+  const chosen = fsMarketCode(url.searchParams.get('market')); if (chosen) return chosen;
+  const seen = request.cf?.country ?? request.headers.get('CF-IPCountry');
+  if (seen === undefined || seen === null || seen === '') return FS_MARKET_DEFAULT;
+  return fsMarketCode(seen) || fsMarketCode(request.headers.get('CF-IPCountry')) || '';
+}
+/** 102: the answer for a visitor whose country nobody knows: no prices, a clear reason, and the app asks the shopper to choose a country. */
+function fsMarketUnknownPayload(code) {
+  return {version:FS_PRICE_VERSION, barcode:code, country:'', currency:'', scope:'market', checkedAt:new Date().toISOString(), market:{code:'', currency:'', currencies:null, source:'unknown'},
+    status:'market_unknown', transport:'pages_worker', product:null, productName:'', pack:null, offers:[], elsewhere:[], estimate:null, related:[], candidates:[], confirmed:null, community:null, data:null,
+    providers:{}, providerSummary:{active:0, unavailable:0, disabled:0}, summary:{bestOfferId:null, lowestCurrentPrice:null, currentOffers:0, retailers:0, stores:0, perChain:[], typical:null, suspect:0},
+    limitations:['FoodScan could not tell which country you are in, so it shows no prices for any country. Choose your country (the "Change" button) to see local, dated prices.']};
 }
 const fsMarketCurrencies = market => FS_MARKET_CURRENCY[market] || null;
 /** Currencies whose everyday prices are large numbers (a 1 kg pack can cost 25,000 VND or 8,000 HUF): the sanity ceiling is higher. */
@@ -3240,9 +3252,11 @@ const fsPriceMedian = xs => { const a = xs.slice().sort((x, y) => x - y), m = a.
  *  the non-suspect, unconditional shelf prices of the last 90 days, one per store, when at least 3 stores recorded one. It is a statistic
  *  of this barcode's own recorded prices, never an estimate from other products. */
 function fsPriceFlagSuspects(items) {
-  const live = items.filter(o => !o.otherCurrency && o.basis === 'item' && o.freshness !== 'historical' && o.freshness !== 'expired');
+  const live = items.filter(o => !o.otherCurrency && !o.packMismatch && o.basis === 'item' && o.freshness !== 'historical' && o.freshness !== 'expired');
   return items.map(o => {
-    if (!o.id.startsWith('op:') || o.otherCurrency || o.basis !== 'item' || o.freshness === 'historical') return o;
+    // 102.1: every source is checked, not only community prices: a web shop listing another pack under this barcode (Lidl's e-shop had a
+    // 194 g coffee at €14.85 while the official observatory recorded €4.76 at Lidl and four other chains) was shown with a €74.25/kg unit price.
+    if (o.otherCurrency || o.packMismatch || o.basis !== 'item' || o.freshness === 'historical') return o;
     const peers = live.filter(x => x.storeId !== o.storeId && x.currency === o.currency).map(x => x.price);
     if (peers.length < 3) return o;
     const med = fsPriceMedian(peers);
@@ -3632,7 +3646,8 @@ async function fsPriceLinkReview(request, env) {
     const key = fsPriceKey(code), cur = await db.prepare('SELECT status, confirmations FROM foodscan_obs_links WHERE ean=?').bind(key).first();
     if (!cur || cur.status !== 'pending_review') return fsPriceJson({error:'not_pending', status:cur?.status || null}, 409);
     if (body.approve && Number(cur.confirmations) < fsConfirmMin(env)) return fsPriceJson({error:'below_minimum'}, 409);
-    await db.prepare('UPDATE foodscan_obs_links SET status=?, reviewed_by=?, reviewed_at=?, updated_at=? WHERE ean=?').bind(body.approve ? 'active' : 'rejected', 'admin', Date.now(), Date.now(), key).run();
+    // 101.1: only columns the deployed schema has (the 101.0 statement wrote reviewed_by/reviewed_at, which no database had: every approval failed with a 503). `updated_at` is the review time.
+    await db.prepare('UPDATE foodscan_obs_links SET status=?, updated_at=? WHERE ean=?').bind(body.approve ? 'active' : 'rejected', Date.now(), key).run();
     return fsPriceJson({barcode:code, status:body.approve ? 'active' : 'rejected'});
   } catch { return fsPriceJson({error:'temporarily_unavailable'}, 503); }
 }
@@ -3830,15 +3845,20 @@ async function fsPricePeekOne(request, env, code, scope, links = new Map()) {
   return {code, status:p.status, currency:p.currency, best:pick(best), latest:pick(latest), current:p.summary.currentOffers, retailers:p.summary.retailers, typical:p.summary.typical?.price ?? p.summary.typical ?? null};
 }
 async function fsPricePeek(request, env, ctx, url) {
-  const codes = [...new Set(String(url.searchParams.get('codes') || '').split(',').map(c => c.trim()).filter(Boolean))];
+  const asked = [...new Set(String(url.searchParams.get('codes') || '').split(',').map(c => c.trim()).filter(Boolean))];
   const scope = fsPriceScope(url, request);
-  if (!codes.length || codes.length > FS_PEEK_MAX || !codes.every(fsPriceValidBarcode) || !scope || scope.nearby) return fsPriceJson({error:'invalid_query', message:`Provide 1 to ${FS_PEEK_MAX} valid barcodes and an optional two-letter market.`}, 400);
+  // 102.1: one malformed barcode (Open Food Facts holds many with a wrong check digit) used to fail the whole batch with a 400, and the client then showed
+  // "no price" for the valid barcodes beside it for half an hour. Now each invalid code is answered on its own and only the valid ones are looked up.
+  const codes = asked.filter(fsPriceValidBarcode), invalid = asked.filter(c => !fsPriceValidBarcode(c)).map(c => ({code:c, status:'invalid_barcode'}));
+  if (!asked.length || asked.length > FS_PEEK_MAX || !scope || scope.nearby) return fsPriceJson({error:'invalid_query', message:`Provide 1 to ${FS_PEEK_MAX} barcodes and an optional two-letter market.`}, 400);
+  if (!codes.length) return fsPriceJson({version:FS_PRICE_VERSION, market:scope.market || '', items:invalid}, 200, {'Cache-Control':'public, max-age=3600'});
+  if (!scope.market) return fsPriceJson({version:FS_PRICE_VERSION, market:'', status:'market_unknown', source:'country unknown: choose a country to see prices', items:[...codes.map(c => ({code:c, status:'market_unknown'})), ...invalid]}, 200, {'Cache-Control':'no-store'});   // 102
   const cache = typeof caches !== 'undefined' ? caches.default : null;
   const key = new Request(url.origin + '/prices/cache/peek/v' + FS_PRICE_VERSION + '/' + scope.market + '/' + codes.map(fsPriceKey).sort().join('-'));
   if (cache) { try { const hit = await cache.match(key); if (hit) return hit; } catch {} }
   if (!fsPriceCanFetch(request.headers.get('CF-Connecting-IP') || 'unknown')) return fsPriceJson({error:'rate_limited', message:'Please retry shortly.'}, 429, {'Retry-After':'60'});
   const links = scope.market === 'GR' ? await fsCommunityLinks(env, codes) : new Map();
-  const items = await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope, links).catch(() => ({code:c, status:'temporarily_unavailable'}))));
+  const items = [...await Promise.all(codes.map(c => fsPricePeekOne(request, env, c, scope, links).catch(() => ({code:c, status:'temporarily_unavailable'})))), ...invalid];
   const out = fsPriceJson({version:FS_PRICE_VERSION, market:scope.market, source:'daily data (Open Prices snapshot, observatory, web-shop seeds); the product page re-checks live', items}, 200, {'Cache-Control':'public, max-age=0, s-maxage=600'});
   if (cache && items.every(i => i.status !== 'temporarily_unavailable')) { try { const copy = out.clone(); ctx?.waitUntil?.(cache.put(key, new Response(copy.body, {status:200, headers:{...Object.fromEntries(copy.headers), 'Cache-Control':'public, max-age=600'}})).catch(() => {})); } catch {} }
   return out;
@@ -3969,7 +3989,8 @@ async function fsPricesRoute(request,env,ctx) {
   if(publicPath!=='compare')return fsPriceJson({error:'not_found'},404);
   const code=url.searchParams.get('barcode')||'',scope=fsPriceScope(url, request);
   if(!fsPriceValidBarcode(code)||!scope)return fsPriceJson({error:'invalid_query',message:'Provide a valid 8/12/13/14-digit GTIN, an optional two-letter market (country) and an optional latitude, longitude and radius (1–50 km).'},400);
-  scope.marketSource = fsMarketCode(url.searchParams.get('market')) ? 'choice' : (fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry'))) ? 'network' : 'default';
+  scope.marketSource = fsMarketCode(url.searchParams.get('market')) ? 'choice' : (fsMarketCode(request.cf?.country) || fsMarketCode(request.headers.get('CF-IPCountry'))) ? 'network' : scope.market ? 'default' : 'unknown';
+  if (!scope.market) return fsPriceJson(fsMarketUnknownPayload(code), 200, {'Cache-Control':'no-store'});   // 102: never Greek prices for a visitor nobody can place
   const greekMarket = scope.market === 'GR';
   const cache = typeof caches!=='undefined' ? caches.default : null;
   const cacheURL=new URL(url.origin+'/prices/cache/v'+FS_PRICE_VERSION+'/'+scope.market+'/'+fsPriceKey(code));

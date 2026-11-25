@@ -20,7 +20,7 @@ function implausible(p) {
   const g = (v) => `${new Intl.NumberFormat(void 0, { maximumFractionDigits: 1 }).format(v)} g`;
   for (const [key, label] of [["fat", "Fat"], ["carbohydrates", "Carbohydrate"], ["protein", "Protein"], ["sugars", "Sugars"], ["salt", "Salt"]])
     if (known(n[key]) && n[key] > 100.5) out.push({ key, text: t("{label} of {amount} per {unit} is impossible", { label: t(label), amount: g(n[key]), unit }) });
-  if (known(n.kcal) && n.kcal > 910) out.push({ key: "kcal", text: t("{kcal} kcal per {unit} is more than pure fat contains", { kcal: Math.round(n.kcal), unit }) });
+  if (known(n.kcal) && n.kcal > 910 && !(known(n.kj) && n.kj / 4.184 <= 910)) out.push({ key: "kcal", text: t("{kcal} kcal per {unit} is more than pure fat contains", { kcal: Math.round(n.kcal), unit }) });
   const macros = (known(n.fat) ? n.fat : 0) + (known(n.carbohydrates) ? n.carbohydrates : 0) + (known(n.protein) ? n.protein : 0);
   if (macros > 105) out.push({ key: "fat", text: t("Fat, carbohydrate and protein add up to {amount} per {unit}", { amount: g(macros), unit }) });
   const drink = p?.nutriScoreData ? p.nutriScoreData.beverage : (p?.categories || []).some((t2) => /^en:(?:beverages|sodas|fruit-juices|juices|waters|soft-drinks)/.test(t2));
@@ -54,7 +54,7 @@ function contradictions(p) {
   if (known(n.sugars) && known(n.carbohydrates) && n.sugars > n.carbohydrates + 0.5) out.push(t("Sugars exceed carbohydrates"));
   if (known(n.saturatedFat) && known(n.fat) && n.saturatedFat > n.fat + 0.5) out.push(t("Saturated fat exceeds total fat"));
   const lower = 9 * (known(n.fat) ? n.fat : 0) + 4 * (known(n.carbohydrates) ? n.carbohydrates : 0) + 4 * (known(n.protein) ? n.protein : 0);
-  if (known(n.kcal) && lower > 0 && n.kcal + Math.max(20, lower * 0.18) < lower) out.push(t("Calories contradict the reported macronutrients"));
+  if (known(n.kcal) && lower > 0 && n.kcal + Math.max(20, lower * 0.18) < lower && !(known(n.kj) && n.kj / 4.184 + Math.max(20, lower * 0.18) >= lower)) out.push(t("Calories contradict the reported macronutrients"));
   return out;
 }
 var fieldCount = (p) => NUTRIENT_KEYS.filter((k) => known(p?.nutrition?.[k])).length;

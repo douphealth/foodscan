@@ -118,6 +118,8 @@ export function checkPayload(p, now = Date.now()) {
   if (!p || typeof p !== 'object' || !(Number.parseInt(p.version, 10) >= PRICE_VERSION)) return null;
   const barcode = String(p.barcode || '');
   if (!validBarcode(barcode)) return null;
+  // 102: the server could not tell which country this shopper is in and sent no prices: say so, and do not slip into the Greek market context
+  if (p.status === 'market_unknown') return summarize({barcode, home:'', currency:'', market:{code:'', currency:'', source:'unknown'}, typical:null, product:null, productName:'', pack:null, offers:[], elsewhere:[], estimate:null, related:[], candidates:[], confirmed:null, community:null, providers:{}, data:null, status:'market_unknown', checkedAt:text(p.checkedAt, 40), transport:text(p.transport, 40)});
   // 83: the answer says which market (country) and currency it is for; offers of that market can rank, the rest are "elsewhere".
   setMarketContext(/^[A-Z]{2}$/.test(String(p.country || '')) ? p.country : 'GR', p.currency);
   const home = HOME;
@@ -144,7 +146,7 @@ export function checkPayload(p, now = Date.now()) {
   // 83: the typical price of this barcode in this market (median of at least 3 stores' unconditional prices, last 90 days), re-checked here.
   const ty = p.summary?.typical, typical = ty && num(ty.price) > 0 && num(ty.low) > 0 && num(ty.high) >= num(ty.low) && Math.round(num(ty.n) || 0) >= 3 && /^[A-Z]{3}$/.test(String(ty.currency || ''))
     ? {price:num(ty.price), low:num(ty.low), high:num(ty.high), n:Math.round(num(ty.n)), retailers:Math.round(num(ty.retailers) || 0), windowDays:Math.round(num(ty.windowDays) || 90), currency:ty.currency, newest:isoDate(ty.newest)} : null;
-  const market = {code:home, currency:CURRENCY, source:['choice', 'network', 'default'].includes(p.market?.source) ? p.market.source : 'default'};
+  const market = {code:home, currency:CURRENCY, source:['choice', 'network', 'default', 'unknown'].includes(p.market?.source) ? p.market.source : 'default'};
   return summarize({barcode, home, currency:CURRENCY, market, typical, product, productName:text(p.productName, 200), pack, offers, elsewhere, estimate, related, candidates, confirmed, community, providers:p.providers || {}, data:p.data && typeof p.data === 'object' ? p.data : null,
     status:offers.length || elsewhere.length ? 'observations_available' : estimate ? 'estimate_only' : status === 'observations_available' || status === 'estimate_only' ? 'no_data' : status,
     checkedAt:text(p.checkedAt, 40), transport:text(p.transport, 40)});

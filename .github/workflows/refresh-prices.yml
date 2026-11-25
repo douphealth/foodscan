@@ -73,6 +73,19 @@ jobs:
         continue-on-error: true
         timeout-minutes: 150
 
+      - name: Sign the data (FoodScan 101 uses a remote file only when a signed manifest lists it)
+        env:
+          PRICE_DATA_SIGNING_KEY: ${{ secrets.PRICE_DATA_SIGNING_KEY }}
+        run: |
+          if [ -z "$PRICE_DATA_SIGNING_KEY" ]; then
+            echo "::warning::PRICE_DATA_SIGNING_KEY is not set. The data is published UNSIGNED, so the site ignores it and shows the prices bundled with its last release. See scripts/sign-price-data.mjs."
+          else
+            umask 077
+            printf '%s\n' "$PRICE_DATA_SIGNING_KEY" > "$RUNNER_TEMP/price-data-key.pem"
+            node ../scripts/sign-price-data.mjs sign out --key "$RUNNER_TEMP/price-data-key.pem"
+            rm -f "$RUNNER_TEMP/price-data-key.pem"
+          fi
+
       - name: Publish to prices-data
         run: |
           cd out

@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS foodscan_obs_links (
   pk_id TEXT NOT NULL,
   confirmations INTEGER NOT NULL,
   disputes INTEGER NOT NULL DEFAULT 0,
-  status TEXT NOT NULL,              -- active | inactive
+  status TEXT NOT NULL,              -- active | pending_review (101: 5+ confirmations, waiting for an admin) | rejected (admin said no) | inactive
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS foodscan_obs_links_status ON foodscan_obs_links(status, ean);

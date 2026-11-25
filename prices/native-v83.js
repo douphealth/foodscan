@@ -11,7 +11,7 @@
  * both prices are per kg or both per litre. */
 import { getPrices, peekPrices, forgetPrices, setConfirmed, confirmedFor, shareConfirmation, TTL } from './price-client-v83.mjs';
 import { esc, euro, money, unitText, whenText, dateText, unitDelta, pageLang, t, marketContext } from './price-core-v83.mjs';
-import { detectMarket, setMarket, marketName, marketFlag, marketsSorted, validMarket, liveSearchURL } from './market-v83.mjs';
+import { detectMarket, setMarket, dismissSuggestion, marketName, marketFlag, marketsSorted, validMarket, liveSearchURL } from './market-v83.mjs';
 
 const icon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>';
 const chev = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
@@ -208,6 +208,19 @@ const NATIVE_L10N = {
     noneIn:c => `Per questo codice a barre non è ancora registrato alcun prezzo in questo paese (${c}). FoodScan non indovina i prezzi. Non significa che non sia in vendita.`, elseIn:c => `Visto solo fuori da questo paese (${c})`,
   },
 };
+/* 102: which country is this? (unknown location, and the "your phone's clock says elsewhere" offer). French, German, Spanish and Italian are hand-written, not machine-translated; a native speaker should still read them. */
+Object.assign(T.en, {whereTitle:'Which country are you in?', whereSub:'FoodScan could not tell where you are, so it shows no prices rather than another country\'s. Choose your country to see local, dated prices.',
+  devHint:c => `Your phone's clock is set to ${c}.`, devUse:c => `Use ${c}`, devKeep:'Keep this country', srcDevice:'from your phone\'s clock', srcLanguage:'guessed from your language'});
+Object.assign(T.el, {whereTitle:'Σε ποια χώρα βρίσκεστε;', whereSub:'Το FoodScan δεν μπόρεσε να καταλάβει πού βρίσκεστε, γι’ αυτό δεν δείχνει τιμές από άλλη χώρα. Επιλέξτε χώρα για να δείτε τοπικές τιμές με ημερομηνία.',
+  devHint:c => `Η ζώνη ώρας της συσκευής σας είναι της χώρας: ${c}.`, devUse:c => `Χρήση: ${c}`, devKeep:'Παραμονή στην τρέχουσα χώρα', srcDevice:'από το ρολόι της συσκευής', srcLanguage:'εκτίμηση από τη γλώσσα σας'});
+Object.assign(NATIVE_L10N.fr, {whereTitle:'Dans quel pays êtes-vous ?', whereSub:'FoodScan n’a pas pu savoir où vous êtes ; il n’affiche donc aucun prix plutôt que ceux d’un autre pays. Choisissez votre pays pour voir des prix locaux et datés.',
+  devHint:c => `L’horloge de votre téléphone est réglée sur : ${c}.`, devUse:c => `Utiliser : ${c}`, devKeep:'Garder ce pays', srcDevice:'d’après l’horloge du téléphone', srcLanguage:'deviné d’après votre langue'});
+Object.assign(NATIVE_L10N.de, {whereTitle:'In welchem Land sind Sie?', whereSub:'FoodScan konnte nicht feststellen, wo Sie sind, und zeigt deshalb lieber keine Preise als die eines anderen Landes. Wählen Sie Ihr Land, um örtliche Preise mit Datum zu sehen.',
+  devHint:c => `Die Uhr Ihres Telefons ist auf dieses Land eingestellt: ${c}.`, devUse:c => `${c} verwenden`, devKeep:'Dieses Land behalten', srcDevice:'nach der Uhr des Telefons', srcLanguage:'aus Ihrer Sprache geschätzt'});
+Object.assign(NATIVE_L10N.es, {whereTitle:'¿En qué país está?', whereSub:'FoodScan no pudo saber dónde está, así que no muestra precios en lugar de mostrar los de otro país. Elija su país para ver precios locales con fecha.',
+  devHint:c => `El reloj de su teléfono está en la zona horaria de: ${c}.`, devUse:c => `Usar ${c}`, devKeep:'Mantener este país', srcDevice:'según el reloj del teléfono', srcLanguage:'deducido de su idioma'});
+Object.assign(NATIVE_L10N.it, {whereTitle:'In quale paese si trova?', whereSub:'FoodScan non ha potuto capire dove si trova, quindi non mostra prezzi invece di quelli di un altro paese. Scelga il suo paese per vedere prezzi locali con data.',
+  devHint:c => `L’orologio del suo telefono è sul fuso orario di: ${c}.`, devUse:c => `Usa ${c}`, devKeep:'Mantieni questo paese', srcDevice:'dall’orologio del telefono', srcLanguage:'dedotto dalla lingua'});
 for (const [l, d] of Object.entries(NATIVE_L10N)) T[l] = Object.setPrototypeOf(d, T.en);
 const lang = () => pageLang();
 const tx = (k, ...a) => { const v = (T[lang()] || T.en)[k]; return typeof v === 'function' ? v(...a) : v; };
@@ -321,9 +334,14 @@ function pickerHTML(home, L) {
     <button type="button" class="fp83-change" data-fs-market-close>${esc(tx('pickClose'))}</button></div></div>`;
 }
 function marketLine(r, L) {
-  const home = r?.home || detectMarket().code; if (!home) return '';
+  const d = detectMarket(), home = r?.home || d.code; if (!home) return '';
   if (ui.picker) return pickerHTML(home, L);
-  return `<p class="fp83-market"><span class="fp83-market__name">${esc(marketFlag(home))} ${esc(tx('inCountry', marketName(home, L), r?.currency || ''))}</span><button type="button" class="fp83-change" data-fs-market-open>${esc(tx('change'))}</button></p>`;
+  // 102: say where the country came from when it is not the shopper's own choice or the network's (the phone's clock, or only the browser language)
+  const note = d.source === 'device' ? tx('srcDevice') : d.source === 'language' ? tx('srcLanguage') : '';
+  // 102: the network says one country, the phone's clock another (a roaming SIM, a VPN): offer the phone's country, never switch silently
+  const sg = d.suggest && d.code === home ? d.suggest : '';
+  return `<p class="fp83-market"><span class="fp83-market__name">${esc(marketFlag(home))} ${esc(tx('inCountry', marketName(home, L), r?.currency || ''))}${note ? ` <small class="fp102-src">${esc(note)}</small>` : ''}</span><button type="button" class="fp83-change" data-fs-market-open>${esc(tx('change'))}</button></p>`
+    + (sg ? `<p class="fp102-suggest"><span>${esc(tx('devHint', marketName(sg, L)))}</span><button type="button" class="fp83-change" data-fs-loc-use="${sg}">${esc(tx('devUse', marketName(sg, L)))}</button><button type="button" class="fp83-change" data-fs-loc-keep="${home}>${sg}">${esc(tx('devKeep'))}</button></p>` : '');
 }
 const typicalLine = (r, L) => { const y = r?.typical; if (!y) return '';
   return `<p class="fp83-typ"><span><b>${esc(tx('typical'))}</b> ${esc(money(y.price, L, y.currency, r.home))}</span><small>${esc(money(y.low, L, y.currency, r.home))} – ${esc(money(y.high, L, y.currency, r.home))} · ${esc(tx('typBasis', y.n, y.retailers))}</small></p>`; };
@@ -337,6 +355,8 @@ function stripHTML0(code, r) {
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>${r ? marketLine(r, L) : ''}`;
   const link = (label, cta) => `<a class="fp75__all${cta ? ' fp75__all--cta' : ''}" href="${pricesURL(code)}">${esc(label)}${chev}</a>`;
   if (!r) return `${head('')}<div class="fp75__skel" aria-hidden="true"><i class="fp75__sk fp75__sk--price"></i><span><i class="fp75__sk"></i><i class="fp75__sk fp75__sk--short"></i></span></div><p class="fp75__sr">${esc(tx('checking'))}</p>`;
+  // 102: nobody can tell which country this is (no choice, no network country, no phone clock, no language region): no prices, and the shopper chooses a country
+  if (r.status === 'market_unknown') return `${head('')}<div class="fp75__none"><div><b>${esc(tx('whereTitle'))}</b><span>${esc(tx('whereSub'))}</span></div></div>${pickerHTML('', L)}`;
   // 84: the shops' web search is still running (the app asks again by itself and replaces this when it finishes)
   if (r.webPending && !r.best && !r.latest) return `${head('')}<div class="fp75__none"><div><b>${esc(tx('webWait'))}</b><span>${esc(tx('webWaitSub'))}</span></div></div>`;
   if (r.status === 'temporarily_unavailable') return `${head('')}<div class="fp75__none"><div><b>${esc(tx('na'))}</b><span>${esc(tx('down'))}</span></div><button type="button" class="fp75__all" data-fp71-retry="${esc(code)}">${esc(tx('retry'))}</button></div>`;
@@ -387,7 +407,7 @@ function paintStandalone(code, view) {
   const page = view.querySelector('#instant-calc')?.closest('.page'); if (!page) return;
   let box = page.querySelector(':scope > .fp75.fp80-standalone');
   if (box && box.dataset.code !== code) { box.remove(); box = null; }
-  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
   if (!box) { box = document.createElement('section'); box.className = 'fp75 fp80-standalone'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); page.prepend(box); }
   if (box.dataset.state === state) return;
   box.dataset.state = state; box.setAttribute('aria-label', tx('eyebrow')); box.setAttribute('aria-busy', r ? 'false' : 'true');
@@ -409,7 +429,7 @@ function paintProduct() {
   const all = [...view.querySelectorAll('.fp75')];
   let box = all.find(n => n.parentElement === at.parent && n.dataset.code === code) || null;
   all.forEach(n => { if (n !== box) n.remove(); });
-  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
   if (!box) { box = document.createElement('section'); box.className = 'fp75'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); }
   const placed = at.after ? at.after.nextElementSibling === box : (at.before ? at.before.previousElementSibling === box : at.parent.lastElementChild === box);
   if (!placed) { if (at.after) at.after.after(box); else at.parent.insertBefore(box, at.before); }
@@ -606,6 +626,8 @@ document.addEventListener('change', e => { const sel = e.target.closest?.('[data
 document.addEventListener('click', e => {
   if (e.target.closest?.('[data-fs-market-open]')) { ui.picker = true; schedule(); setTimeout(() => document.getElementById('fp83-sel')?.focus(), 80); return; }
   if (e.target.closest?.('[data-fs-market-close]')) { ui.picker = false; schedule(); return; }
+  const lu = e.target.closest?.('[data-fs-loc-use]'); if (lu) { setMarket(lu.getAttribute('data-fs-loc-use')); return; }   // 102: the phone's country, on the shopper's tap
+  const lk = e.target.closest?.('[data-fs-loc-keep]'); if (lk) { const [from, to] = String(lk.getAttribute('data-fs-loc-keep')).split('>'); dismissSuggestion(from, to); schedule(); return; }
   const c = e.target.closest?.('[data-fs-confirm]');
   if (c) { const code = c.dataset.fsConfirm; setConfirmed(code, {id:c.dataset.id, name:c.dataset.name}); want(code, {fresh:true}); schedule();
     shareConfirmation(code, c.dataset.id, 1).then(a => { shared.set(code, a); schedule(); }); return; } // 91: also a vote for everyone
@@ -629,7 +651,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-101.0.0';
+export const BUILD = 'foodscan-102.1.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, makeEnv, compare, json, fakeD1, read, loadWorker } from './helpers.mjs';
+import { ROOT, makeEnv, compare, json, fakeD1, read, loadWorker, signedRemote } from './helpers.mjs';
 const P = await import(pathToFileURL(path.join(ROOT, 'price-refresh/tools/webclaw-prefill.mjs')).href);
 
 // one barcode per case, each in another shard: the worker keeps a shard it has read for the rest of the process
@@ -12,14 +12,14 @@ const offer = (o = {}) => ({ r: 'Kiosk Example', p: 1.8, u: 'https://www.kiosk-e
 async function webOffers(o, t = new Date().toISOString()) {
   const code = CODES[n], url = `https://data-webpre94-${++n}.test/prices-data`;
   const today = new Date().toISOString(), shard = { schema: 1, built: today, products: { [P.key14(code)]: { t, o: [offer(o)] } } };
-  const remote = [new RegExp('^' + url.replace(/\./g, '\\.') + '/web/(\\d{2})\\.json'), u => u.endsWith(`/web/${code.slice(-2)}.json`) ? json(shard) : new Response('', { status: 404 })];
+  const sr = signedRemote(url, { [`web/${code.slice(-2)}.json`]: shard }); // 101: a remote shard is used only when a signed manifest lists it
   const live = [/api\.webclaw\.io|api\.anthropic|api\.firecrawl/, () => { throw new Error('no live search in this test'); }];
-  const r = await compare(code, { market: 'GR', env: makeEnv({ FOODSCAN_PRICE_DATA_URL: url }), extra: [remote, live] });
+  const r = await compare(code, { market: 'GR', env: makeEnv(sr.env), extra: [...sr.handlers, live] });
   return r.body.offers.filter(x => String(x.id).startsWith('ws:'));
 }
 
-test('a web-shop price with a valid date on a product page is kept and can be the cheapest', async () => {
-  const ws = await webOffers(); assert.equal(ws.length, 1); assert.equal(ws[0].tier, 'current');
+test('a web-shop price with a valid date on a product page is kept, shown as "last seen" and never ranked as the cheapest (101: nobody re-read the shop page today)', async () => {
+  const ws = await webOffers(); assert.equal(ws.length, 1); assert.equal(ws[0].tier, 'lastSeen'); assert.equal(ws[0].rankingEligible, false); assert.equal(ws[0].price, 1.8);
 });
 test('a web-shop price with no date, a future date or only a shop home page is dropped (it used to be dated today)', async () => {
   assert.equal((await webOffers({ c: '' }, '')).length, 0, 'no date');
@@ -60,7 +60,10 @@ test('scan outcomes: Do Not Track, Global Privacy Control, other sites and bad v
   const ok = { barcode: '5201024005438', grade: 'none', price: 'none', photo: false };
   assert.equal((await outcome(env, ok, { DNT: '1' })).body.recorded, false);
   assert.equal((await outcome(env, ok, { 'Sec-GPC': '1' })).body.recorded, false);
-  const other = await outcome(env, ok, { Origin: 'https://evil.example', 'Sec-Fetch-Site': 'cross-site' }); assert.ok(other.status === 403 || other.body.recorded === false, 'another site');
+  // 101 (fix 13): a beacon from another origin is dropped quietly (204, no body, no console error) and never counted
+  const worker = await loadWorker();
+  const other = await worker.fetch(new Request('https://food-scan.test/api/prices/outcome', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example', 'Sec-Fetch-Site': 'cross-site', 'CF-Connecting-IP': '203.0.113.9' }, body: JSON.stringify(ok) }), env, { waitUntil() {} });
+  assert.equal(other.status, 204, 'another site'); assert.equal(other.headers.get('X-FoodScan-Dropped'), 'origin');
   assert.equal((await outcome(env, { ...ok, grade: 'excellent' })).status, 400);
   assert.equal((await outcome(env, { ...ok, barcode: '123' })).status, 400);
   assert.equal(db.raw.prepare('SELECT COUNT(*) AS n FROM foodscan_scan_daily').get().n, 0);

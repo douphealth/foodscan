@@ -81,18 +81,46 @@ async function fs61Rows(request,env,m,files){
 async function fs60LocalAlternatives(request,env){
  const u=new URL(request.url),country=marketCountry(request),category=u.searchParams.get('category')||'',page=marketPage(request);
  if(u.searchParams.get('refresh')==='1')return null;
+ // 101 (fix 8): the bundled catalogue is a GREEK supermarket catalogue. Outside Greece it never supplies "better choices" (v100 let
+ // Greek products whose OFF record also lists France, e.g. «Μερέντα», into French results); the live, country-filtered search answers.
+ if(!fs101Greek(request))return null;
  if(!/^[a-z]{2}:[a-z0-9][a-z0-9-]{1,100}$/.test(category))return error('invalid_category','Choose a source-listed food category.',400);
  if(!page)return error('invalid_page','Page must be from 1 to 50.',400);
  try{
   const m=await fs60Manifest(request,env),index=await fs60ReadAsset(request,env,'categories.json');
   if(index.revision!==m.revision)throw new Error('catalogue_revision_mismatch');
   const data=await fs61Rows(request,env,m,index.categories[category]||[]);
-  const products=data.products.filter(p=>(!country||p.countries_tags?.includes('en:'+country))&&p.categories_tags?.includes(category));
-  if(!products.length&&(data.failures.length||country&&country!=='greece'))return null;
+  const products=data.products.filter(p=>p.categories_tags?.includes(category));
+  if(!products.length&&data.failures.length)return null;
   products.sort((a,b)=>String(a.code).localeCompare(String(b.code)));const size=48,total=products.length;
   return json({products:products.slice((page-1)*size,page*size),country:country||null,category,page,total,hasMore:page*size<total,partial:false,recordMode:'dated-catalogue-record-v1',provider:'off-catalogue',source:'Open Food Facts daily CSV export',fetchedAt:m.exportedAt,
    catalogue:{status:data.failures.length?'partial':'ready',datasetMarket:'greece',market:country||'any',marketCoverage:country&&country!=='greece'?'listed-subset':'greece-snapshot',failedFiles:data.failures,count:m.productCount,exportedAt:m.exportedAt,revision:m.revision,source:m.source},version:VERSION,coverage:m.coverage},200,{'X-FoodScan-Cache':'BUNDLED-CATALOGUE','Cache-Control':'public, max-age=300'});
  }catch{return null;}
+}
+/* 101: which record answers /api/product.
+ *  - Outside Greece the bundled GREEK catalogue is never used (fix 8): the live Open Food Facts record (edge-cached, saved copies
+ *    up to 30 days when the source is busy) answers, and the phone reads Open Food Facts directly if this server is paused.
+ *  - In Greece (fix 3) the catalogue is a dated export (30 Oct 2026, no categories): the live record is asked for in parallel,
+ *    within FS_LIVE_UPGRADE_MS, and wins when it is at least as recent (it carries categories and any later correction).
+ *    The catalogue answers when the live record is slow, busy or missing. */
+const FS_LIVE_UPGRADE_MS = 1800;
+function fs101Greek(request) { const c = marketCountry(request); return c === 'greece' || (!c && !request.cf?.country); }
+async function fs101Product(request, env, ctx, code) {
+  const refresh = new URL(request.url).searchParams.get('refresh') === '1';
+  if (refresh || !fs101Greek(request)) return await productResponse(request, env, ctx, code);
+  const local = await fs60LocalProduct(request, env, code);
+  if (!local) return await productResponse(request, env, ctx, code);
+  const liveTask = productResponse(request, env, ctx, code).catch(() => null);
+  if (ctx?.waitUntil) ctx.waitUntil(liveTask.then(() => {}));
+  const live = await Promise.race([liveTask, new Promise((ok) => setTimeout(() => ok(null), FS_LIVE_UPGRADE_MS))]);
+  if (live && live.status === 200 && live.headers.get('X-FoodScan-Cache') !== 'STALE') {
+    try {
+      const [lb, cb] = await Promise.all([live.clone().json(), local.clone().json()]);
+      const lt = Number(lb?.product?.last_modified_t) || 0, ct = Number(cb?.product?.last_modified_t) || 0;
+      if (lb?.product && lt >= ct) { const h = new Headers(live.headers); h.set('X-FoodScan-Record', 'live-newer-than-catalogue'); return new Response(live.body, {status:200, headers:h}); }
+    } catch {}
+  }
+  return local;
 }
 async function fs60LocalProduct(request,env,code){
  try{

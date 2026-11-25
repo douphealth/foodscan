@@ -3,7 +3,7 @@
  *    node tools/verify-deploy.mjs https://food-scan.gearuptofit.com [expectedVersion]
  *  Exit code 0 only when the site serves the expected release AND its price API answers with sources, dates and an estimate contract. */
 const base = (process.argv[2] || 'https://food-scan.gearuptofit.com').replace(/\/+$/, '');
-const want = process.argv[3] || '100.1.0';
+const want = process.argv[3] || '102.1.0';
 const UA = { 'User-Agent': 'FoodScan-verify/80' };
 let bad = 0; const ok = (c, msg) => { console.log((c ? '  ok   ' : '  FAIL ') + msg); if (!c) bad++; };
 const get = async (p, init) => { try { const r = await fetch(base + p + (p.includes('?') ? '&' : '?') + 'r=' + Math.random(), { headers: UA, ...init, signal: AbortSignal.timeout(30000) }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return { status: r.status, text: t, json: j }; } catch (e) { return { status: 0, text: String(e), json: null }; } };
@@ -11,7 +11,7 @@ console.log('Checking', base, 'for release', want);
 const h = await get('/api/health'); ok(h.json?.version === want, `/api/health reports ${h.json?.version ?? 'nothing'} (need ${want})`);
 const home = await get('/'); ok(new RegExp('data-foodscan-version="' + want.replace(/\./g, '\.') + '"').test(home.text), 'the home page carries release ' + want);
 const ph = await get('/api/prices/health'); ok(ph.status === 200 && ph.json?.version === want, `/api/prices/health ${ph.status === 200 ? 'answers' : 'is missing (HTTP ' + ph.status + '): the deployed release has no price service'}`);
-if (ph.json) { ok(ph.json.sources && Object.keys(ph.json.sources).length >= 3, 'health lists the price sources'); ok(ph.json.estimator?.estimates > 5000, `estimator available (${ph.json.estimator?.estimates ?? 0} estimates)`); console.log('  info  remote data:', ph.json.remote?.url, '| estimator origin:', ph.json.estimator?.origin); for (const [id, s] of Object.entries(ph.json.sources || {})) console.log('  info ', id.padEnd(13), s.state, s.seed?.snapshot || '', 'age', s.seed?.ageDays + ' d'); }
+if (ph.json) { ok(ph.json.sources && Object.keys(ph.json.sources).length >= 3, 'health lists the price sources'); ok(ph.json.estimator?.status === 'removed', `no estimated prices are served (101 policy; estimator status: ${ph.json.estimator?.status ?? 'missing'})`); const ig = ph.json.remote?.integrity; console.log('  info  remote data:', ph.json.remote?.url, '| signed manifest:', ig?.status ?? 'unknown', ig?.built ? '(built ' + ig.built + ', ' + ig.files + ' files)' : ''); if (ig && ig.status !== 'ok') console.log('  WARN  the daily price refresh is NOT used (' + ig.status + (ig.reason ? ': ' + ig.reason : '') + '): the site shows the prices bundled with this release. See SETUP.md section 4c.'); for (const [id, s] of Object.entries(ph.json.sources || {})) console.log('  info ', id.padEnd(13), s.state, s.seed?.snapshot || '', 'age', s.seed?.ageDays + ' d'); }
 for (const [code, label] of [['5201004023360', 'recorded prices'], ['5203735000320', 'no recorded price (no estimate since 81)'], ['5449000214911', 'recorded prices (Coca-Cola)']]) {
   const r = await get(`/api/prices/compare?barcode=${code}`, { method: 'POST' });
   const j = r.json; ok(r.status === 200 && j?.version === want, `price lookup ${code} (${label}): HTTP ${r.status}, release ${j?.version ?? '?'}`);

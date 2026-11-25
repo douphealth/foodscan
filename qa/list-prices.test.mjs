@@ -6,7 +6,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import { pathToFileURL } from 'node:url';
-import { ROOT, op, compare, peek, makeEnv, daysAgo } from './helpers.mjs';
+import { ROOT, op, compare, peek, makeEnv, daysAgo, signedRemote } from './helpers.mjs';
 const B = await import(pathToFileURL(path.join(ROOT, 'price-refresh/tools/build-open-prices.mjs')).href);
 const LP = await import(pathToFileURL(path.join(ROOT, 'prices/list-prices-v90.js')).href);
 
@@ -21,7 +21,10 @@ function dumps(items) {
 let n = 0;
 async function branchEnv(items) {
   const snap = await B.build(dumps(items), { now: Date.now() }), url = `https://peek${++n}.test/prices-data`;
-  return { env: makeEnv({ FOODSCAN_PRICE_DATA_URL: url }), handlers: [[new RegExp('^' + url.replace(/\./g, '\\.') + '/op/'), u => { const id = Number(u.match(/op\/(\d{3})\.json/)[1]); const s = snap.shards[id]; return new Response(JSON.stringify({ schema: 1, cutoff: snap.cutoff, built: snap.manifest.built, ...s }), { headers: { 'content-type': 'application/json' } }); }]] };
+  // 101: the worker uses a remote shard only when a signed manifest lists it
+  const files = {}; for (const id of Object.keys(snap.shards)) files[`op/${String(id).padStart(3, '0')}.json`] = { schema: 1, cutoff: snap.cutoff, built: snap.manifest.built, ...snap.shards[id] };
+  const sr = signedRemote(url, files);
+  return { env: makeEnv(sr.env), handlers: sr.handlers };
 }
 
 test('peek gives each barcode the same lowest current price as the product page, without any live request', async () => {
@@ -46,10 +49,15 @@ test('a suspect crowd price never shows in a list either', async () => {
   assert.ok(p.body.items[0].best.price >= 4, `got ${p.body.items[0].best.price}`);
 });
 
-test('peek refuses more than five barcodes (the free-plan subrequest budget) and invalid ones', async () => {
+test('peek refuses more than five barcodes (the free-plan subrequest budget); an invalid barcode is answered on its own and never sinks the batch', async () => {
   const six = ['3017620422003', '5000159407236', '5201004023360', '5204140002008', '5201005001824', '5201004040022'];
   assert.equal((await peek(six)).res.status, 400);
-  assert.equal((await peek(['12345'])).res.status, 400);
+  const lone = await peek(['12345']); assert.equal(lone.res.status, 200); assert.deepEqual(lone.body.items, [{ code: '12345', status: 'invalid_barcode' }]);
+  // 102.1: before, one bad check digit (5201004023361) made the whole batch a 400 and the valid neighbour showed "no price" for half an hour
+  const mixed = await peek(['5201004023360', '5201004023361'], { market: 'GR' });
+  assert.equal(mixed.res.status, 200);
+  assert.equal(mixed.body.items.find(i => i.code === '5201004023361').status, 'invalid_barcode');
+  assert.notEqual(mixed.body.items.find(i => i.code === '5201004023360').status, 'invalid_barcode');
 });
 
 test('the row line and the swap comparison: an older price is marked, and unit prices are compared only on the same basis', () => {

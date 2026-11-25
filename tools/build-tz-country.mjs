@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+/** Builds prices/tz-country-v102.mjs: the device time zone -> country table FoodScan 102 uses to notice where a phone really is
+ *  (a roaming SIM or a VPN makes the network country wrong; the time zone a phone sets from its own location is usually right).
+ *
+ *    node tools/build-tz-country.mjs <tzdata zoneinfo dir>        e.g. C:/Python312/Lib/site-packages/tzdata/zoneinfo (pip install tzdata)
+ *    node tools/build-tz-country.mjs --check                      the committed module equals what the data would produce (no data needed: structural check)
+ *
+ *  Source: IANA tz database `zone.tab` (one row per country and zone; every zone name is in exactly one country) plus the `L` links of
+ *  `tzdata.zi` for the old names some browsers still report (Asia/Calcutta, Europe/Kiev, Asia/Saigon...). Only Area/City names are kept (no US/, Etc/, CET...). */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const OUT = path.join(here, '../prices/tz-country-v102.mjs');
+const AREAS = new Set(['Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic', 'Australia', 'Europe', 'Indian', 'Pacific']);
+const dir = process.argv[2];
+if (dir === '--check') {
+  // Structural check of the committed module (no tz data needed): every zone is in exactly one country, every old name points at a real zone,
+  // the country codes are two capital letters, and the counts in the header and in TZ_COUNTRY_COUNT are the real ones.
+  const text = fs.readFileSync(OUT, 'utf8'), lit = name => JSON.parse(new RegExp(`^const ${name} = ("(?:[^"\\\\]|\\\\.)*");$`, 'm').exec(text)?.[1] ?? 'null');
+  const Z = lit('Z'), A = lit('A'), problems = [], owner = new Map();
+  if (typeof Z !== 'string' || typeof A !== 'string') { console.error('FAIL: the Z and A tables were not found in ' + OUT); process.exit(1); }
+  for (const entry of Z.split(';')) {
+    const i = entry.indexOf(':'), cc = entry.slice(0, i);
+    if (!/^[A-Z]{2}$/.test(cc)) problems.push('bad country code ' + JSON.stringify(cc));
+    for (const zone of entry.slice(i + 1).split(',')) {
+      if (!/^[A-Za-z_]+\/[A-Za-z0-9_+\-/]+$/.test(zone)) problems.push('bad zone name ' + zone);
+      if (owner.has(zone)) problems.push(`zone ${zone} is in both ${owner.get(zone)} and ${cc}`);
+      owner.set(zone, cc);
+    }
+  }
+  const countries = new Set(owner.values());
+  const aliases = A ? A.split(',') : [];
+  for (const pair of aliases) { const i = pair.indexOf('>'), alias = pair.slice(0, i), target = pair.slice(i + 1); if (!owner.has(target)) problems.push(`old name ${alias} points at unknown zone ${target}`); if (owner.has(alias)) problems.push(`old name ${alias} is also a real zone`); }
+  const count = Number(/export const TZ_COUNTRY_COUNT = (\d+);/.exec(text)?.[1]), head = /\* (\d+) zones, (\d+) old names\./.exec(text);
+  if (count !== countries.size) problems.push(`TZ_COUNTRY_COUNT is ${count} but the table has ${countries.size} countries`);
+  if (!head || Number(head[1]) !== owner.size || Number(head[2]) !== aliases.length) problems.push(`the header says ${head?.[1]} zones and ${head?.[2]} old names, the table has ${owner.size} and ${aliases.length}`);
+  if (problems.length) { console.error('FAIL:\n  ' + problems.join('\n  ')); process.exit(1); }
+  console.log(`OK: ${owner.size} zones in ${countries.size} countries, ${aliases.length} old names, no zone in two countries`);
+  process.exit(0);
+}
+if (!dir || dir.startsWith('--')) { console.error('usage: node tools/build-tz-country.mjs <tzdata zoneinfo dir>   |   --check'); process.exit(2); }
+
+const rows = fs.readFileSync(path.join(dir, 'zone.tab'), 'utf8').split('\n').filter(l => l && !l.startsWith('#')).map(l => l.split('\t'));
+const byZone = new Map();
+for (const [cc, , zone] of rows) { if (byZone.has(zone) && byZone.get(zone) !== cc) throw new Error('ambiguous zone ' + zone); byZone.set(zone, cc); }
+let version = 'unknown';
+try { version = fs.readFileSync(path.join(dir, 'tzdata.zi'), 'utf8').split('\n')[0].replace(/^#\s*version\s*/, '').trim() || version; } catch {}
+const links = new Map();
+try {
+  for (const l of fs.readFileSync(path.join(dir, 'tzdata.zi'), 'utf8').split('\n')) {
+    if (!l.startsWith('L ')) continue;
+    const [, target, alias] = l.split(' ');
+    if (AREAS.has(alias.split('/')[0]) && alias.includes('/') && !byZone.has(alias) && byZone.has(target)) links.set(alias, target);
+  }
+} catch {}
+
+const byCountry = new Map();
+for (const [zone, cc] of byZone) { if (!AREAS.has(zone.split('/')[0])) continue; (byCountry.get(cc) || byCountry.set(cc, []).get(cc)).push(zone); }
+const countries = [...byCountry.keys()].sort();
+const Z = countries.map(cc => cc + ':' + byCountry.get(cc).sort().join(',')).join(';');
+const A = [...links].sort().map(([alias, target]) => alias + '>' + target).join(',');
+
+const src = `/* FoodScan 102: device time zone -> country. GENERATED by tools/build-tz-country.mjs from the IANA tz database ${version} (zone.tab + backward links); do not edit.
+ * Why: a roaming SIM or a VPN gives the network country of somewhere else; the time zone a phone sets from its own location is usually the real one.
+ * Used only to SUGGEST a country (never to switch silently) and as the fallback when the network country is unknown. Every zone name in zone.tab belongs to exactly one country.
+ * ${byZone.size} zones, ${links.size} old names. */
+const Z = ${JSON.stringify(Z)};
+const A = ${JSON.stringify(A)};
+let table = null;
+function build() {
+  table = new Map();
+  for (const entry of Z.split(';')) { const i = entry.indexOf(':'), cc = entry.slice(0, i); for (const zone of entry.slice(i + 1).split(',')) table.set(zone, cc); }
+  for (const pair of A.split(',')) { const i = pair.indexOf('>'); const cc = table.get(pair.slice(i + 1)); if (cc) table.set(pair.slice(0, i), cc); }
+}
+/** The ISO country of an IANA time zone name ("Europe/Athens" -> "GR"), or '' (UTC, Etc/*, an unknown or empty name). */
+export function countryOfZone(zone) { if (!table) build(); return table.get(String(zone || '')) || ''; }
+/** The device's own time zone name ('' when the browser does not say). */
+export function deviceZone() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { return ''; } }
+export const TZ_COUNTRY_COUNT = ${countries.length};
+`;
+fs.writeFileSync(OUT, src);
+console.log(`wrote ${path.relative(process.cwd(), OUT)}: ${byZone.size} zones in ${countries.length} countries, ${links.size} old names, ${src.length} bytes (tzdata ${version})`);

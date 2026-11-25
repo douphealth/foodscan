@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { ROOT } from './helpers.mjs';
 
-const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v8500.mjs')).href);
+const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v101.mjs')).href);
 const Q = await import(pathToFileURL(path.join(ROOT, 'prices/quick-grade-v85.mjs')).href);
 const V = await import(pathToFileURL(path.join(ROOT, 'tools/quick-grade-validate.mjs')).href);
 const U = await import(pathToFileURL(path.join(ROOT, 'prices/grade-ui-v85.mjs')).href);

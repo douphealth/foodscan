@@ -174,9 +174,9 @@ test('fix 2: leaving a page closes the compare dialog', () => {
   assert.match(src, /if \(where !== lastWhere\) \{[^}]*closeModal\(\);/);
 });
 test('fix 3: the change key is built from signatures, not from the stored lists', () => {
-  const key = src.match(/const key = \[r\.page[^\n]*/)[0];
+  const key = src.match(/key = \[r\.page[^\n]*/)[0];   // 102: the line is "const mk = marketNow(), key = [...", the country is part of the key
   assert.ok(!key.includes('readRaw('), 'no raw megabyte string in the key');
-  for (const k of ['readSig(PORTION_KEY)', 'readSig(DAILY_KEY)', 'readSig(COMPARE_KEY)', 'readSig(LIST_KEY)', 'recordsKey(']) assert.ok(key.includes(k), k);
+  for (const k of ['readSig(PORTION_KEY)', 'readSig(DAILY_KEY)', 'readSig(COMPARE_KEY)', 'readSig(LIST_KEY)', 'recordsKey(', 'mk.code']) assert.ok(key.includes(k), k);
   assert.match(src, /const sig = s => \(s \? `\$\{s\.length\}:\$\{s\.slice\(0, 48\)\}:\$\{s\.slice\(-48\)\}` : '0'\);/);
 });
 test('fix 5 and 7: the compare table names its basis, crowns no winner across g and ml, and formats energy like the hub', () => {

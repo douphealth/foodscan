@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { pathToFileURL } from 'node:url';
-import { ROOT, op, compare, makeEnv, json, daysAgo } from './helpers.mjs';
+import { ROOT, op, compare, makeEnv, json, daysAgo, signedRemote } from './helpers.mjs';
 const B = await import(pathToFileURL(path.join(ROOT, 'price-refresh/tools/build-open-prices.mjs')).href);
 
 /** Real-API items -> the four dump files (the official dumps carry ids, the API nests the objects). */
@@ -29,7 +29,10 @@ let base = 0;
 /** A fake prices-data branch serving the shards of `snap`, at its own URL (the worker caches shards per base URL). */
 function branch(snap) {
   const url = `https://data${++base}.test/prices-data`, calls = [];
-  return { env: makeEnv({ FOODSCAN_PRICE_DATA_URL: url }), calls, handlers: [[new RegExp('^' + url.replace(/\./g, '\\.') + '/op/'), u => { calls.push(u); const id = Number(u.match(/op\/(\d{3})\.json/)[1]); const s = snap.shards[id]; return json({ schema: 1, cutoff: snap.cutoff, built: snap.manifest.built, ...s }); }], [new RegExp('^' + url.replace(/\./g, '\\.')), () => json({}, 404)]] };
+  // 101: the worker uses a remote shard only when a signed manifest lists it (signedRemote signs every shard of the snapshot with a test key)
+  const files = {}; for (const id of Object.keys(snap.shards)) files[`op/${String(id).padStart(3, '0')}.json`] = { schema: 1, cutoff: snap.cutoff, built: snap.manifest.built, ...snap.shards[id] };
+  const sr = signedRemote(url, files);
+  return { env: makeEnv(sr.env), calls, handlers: sr.handlers.map(([re, h]) => [re, u => { if (/\/op\//.test(u)) calls.push(u); return h(u); }]) };
 }
 
 test('the snapshot keeps every usable observation and nothing else: duplicates, drafts, old prices and prices without a store are left out', async () => {

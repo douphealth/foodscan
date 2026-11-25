@@ -6,7 +6,7 @@ import { esc, pageLang } from './price-core-v83.mjs';
 import { SWAP_RELIABILITY } from './swaps-v88.mjs';
 import { detectMarket } from './market-v83.mjs';
 // 101: the bundled catalogue behind swaps and similar-product estimates is GREEK: used only for a shopper in Greece (their own choice first, else the server's answer)
-const greekMarket = res => { try { const own = detectMarket().code; if (own) return own === 'GR'; } catch {} const h = res?.headers?.get?.('x-foodscan-market'); return !h || h === 'greece'; };
+const greekMarket = res => { try { const own = detectMarket().code; if (own) return own === 'GR'; } catch {} const h = res?.headers?.get?.('x-foodscan-market'); return h === 'greece'; };   // 102: no known market is not Greece
 
 const INDEX_URL = '/assets/swaps-off-csv-2026-10-30.json';
 const T = {

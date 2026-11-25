@@ -122,7 +122,8 @@ export function createCatalogue(fetcher=(...args)=>fetch(...args)){
  }
  async function product(code,{signal,country}={}){
   if(!validBarcode(String(code)))return null;
-  if(country!==undefined&&market(country)!=='greece')return null; // 101 (fix 8)const m=await manifest(signal,{allowExpired:true}),key=keyOf(code),bucket=String(Number(key.slice(-6))%m.barcodeBuckets).padStart(2,'0');
+  if(country!==undefined&&market(country)!=='greece')return null; // 101 (fix 8)
+  const m=await manifest(signal,{allowExpired:true}),key=keyOf(code),bucket=String(Number(key.slice(-6))%m.barcodeBuckets).padStart(2,'0');
   const {data:index}=await waitFor(read(`codes-${bucket}.json`),signal);checkRevision(index,m);const file=index.codes?.[key];if(!file)return null;
   if(!m.shards[file])throw new CatalogueError('catalogue_invalid_path');
   const shard=await loadRaw(m,file,signal),raw=shard.byRaw.get(key);

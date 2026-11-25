@@ -26,7 +26,7 @@ export function setConfirmed(code, choice) {
 }
 
 function remember(code, result) {
-  if (result.status === 'temporarily_unavailable' || result.status === 'incomplete' || result.raw?.kind === 'open') return;
+  if (result.status === 'temporarily_unavailable' || result.status === 'incomplete' || result.status === 'market_unknown' || result.raw?.kind === 'open') return;
   const entry = {at:Date.now(), raw:result.raw};
   memory.set(code, entry);
   try { store?.setItem(KEY + code, JSON.stringify(entry)); } catch {}
@@ -84,7 +84,8 @@ export function getPrices(code, {signal, quantity = '', fresh = false, near = nu
   const job = (async () => {
     let r = await viaService(code, signal, near, fresh, market, false, cheap);
     // Nearby answers need the server's distance filter: no direct fallback for them.
-    if (!near && (!r || r.status === 'temporarily_unavailable')) r = (await viaOpenPrices(code, signal, quantity, market)) || r;
+    // 102: with no known country there is nothing to read directly (the direct read would fall back to Greece): the service's own answer stands
+    if (!near && market && (!r || r.status === 'temporarily_unavailable')) r = (await viaOpenPrices(code, signal, quantity, market)) || r;
     if (!r) r = {barcode:code, status:'temporarily_unavailable', offers:[], elsewhere:[], best:null, latest:null, raw:null};
     // 84: the shops' web search was still running when this answer left: keep the answer it gave, and ask once more, waiting for the search to finish. The
     // finished answer is remembered and announced, so the price card, comparisons and the Prices page fill in by themselves.
