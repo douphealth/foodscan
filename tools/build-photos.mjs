@@ -9,22 +9,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bestPhotoFile } from '../assets/domain-v106.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > -1 ? process.argv[i + 1] : d; };
 export const fileFor = rev => path.join(here, `../assets/photos-${rev}.json`);
 
 /** The image list of one product -> the file part of the best photo ("front_en.4.400", "1.400"), or null. */
-export function bestPhoto(images) {
-  if (!images || typeof images !== 'object') return null;
-  const sel = k => (images[k]?.rev ? `${k}.${images[k].rev}.400` : null);
-  const fronts = Object.keys(images).filter(k => /^front_[a-z]{2}$/.test(k)).sort();
-  for (const k of fronts) { const s = sel(k); if (s) return s; }
-  const raw = Object.keys(images).filter(k => /^\d+$/.test(k)).map(Number).sort((a, b) => a - b);
-  if (raw.length) return `${raw[0]}.400`;
-  const pack = Object.keys(images).filter(k => /^packaging_[a-z]{2}$/.test(k)).sort();
-  for (const k of pack) { const s = sel(k); if (s) return s; }
-  return null;
+export function bestPhoto(images, lang = '') {
+  // 106: one rule for the build and the browser (assets/domain: bestPhotoFile); it also skips a thumbnail-sized upload and prefers the record's language.
+  const file = bestPhotoFile(images, lang);
+  return file ? `${file}.400` : null;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -33,13 +28,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const limit = Number(arg('--limit', codes.length)), todo = codes.slice(0, limit), photos = {}, ua = 'FoodScanBuild/89 (+https://food-scan.gearuptofit.com/how/; photo index, 50 barcodes per request)';
   let asked = 0, answered = 0;
   for (let i = 0; i < todo.length; i += 50) {
-    const batch = todo.slice(i, i + 50), url = `https://world.openfoodfacts.org/api/v2/search?code=${batch.join(',')}&fields=code,images&page_size=50`;
+    const batch = todo.slice(i, i + 50), url = `https://world.openfoodfacts.org/api/v2/search?code=${batch.join(',')}&fields=code,lang,images&page_size=50`;
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const res = await fetch(url, { headers: { 'User-Agent': ua }, signal: AbortSignal.timeout(60000) });
         if (res.status === 429 || res.status >= 500) throw new Error('HTTP ' + res.status);
         const j = await res.json(); asked += batch.length;
-        for (const p of j.products || []) { answered++; const b = bestPhoto(p.images); if (b && batch.includes(p.code)) photos[p.code] = b; }
+        for (const p of j.products || []) { answered++; const b = bestPhoto(p.images, p.lang); if (b && batch.includes(p.code)) photos[p.code] = b; }
         break;
       } catch (e) { console.error(`batch ${i / 50}: ${e.message}, retry ${attempt + 1}`); await new Promise(r => setTimeout(r, 15000 * (attempt + 1))); }
     }

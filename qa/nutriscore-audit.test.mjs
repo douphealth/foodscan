@@ -11,7 +11,7 @@ import { ROOT } from './helpers.mjs';
 
 const ctx = {}; vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'src/domain/nutriscore2023.js'), 'utf8') + '\nthis.ns23Score = ns23Score; this.ns23TH = ns23TH;', ctx);
-const client = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v104.mjs')).href);
+const client = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v106.mjs')).href);
 
 test('the 2023 point tables are exactly the reference implementation\'s', () => {
   const T = ctx.ns23TH, same = (a, b) => assert.deepEqual([...a], b);

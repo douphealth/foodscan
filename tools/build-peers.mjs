@@ -9,7 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v104.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v106.mjs')).href);
 const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const KIND = { general: 'g', beverage: 'b', water: 'w', cheese: 'c', fat: 'f' };
 const r = (v, d = 1) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 10 ** d) / 10 ** d : null);

@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v104.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v106.mjs')).href);
 const S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href);
 const B = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
 const QG = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);

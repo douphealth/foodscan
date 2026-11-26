@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { ROOT } from './helpers.mjs';
 
-const { parseProduct, assessGrade } = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v104.mjs')).href);
+const { parseProduct, assessGrade } = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v106.mjs')).href);
 const grade = (cats, ing, n, name = 'x') => assessGrade(parseProduct({ status: 1, product: { code: '3017620422003', product_name: name, quantity: '500 g', nutrition_data_per: '100g', categories_tags: cats, ingredients_text: ing,
   nutriments: { 'energy-kcal_100g': Math.round((n.kj || 0) / 4.184), 'energy-kj_100g': n.kj || 0, fat_100g: n.fat || 0, 'saturated-fat_100g': n.sat || 0, carbohydrates_100g: n.carbs ?? n.sugars ?? 0, sugars_100g: n.sugars || 0, fiber_100g: n.fibre || 0, proteins_100g: n.protein || 0, salt_100g: n.salt || 0, sodium_100g: (n.salt || 0) / 2.5, 'fruits-vegetables-legumes-estimate-from-ingredients_100g': n.fvl || 0 } } }, '3017620422003'));
 

@@ -6,7 +6,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, read } from './helpers.mjs';
 
-const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v104.mjs')).href);
+const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v106.mjs')).href);
 const M = await import(pathToFileURL(path.join(ROOT, 'prices/market-v83.mjs')).href);
 
 const CODE = '5449000000996';
@@ -39,9 +39,9 @@ test('a drink the source scored correctly is still reported as published, with o
 });
 
 test('"Your week" and the foods page count the corrected letter, and the server engine is the same code', () => {
-  assert.match(read('assets/chunk-XKEZNCT7-v104.js'), /L\(i,\{estimate:!1\}\);return d\.status==="reported"\?d\.grade:d\.correctedGrade\|\|null/);
-  assert.match(read('assets/chunk-5DGYLCD6-v104.js'), /D\(a,\{estimate:!1\}\);return e\.status==="reported"\?e\.grade:e\.correctedGrade\|\|null/);
-  for (const f of ['_worker.js', 'src/domain/grade.js', 'assets/domain-v104.mjs']) {
+  assert.match(read('assets/chunk-XKEZNCT7-v106.js'), /L\(i,\{estimate:!1\}\);return d\.status==="reported"\?d\.grade:d\.correctedGrade\|\|null/);
+  assert.match(read('assets/chunk-5DGYLCD6-v106.js'), /D\(a,\{estimate:!1\}\);return e\.status==="reported"\?e\.grade:e\.correctedGrade\|\|null/);
+  for (const f of ['_worker.js', 'src/domain/grade.js', 'assets/domain-v106.mjs']) {
     const s = read(f);
     assert.ok(!/estimate \? ns23(?:Drink|Sweetener)Check/.test(s), f + ': the checks no longer depend on the estimate option');
     assert.match(s, /correctedGrade: isGrade\(r\.grade\) \? r\.grade : null/, f);

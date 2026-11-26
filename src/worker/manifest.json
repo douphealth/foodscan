@@ -14,8 +14,8 @@
   },
   {
    "file": "src/domain/model.js",
-   "lines": 213,
-   "bytes": 14983
+   "lines": 242,
+   "bytes": 17949
   },
   {
    "file": "src/domain/estimate.js",
@@ -118,5 +118,5 @@
    "bytes": 12086
   }
  ],
- "sha256": "fbb47975ffe7ab6a956e7ae09fd92df33786d61a8003ca082b86ee5212ca87ba"
+ "sha256": "e0f7feb13fc9d3c56128f6096e0600e703964cd57b1e23d42ecbf4320d2f4b1b"
 }

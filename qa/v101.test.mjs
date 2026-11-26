@@ -15,8 +15,8 @@ import { pathToFileURL } from 'node:url';
 globalThis.__FS101_TEST__ = true; // asks the worker for its test hooks when it is first imported (see "internals the unit tests call directly")
 import { ROOT, read, loadWorker, makeEnv, withNetwork, json, signedRemote, TEST_PUBKEY } from './helpers.mjs';
 const imp = p => import(pathToFileURL(path.join(ROOT, p)).href);
-const D = await imp('assets/domain-v104.mjs');
-const { createCatalogue } = await imp('assets/market-catalogue-v104.mjs');
+const D = await imp('assets/domain-v106.mjs');
+const { createCatalogue } = await imp('assets/market-catalogue-v106.mjs');
 const Sign = await imp('scripts/sign-price-data.mjs');
 const Pack = await imp('tools/repack-v101.mjs');
 const tmp = prefix => fs.mkdtempSync(path.join(os.tmpdir(), prefix));
