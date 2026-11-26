@@ -1,0 +1,25 @@
+# FoodScan 63.0.0 — validation report (changes since 62.0.0)
+
+Read with `VALIDATION-REPORT-62.0.0.md` (engine, matching, Greek search, speed): everything there still holds, re-run on this build. Nothing was deployed or merged. 70 automated tests pass (54 unit/contract, 16 in Chromium).
+
+## Against your v63 order
+
+| # | Your criterion | Result |
+|---|---|---|
+| 1 | No qualifying indexed search result silently excluded by a five-shard limit | **Met.** Search is paged over the whole ranking; for `γάλα`, `cheese`, `ψωμί`, `chocolate`, `bio`, `τυρί` the union of all pages equals a brute-force scan of the 12,113 records (same set, no duplicates, `total` exact), including queries that touch more than five shards. A failed shard shows up as `partial`/`unavailable`. The UI test clicks "Show more" to the end. |
+| 2 | Scheduled refresh; works after expiry without presenting stale grades as current | **Partly met.** Expiry: lookups/search/shared links work to 365 days, recommendations stop at 90, every grade carries the "more than 90 days old" caveat (Greek too); tested by moving the clock. Refresh: the builder reproduces the shipped catalogue field for field from an OFF-shaped CSV, deterministically, with a monthly artifact-only job. **Not run against the real 1 GB export**; the first real run needs a human look. A rehearsal catalogue built this way drives the app almost like the shipped one (higher-grade suggestions 34 vs 38 of 128; its family partition agrees with the shipped one for 86% of records, which only affects which shards a family query reads). |
+| 3 | Zero A→C mismatches in tested recommendation-to-report journeys | **Met on everything tested:** 0 of 128 sampled products (API unreachable) and every suggestion on 10 products opened in the real UI (≥15 suggestions). Live source drift remains possible and is labelled, see 62.0.0 §1. |
+| 4 | Every claim has evidence; unknown never zero | **Met on tested records.** Records missing sugars, salt or saturated fat show "Not reported", no Low/Medium/High pill, "Incomplete label"; the composite "n/100" is removed; no `n/100` text anywhere on a complete report. Only two real records per case were tested; the highlight rules themselves live in minified chunks and were not read line by line. |
+| 5 | Demonstrated improvement in real mobile LCP, INP, p95 lookup | **Partly.** p95 lookup improved in 62.0.0 (387 → 140 ms at 4× CPU). First paint improved 0.7 s by removing the preload hints. **Not improved:** time to the real app UI (5.5 s on the throttled profile) and nothing measured for INP; real route-level splitting needs source, which v61 does not have. "Real mobile" here means a throttled desktop Chromium, not a phone. |
+| 6 | ≥200 independently reviewed comparison pairs by food type | **Not met, tooling ready.** `release-qa/review-pairs.(json\|csv)` holds 260 pairs the engine really produced (all 31 food families, all four offer kinds); `tools/score-review.mjs` scores filled verdicts and fails below 200 reviewed pairs, 5 per family, or 5% wrong. I did not label them myself because that would not be independent. |
+| 7 | Verified recommendation saves, shared-link conversions, returning users | **Not done.** The privacy-safe event pipeline exists (v32+); no production data was available to verify it. |
+
+## Other findings
+
+- **Cloud backup endpoint (`/api/sync`).** Unauthenticated key-value store in v52–v62 when D1 was bound: any string was a key (including `a`), keys travelled in the URL (and so in logs), 5 MB per write, unlimited rows and writes, no deletion, plaintext keys in the table. The shipped UI never calls it. Hardened and dormant by default; six abuse tests on SQLite. **Existing `cloud_sync` rows, if any, are not migrated** (the client never wrote them); drop the table after checking: `DROP TABLE IF EXISTS cloud_sync;`.
+- **Sitemap.** 13 URLs listed, 13 indexable when checked at Open Food Facts' documented 15 reads a minute. A first, faster pass wrongly flagged 6 as non-indexable because the food source throttled me and the Worker correctly served `noindex` fallback pages: the tool now treats fallback and 429/502/503 answers as "unverified", never as removal, and pages expose their record origin.
+- **Balance view.** Its "77/100 visual index" read as a health score; removed.
+- **Open Food Facts limits.** The bulk export, not the API, is used for volume (15 product reads and 10 searches per minute per IP; the search API returned 503 during this work). The Worker's live reads are unchanged.
+
+## Not done
+Data enrichment of records without ingredients (8,590) or categories (6,155) — there is no new data to enrich them with, and inferring them is not done; other countries' catalogues (the builder takes `--country`, but the product-type lexicon is Greek/English-centred and no second country was built or tested); route-level code splitting, INP; the repeat-shopping workspace; CI (the PR adds a refresh workflow only; `npm test` needs the baseline ZIP and Chrome, so it is not wired into GitHub Actions); staging and device tests.

@@ -1,0 +1,1 @@
+<small>${avg===null?e("Incomplete label"):`${avg}/100 ${e("visual index")}`}</small>
