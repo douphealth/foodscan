@@ -84,8 +84,8 @@
   },
   {
    "file": "src/worker/prices.js",
-   "lines": 1674,
-   "bytes": 162732
+   "lines": 1734,
+   "bytes": 168833
   },
   {
    "file": "src/worker/webprices.js",
@@ -118,5 +118,5 @@
    "bytes": 12086
   }
  ],
- "sha256": "95f69365009485437333ce27a6a51d2ff56b3d4a67555e17b4bd320be9970a35"
+ "sha256": "fbb47975ffe7ab6a956e7ae09fd92df33786d61a8003ca082b86ee5212ca87ba"
 }

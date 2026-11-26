@@ -222,6 +222,16 @@ Object.assign(NATIVE_L10N.es, {whereTitle:'¿En qué país está?', whereSub:'Fo
 Object.assign(NATIVE_L10N.it, {whereTitle:'In quale paese si trova?', whereSub:'FoodScan non ha potuto capire dove si trova, quindi non mostra prezzi invece di quelli di un altro paese. Scelga il suo paese per vedere prezzi locali con data.',
   devHint:c => `L’orologio del suo telefono è sul fuso orario di: ${c}.`, devUse:c => `Usa ${c}`, devKeep:'Mantieni questo paese', srcDevice:'dall’orologio del telefono', srcLanguage:'dedotto dalla lingua'});
 for (const [l, d] of Object.entries(NATIVE_L10N)) T[l] = Object.setPrototypeOf(d, T.en);
+// 105: the prices came in two steps and a shop's own page is still being checked. liveWait stands where liveFail would (a "last seen" price leads);
+// liveWaitMore sits under a current price that another shop's answer may still change.
+for (const [l, s] of Object.entries({
+  en:['Checking the shop’s page for today’s price…', 'Still checking one shop’s page. This price may update in a moment.'],
+  el:['Γίνεται έλεγχος της σελίδας του καταστήματος για τη σημερινή τιμή…', 'Ελέγχεται ακόμη η σελίδα ενός καταστήματος. Η τιμή μπορεί να ενημερωθεί σε λίγο.'],
+  fr:['Vérification de la page du magasin pour le prix du jour…', 'La page d’un magasin est encore en cours de vérification. Ce prix peut changer dans un instant.'],
+  de:['Die Seite des Geschäfts wird auf den heutigen Preis geprüft…', 'Die Seite eines Geschäfts wird noch geprüft. Dieser Preis kann sich gleich ändern.'],
+  es:['Comprobando la página de la tienda para el precio de hoy…', 'Aún se está comprobando la página de una tienda. Este precio puede cambiar en un momento.'],
+  it:['Controllo della pagina del negozio per il prezzo di oggi…', 'La pagina di un negozio è ancora in fase di controllo. Questo prezzo può cambiare tra un momento.'],
+})) if (T[l]) Object.assign(T[l], {liveWait:s[0], liveWaitMore:s[1]});
 const lang = () => pageLang();
 const tx = (k, ...a) => { const v = (T[lang()] || T.en)[k]; return typeof v === 'function' ? v(...a) : v; };
 const mHome = () => marketContext().home;
@@ -242,7 +252,7 @@ const want = (code, {fresh:force = false, cheap = false} = {}) => { if (!code) r
   const R = cheap ? cheapResults : results, A = cheap ? cheapAsked : asked, put = (c, r) => R.set(c, {...r, readAt:Date.now()});
   const have = R.get(code);
   // A partial or failed answer is re-asked after one minute (not on every repaint); a complete one after 10 minutes.
-  const life = have && (have.status === 'temporarily_unavailable' || have.status === 'incomplete') ? 60000 : TTL;
+  const life = have && (have.status === 'temporarily_unavailable' || have.status === 'incomplete' || have.liveUnsettled) ? 60000 : TTL; // 105: nor an answer whose shop check never finished
   if (have && !force && Date.now() - have.readAt < life) return have;
   if (have && !force && A.has(code)) return have; // a request is already on its way
   if (!force) { const hit = peekPrices(code, undefined, cheap); if (hit) { put(code, hit); return R.get(code); } }
@@ -251,7 +261,8 @@ const want = (code, {fresh:force = false, cheap = false} = {}) => { if (!code) r
   const asking = detectMarket().code; // 83: an answer for a market the shopper has since left is dropped
   getPrices(code, {fresh:force, cheap}).then(r => { if (asking === detectMarket().code) put(code, r); A.delete(code); schedule(); }).catch(() => A.delete(code)); return force ? null : have || null; };
 // 84: a finished web price search replaces the earlier answer at once.
-window.addEventListener('foodscan:prices-updated', e => { const c = e.detail?.code; if (c && e.detail.result) { keep(c, e.detail.result); schedule(); } });
+// 105: also the complete answer after a quick one (a shop's page was still being checked); a chip's answer goes back to the chips' own store.
+window.addEventListener('foodscan:prices-updated', e => { const c = e.detail?.code; if (c && e.detail.result) { if (e.detail.cheap) cheapResults.set(c, {...e.detail.result, readAt:Date.now()}); else keep(c, e.detail.result); schedule(); } });
 const fresh = o => tx(o.freshness === 'current' ? 'fresh' : o.freshness);
 const proof = o => o.id?.startsWith('pk:') ? tx('observatory') + (o.match === 'auto-exact' ? ' · ' + tx('auto') : o.match === 'user-confirmed' ? ' · ' + tx('userConf') : o.match === 'community-confirmed' ? ' · ' + tx('communityConf') : '') : /^(?:bz|li|ws):/.test(o.id || '') ? tx('web') : o.id?.startsWith('ek:') ? tx('basket') : o.sourceKind === 'licensed' ? tx('feed') : o.proofType === 'RECEIPT' || o.proofType === 'PRICE_TAG' ? tx('shopper') + ' · ' + tx(o.proofType === 'RECEIPT' ? 'receipt' : 'photo') : '';
 const condLabel = o => o.conditional === 'LOYALTY_PROGRAM' ? tx('card') : o.conditional === 'QUANTITY' ? tx('multi') : tx('cond');
@@ -349,7 +360,7 @@ const noneSub = r => r?.home && r.home !== 'GR' ? tx('noneIn', marketName(r.home
 /** 83: a price is never a dead end. Whatever is recorded, the shopper can open live prices for THIS barcode in their country (Google Shopping, which
  *  matches by GTIN). It is a search link, not a FoodScan price: the note says whose prices they are. */
 const liveLink = (code, r) => `<p class="fp83-live"><a href="${esc(liveSearchURL(code))}" target="_blank" rel="noopener noreferrer">${esc(tx('liveShop'))} ↗</a><small>${esc(tx('liveShopNote'))}</small></p>`;
-function stripHTML(code, r) { const html = stripHTML0(code, r); return r && r.status !== 'temporarily_unavailable' ? html + liveLink(code, r) : html; }
+function stripHTML(code, r) { const html = stripHTML0(code, r) + (r?.livePending && r.best ? `<p class="fp80-stale fp105-wait" role="status">${esc(tx('liveWaitMore'))}</p>` : ''); return r && r.status !== 'temporarily_unavailable' ? html + liveLink(code, r) : html; }
 function stripHTML0(code, r) {
   const L = lang();
   const head = pill => `<header class="fp75__head"><span class="fp75__eyebrow">${icon}${esc(tx('eyebrow'))}</span>${pill || ''}</header>${r ? marketLine(r, L) : ''}`;
@@ -386,7 +397,7 @@ function stripHTML0(code, r) {
   if (last) return `${head(`<span class="fp75__pill fp75__pill--stale">${esc(tx('agePill', whenText(last, L)))}</span>`)}
       <div class="fp75__main"><div class="fp75__price"><small class="fp80-lead">${esc(tx('last'))}</small><strong>${esc($(last, L))}</strong>${last.unitPrice != null ? `<em>${esc(unitText(last, L))}</em>` : ''}</div>
         <div class="fp75__store"><b>${where(last)}</b><span>${esc(fmtShort(last.date, L))} · ${esc(whenText(last, L))}</span><span class="fp75__src">${esc(last.storeScope === 'national' ? tx('national') : last.storeScope === 'online' ? tx('online') : last.source)}</span></div></div>
-      <p class="fp80-stale">${esc(last.liveUnconfirmed ? tx('liveFail') : tx('stale', whenText(last, L)))}</p>${typicalLine(r, L)}${confLine(code, r)}${r.candidates?.length ? `<p class="fp81-rel__head fp82-cands__head">${esc(tx('candHeadNow'))}</p>${candList(code, r)}` : ''}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
+      <p class="fp80-stale${r.livePending && last.liveUnconfirmed ? ' fp105-wait" role="status' : ''}">${esc(last.liveUnconfirmed ? tx(r.livePending ? 'liveWait' : 'liveFail') : tx('stale', whenText(last, L)))}</p>${typicalLine(r, L)}${confLine(code, r)}${r.candidates?.length ? `<p class="fp81-rel__head fp82-cands__head">${esc(tx('candHeadNow'))}</p>${candList(code, r)}` : ''}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('allStores'))}</footer>`;
   if (r.confirmed) return `${head('')}${confLine(code, r)}${elseLine(r, L)}<footer class="fp75__foot">${link(tx('addOwn'))}</footer>`;
   if (r.candidates?.length) return candStrip(code, r, head, link);
   if (r.related?.length) return relatedStrip(r, head, link);
@@ -407,7 +418,7 @@ function paintStandalone(code, view) {
   const page = view.querySelector('#instant-calc')?.closest('.page'); if (!page) return;
   let box = page.querySelector(':scope > .fp75.fp80-standalone');
   if (box && box.dataset.code !== code) { box.remove(); box = null; }
-  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '') + (r.livePending ? ':checking' : '')) : 'wait'); // 105: the "checking the shop's page" note is part of what is drawn
   if (!box) { box = document.createElement('section'); box.className = 'fp75 fp80-standalone'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); page.prepend(box); }
   if (box.dataset.state === state) return;
   box.dataset.state = state; box.setAttribute('aria-label', tx('eyebrow')); box.setAttribute('aria-busy', r ? 'false' : 'true');
@@ -429,7 +440,7 @@ function paintProduct() {
   const all = [...view.querySelectorAll('.fp75')];
   let box = all.find(n => n.parentElement === at.parent && n.dataset.code === code) || null;
   all.forEach(n => { if (n !== box) n.remove(); });
-  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '')) : 'wait');
+  const r = results.get(code) || null, state = lang() + ':' + sharedKey(code) + ':' + (ui.picker ? 'pick:' : '') + (r?.home || '') + (detectMarket().suggest || '') + ':' + (r ? (r.status + ':' + (r.best?.id || r.latest?.id || '') + ':' + r.offers.length + ':' + (r.estimate ? r.estimate.cls + r.estimate.unitMid : '') + ':' + (r.confirmed?.id || '') + ':' + (r.candidates?.length || 0) + ':' + (r.typical?.price || '') + (r.livePending ? ':checking' : '')) : 'wait'); // 105: the "checking the shop's page" note is part of what is drawn
   if (!box) { box = document.createElement('section'); box.className = 'fp75'; box.dataset.code = code; box.setAttribute('aria-live', 'polite'); }
   const placed = at.after ? at.after.nextElementSibling === box : (at.before ? at.before.previousElementSibling === box : at.parent.lastElementChild === box);
   if (!placed) { if (at.after) at.after.after(box); else at.parent.insertBefore(box, at.before); }
@@ -651,7 +662,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-104.0.0';
+export const BUILD = 'foodscan-105.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

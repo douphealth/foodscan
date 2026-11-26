@@ -1867,7 +1867,7 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "104.0.0";
+var VERSION = "105.0.0";
 var BUILD = "9900-daily-portions";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
@@ -3329,11 +3329,15 @@ function fsShopSeedTrusted(o, env, now=Date.now()) {
   const t = Date.parse(o?.fetchedAt || ''); return Number.isFinite(t) && now - t >= 0 && now - t <= h * 3600e3;
 }
 /** Seed offers for one barcode, plus what the payload needs to name the product and its real pack size. */
-async function fsGrSeedOffers(request, env, code, now=Date.now()) {
-  const key = fsPriceKey(code), out = {items:[], providers:{}, product:null, pack:null}, pending = [];
-  for (const id of Object.keys(FS_GR_SOURCES)) {
+async function fsGrSeedOffers(request, env, code, now=Date.now(), opts={}) {
+  const key = fsPriceKey(code), out = {items:[], providers:{}, product:null, pack:null}, pending = [], liveJobs = [];
+  // 105: the sources' files are read SIDE BY SIDE. They used to be read one after another (manifest, then shard, per source, then the
+  // candidates): on a cold worker that was a chain of 8 to 10 requests to the signed price data, 2.3 s measured against 11 subrequests.
+  const ids = Object.keys(FS_GR_SOURCES), estTask = fsEstimateFor(request, env, code).catch(() => null);
+  const seeds = await Promise.all(ids.map(id => fsGrEnabled(id, env) ? fsGrSeed(request, env, id, code) : null));
+  for (const [n, id] of ids.entries()) {
     if (!fsGrEnabled(id, env)) { out.providers[id] = {status:'disabled', reason:'needs_permission', count:0}; continue; }
-    const def = FS_GR_SOURCES[id], seed = await fsGrSeed(request, env, id, code);
+    const def = FS_GR_SOURCES[id], seed = seeds[n];
     if (!seed) { out.providers[id] = {status:'unavailable', reason:'seed_missing', count:0}; continue; }
     let p = seed.products[key];
     if (typeof p === 'number') p = Array.isArray(seed.rows) ? seed.rows[p] || null : null; // 79: rows shared by the barcodes of one shop item
@@ -3357,7 +3361,8 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
         ...(typeof p.c === 'string' && p.c ? {extraOffer:fsPriceText(p.c, 40)} : {})});
       // 79: the live checks of the shops run in parallel (each at most 2.5 s); see fsGrLiveCheck / fsGrLiveHtml.
       const liveOn = def.live && items.length && path && env?.FS_SHOP_LIVE !== '0' && !(id === 'kritikos' && env?.FS_KRITIKOS_LIVE === '0');
-      if (liveOn) { pending.push(fsGrLiveCheck(def, path, code, now).then(async r => {
+      const job = {id, items, done:false};
+      if (liveOn) { liveJobs.push(job); pending.push(fsGrLiveCheck(def, path, code, now).then(async r => {
         // 101: one retry, after a short pause, when the shop did not answer (timeout, 5xx, 429, network); never on a clear answer.
         if (r.status === 'unavailable' && !(r.http >= 400 && r.http < 429) && !r.reason) { await new Promise(ok => setTimeout(ok, 250)); r = await fsGrLiveCheck(def, path, code, now); r.retried = true; }
         return r; }).then(r => {
@@ -3370,7 +3375,7 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
         else if (r.status === 'barcode_not_on_page' || r.status === 'gone') items.length = 0; // the shop no longer sells it under this barcode
         const pv = out.providers[id]; pv.live = r.status; if (r.retried) pv.liveRetried = true; if (r.status !== 'confirmed') pv.liveReason = r.reason || (r.http ? 'http_' + r.http : undefined);
         pv.count = items.length; pv.status = items.length ? 'ok_with_data' : 'ok_empty';
-        out.items.push(...items);
+        out.items.push(...items); job.done = true;
       })); } else { if (items.length && !fsShopSeedTrusted(items[0], env, now) && items[0].rankingEligible !== false) Object.assign(items[0], {rankingEligible:false, liveUnconfirmed:true, lastSeen:true}); out.items.push(...items); }
       out.providers[id] = {status:items.length?'ok_with_data':'ok_empty', snapshot:seed.source.snapshot, fetchedAt:fsPriceStamp(seed.source.fetched_at), count:items.length, source:new URL(def.url).hostname.replace(/^www\./,''), license:def.license};
       continue; // 78: the shop's product name is never used as the product identity
@@ -3388,10 +3393,24 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
     // 78: the observatory's pack size is kept ONLY to check the link against the validated label; it never sets the quantity.
     if (p && !out.pack && (p.u === 'kg' || p.u === 'l') && p.q > 0.005 && p.q <= 50) out.pack = {amount:Math.round(p.q*10000)/10000, unit:p.u, source:id};
   }
-  const est = await fsEstimateFor(request, env, code).catch(() => null);
+  const est = await estTask;
   if (est) { out.estimate = est.estimate; out.estimateMeta = est.meta; out.estimateName = est.name; out.candidates = est.candidates || []; }
-  await Promise.all(pending);
-  return out;
+  const all = Promise.all(pending), budget = Number(opts?.liveBudgetMs) || 0;
+  if (!(budget > 0) || !pending.length) { await all; return out; }
+  /* 105: a shop's own product page can take seconds (Bazaar: 2.5 s time-out, then a retry that answered: 4.9 s measured on the live site),
+   * and the whole price answer used to wait for it, although the observatory, e-katanalotis and Open Prices were ready in a fraction of
+   * a second. With a budget the caller gets, when the budget runs out, a SNAPSHOT in which a shop price still being checked is exactly
+   * what an unconfirmed one is (shown as "last seen", never ranked) and marked `livePending`; `settle()` resolves to the complete answer
+   * once every shop has answered. The live checks themselves are unchanged: same request, same retry, same rules. */
+  let timer; const late = await Promise.race([all.then(() => false), new Promise(ok => { timer = setTimeout(() => ok(true), budget); })]); clearTimeout(timer);
+  if (!late) return out;
+  const waiting = liveJobs.filter(j => !j.done);
+  if (!waiting.length) { await all; return out; }
+  all.catch(() => {});
+  return {...out,
+    items:[...out.items, ...waiting.flatMap(j => j.items.map(o => ({...o, rankingEligible:false, liveUnconfirmed:true, lastSeen:true, livePending:true})))],
+    providers:{...out.providers, ...Object.fromEntries(waiting.map(j => [j.id, {...out.providers[j.id], live:'pending'}]))},
+    livePending:waiting.map(j => j.id), settle:() => all.then(() => out)};
 }
 /** 78: truthful provider health. Every provider reports exactly one of:
  *  ok_with_data (answered, and at least one usable observation for this barcode), ok_empty (answered, nothing usable),
@@ -3679,14 +3698,23 @@ function fsRemoteManifest(env) {
   const keyed = base + '|' + String(env?.FOODSCAN_PRICE_DATA_PUBKEY || '');
   if (fsRemoteManifestEntry && fsRemoteManifestEntry.key === keyed && Date.now() - fsRemoteManifestEntry.at < FS_REMOTE_MANIFEST_TTL) return fsRemoteManifestEntry.task;
   const task = fsRemoteManifestLoad(env, base).catch(() => null);
-  fsRemoteManifestEntry = {key:keyed, at:Date.now(), task};
+  const entry = fsRemoteManifestEntry = {key:keyed, at:Date.now(), task, ready:false};
+  task.then(() => { entry.ready = true; });
   return task;
 }
-/** One remote JSON file, used only if the signed manifest lists it and its SHA-256 matches. null otherwise (=> bundled copy). */
+/** One remote JSON file, used only if the signed manifest lists it and its SHA-256 matches. null otherwise (=> bundled copy).
+ *  105: while the signed manifest is still loading (a cold worker), the file is asked for AT THE SAME TIME instead of after it, which
+ *  takes one request out of every cold chain. Nothing about trust changes: the bytes are used only once the manifest has verified and
+ *  lists exactly this file's SHA-256; a file the manifest does not list is dropped unread. */
 async function fsRemoteJSON(env, name, maxBytes = 4 * 1024 * 1024, ttl = 1800) {
-  const m = await fsRemoteManifest(env); if (!m) return null;
-  const want = m.files[name]; if (!want) return null;
-  const res = await fetch(m.base + '/' + name, {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':ttl, '404':60, '500-599':0}}});
+  const get = base => fetch(base + '/' + name, {signal:AbortSignal.timeout(1500), headers:{'Accept':'application/json'}, cf:{cacheEverything:true, cacheTtlByStatus:{'200-299':ttl, '404':60, '500-599':0}}});
+  const drop = task => { task?.then(r => r?.body?.cancel()).catch(() => {}); return null; };
+  const base = fsV80Base(env), mTask = fsRemoteManifest(env);
+  const early = base && String(env?.FOODSCAN_PRICE_DATA_PUBKEY || '').trim() && !fsRemoteManifestEntry?.ready && /^[a-z0-9][a-z0-9\-_/.]*\.json$/i.test(name) && !name.includes('..')
+    ? get(base).catch(() => null) : null;
+  const m = await mTask; if (!m) return drop(early);
+  const want = m.files[name]; if (!want) return drop(early);
+  const res = (early && m.base === base ? await early : null) || await get(m.base);
   if (!res.ok) { await res.body?.cancel(); return null; }
   const buf = await res.arrayBuffer(); if (buf.byteLength > maxBytes) return null;
   if (fsHex(await crypto.subtle.digest('SHA-256', buf)) !== want) { fsRemoteState.mismatches++; return null; }
@@ -4006,14 +4034,14 @@ async function fsOpSnapshotOffers(code, scope, env, request) {
 }
 async function fsPricePeekOne(request, env, code, scope, links = new Map()) {
   const none = {items:[], providers:{}, product:null, pack:null}, greek = scope.market === 'GR';
-  const [meta, open, official] = await Promise.all([
+  const [meta, open, official, pre] = await Promise.all([
     fsPriceLocalCatalogueMeta(request, env, code, true).catch(() => null),
     fsOpSnapshotOffers(code, scope, env, request).catch(() => ({status:'unavailable', items:[]})),
     greek ? fsGrSeedOffers(request, {...env, FS_SHOP_LIVE:'0'}, code).catch(() => none) : Promise.resolve(none),
+    greek ? fsWebPrefill(request, env, code).catch(() => null) : Promise.resolve(null), // 93; 105: read beside the other sources
   ]);
   const link = greek && !official.providers?.posokanei?.linked ? links.get(fsPriceKey(code)) : null;
   if (link) { const c = await fsCommunityOffers(request, env, code, link).catch(() => null); if (c?.found) { official.items.push(...c.items); if (c.pack && !official.pack) official.pack = c.pack; official.community = {id:link.pk_id, name:c.name, confirmations:link.confirmations, offers:c.items.length}; } }
-  const pre = greek ? await fsWebPrefill(request, env, code).catch(() => null) : null; // 93
   const web = pre ? await fsWebPreOffers(pre, code, scope, meta).catch(() => ({status:'disabled', items:[]})) : {status:'disabled', items:[]};
   const p = fsPriceBuildPayload({code, scope, meta, open, licensed:{status:'disabled', items:[]}, official, web});
   const pick = o => o ? {price:o.price, currency:o.currency, retailer:o.retailer || '', date:o.date, tier:o.tier, unitPrice:o.unitPrice ?? null, unitBasis:o.unitBasis ?? null, sale:Boolean(o.discountType)} : null;
@@ -4178,43 +4206,75 @@ async function fsPricesRoute(request,env,ctx) {
   // 78: ?fresh=1 (sent on a rescan or "Try again") skips the edge copy and asks every source again.
   const forceFresh=url.searchParams.get('fresh')==='1';
   if(cache&&!forceFresh){try{const cached=await cache.match(cacheKey);if(cached)return cached;}catch{}}
+  /* 105: quick=1 (sent by the app from 105 on) asks for the answer in two steps when a shop's page is slow: this request returns as
+   * soon as the fast sources are in and the shops have had FS_LIVE_QUICK_MS, with any shop price still being checked shown as
+   * "last seen" and marked livePending; the app then asks once more WITHOUT quick, and that request joins the check already running
+   * in this worker (fsLiveSettling) or reads the finished answer from the edge cache. A request without quick waits as before, so an
+   * app tab from before 105 behaves exactly as it did. */
+  const quick = url.searchParams.get('quick') === '1', started = Date.now();
+  const timing = extra => `sources;dur=${Date.now() - started}` + (extra ? ', ' + extra : '');
+  if (!quick && !forceFresh) { const running = fsLiveSettling.get(cacheKey.url);
+    if (running && Date.now() - running.at > FS_LIVE_JOIN_MS) fsLiveSettling.delete(cacheKey.url);
+    else if (running) { const done = await running.task.catch(() => null); if (done) return fsPriceJson(done.payload, 200, {...done.headers, 'Server-Timing':timing('live;desc="joined"')}); } }
   if(!fsPriceCanFetch(request.headers.get('CF-Connecting-IP')||'unknown'))return fsPriceJson({error:'rate_limited',message:'Please retry shortly.'},429,{'Retry-After':'60'});
-  const [meta, open, licensed, official] = await Promise.all([
+  const none = {items:[],providers:{},product:null,pack:null};
+  const preTask = greekMarket ? fsWebPrefill(request, env, code).catch(()=>null) : Promise.resolve(null); // 93; 105: read beside the other sources, not after them
+  const [meta, open, licensed, first] = await Promise.all([
     fsPriceLocalCatalogueMeta(request, env, code).catch(()=>null),
     fsPriceOpenOffers(code, scope, env, request),
     fsPriceLicensedOffers(env, code, scope),
     // 83: the Greek official and web-shop sources are consulted only for the Greek market
-    greekMarket ? fsGrSeedOffers(request, env, code).catch(()=>({items:[],providers:{},product:null,pack:null})) : Promise.resolve({items:[],providers:{},product:null,pack:null}),
+    greekMarket ? fsGrSeedOffers(request, env, code, Date.now(), {liveBudgetMs:quick ? FS_LIVE_QUICK_MS : 0}).catch(()=>none) : Promise.resolve(none),
   ]);
-  // 82: a confirmation is used only while this barcode has no observatory link of its own (a reviewed or exact link always wins).
-  if(greekMarket&&pkId&&!official.providers?.posokanei?.linked){
-    const c=await fsObsConfirmed(request, env, code, pkId).catch(()=>null);
-    if(c){official.items.push(...c.items);if(c.items.length)official.linkMatch='user-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;}
-    official.confirmed={id:pkId,name:c?.name||'',offers:c?.items.length||0,status:!c?'unavailable':!c.found?'not_found':c.items.length?'ok':'no_prices'};
+  const pre = await preTask, once = {};
+  /** Everything after the sources: confirmations, shared links, prices found ahead, the paid web search (never for a snapshot), and the payload. */
+  const finish = async (official, snapshot) => {
+    // 82: a confirmation is used only while this barcode has no observatory link of its own (a reviewed or exact link always wins).
+    if(greekMarket&&pkId&&!official.providers?.posokanei?.linked){
+      const c=await (once.pk ||= fsObsConfirmed(request, env, code, pkId).catch(()=>null));
+      if(c){official.items.push(...c.items);if(c.items.length)official.linkMatch='user-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;}
+      official.confirmed={id:pkId,name:c?.name||'',offers:c?.items.length||0,status:!c?'unavailable':!c.found?'not_found':c.items.length?'ok':'no_prices'};
+    }
+    // 91: a link shared by shoppers (2+ independent confirmations), when this barcode has no observatory link of its own and no choice on this device
+    if(greekMarket&&!official.providers?.posokanei?.linked&&!official.confirmed){
+      const link=(await (once.links ||= fsCommunityLinks(env,[code]))).get(fsPriceKey(code));
+      if(link){const c=await (once.community ||= fsCommunityOffers(request,env,code,link).catch(()=>null));
+        if(c?.found){official.items.push(...c.items);if(c.items.length)official.linkMatch='community-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;official.community={id:link.pk_id,name:c.name,confirmations:link.confirmations,offers:c.items.length};}}
+    }
+    let web = pre ? await fsWebPreOffers(pre, code, scope, meta).catch(()=>({status:'disabled',items:[]})) : {status:'disabled',items:[]}, payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
+    const preWeb = pre ? web : null;
+    // 84: the web search costs money, so it runs only when the cheap sources left this barcode without a CURRENT price in the shopper's market (or the shopper
+    // asked again). deep=1 is the app's follow-up to a search that was still running: it waits for the whole search inside its own request.
+    // 105: never for a snapshot: a shop price that is only still being checked must not start a paid search.
+    const webSvc = snapshot || url.searchParams.get('web') === '0' ? null : fsWebService(env, ctx, url.searchParams.get('deep') === '1'); // web=0: a chip, never the paid search
+    if (webSvc && payload.summary.currentOffers === 0) {
+      web = await fsPriceWebOffers({FS_WEB_PRICES:webSvc}, code, scope, meta, forceFresh).catch(()=>({status:'unavailable',items:[]}));
+      if (preWeb && !(web.items||[]).length) web = preWeb; // 93: a live search that finds nothing never hides the prices found ahead
+      payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
+    }
+    // 78: an answer with any provider down is never cached (the next scan asks again). Complete answers are kept 10 minutes. 84: nor while the web search is still running.
+    const ttl = !snapshot && payload.providerSummary.unavailable === 0 && payload.status !== 'temporarily_unavailable' && web.status !== 'pending' ? 600 : 0;
+    return {payload, ttl, headers:{'Cache-Control':ttl?`public, max-age=0, s-maxage=${ttl}`:'no-store','X-Price-Cache-TTL':String(ttl)}};
+  };
+  const keep = done => { if(cache&&done.ttl){try{ctx?.waitUntil?.(cache.put(cacheKey,new Response(JSON.stringify(done.payload),{status:200,headers:{'Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','X-FoodScan-Version':FS_PRICE_VERSION,...done.headers,'Cache-Control':`public, max-age=${done.ttl}`}})).catch(()=>{}));}catch{}} };
+  if (first.livePending?.length && typeof first.settle === 'function') {
+    // The shops are still answering: finish in the background (kept alive by waitUntil), cache the complete answer, and let the follow-up join it.
+    const settling = first.settle().then(full => finish(full, false)).then(done => { keep(done); return done; });
+    // Kept by time, not by a timer (a worker can be frozen between requests): an entry is joined for FS_LIVE_JOIN_MS from its start, never later.
+    const entry = {task:settling, at:Date.now()};
+    for (const [k, v] of fsLiveSettling) if (Date.now() - v.at > FS_LIVE_JOIN_MS) fsLiveSettling.delete(k);
+    fsLiveSettling.set(cacheKey.url, entry);
+    ctx?.waitUntil?.(settling.then(() => {}, () => { if (fsLiveSettling.get(cacheKey.url) === entry) fsLiveSettling.delete(cacheKey.url); }));
+    const snap = await finish(first, true);
+    snap.payload.livePending = first.livePending;
+    return fsPriceJson(snap.payload, 200, {...snap.headers, 'Server-Timing':timing('live;desc="pending"')});
   }
-  // 91: a link shared by shoppers (2+ independent confirmations), when this barcode has no observatory link of its own and no choice on this device
-  if(greekMarket&&!official.providers?.posokanei?.linked&&!official.confirmed){
-    const link=(await fsCommunityLinks(env,[code])).get(fsPriceKey(code));
-    if(link){const c=await fsCommunityOffers(request,env,code,link).catch(()=>null);
-      if(c?.found){official.items.push(...c.items);if(c.items.length)official.linkMatch='community-confirmed';if(c.pack&&!official.pack)official.pack=c.pack;official.community={id:link.pk_id,name:c.name,confirmations:link.confirmations,offers:c.items.length};}}
-  }
-  const pre = greekMarket ? await fsWebPrefill(request, env, code).catch(()=>null) : null; // 93
-  let web = pre ? await fsWebPreOffers(pre, code, scope, meta).catch(()=>({status:'disabled',items:[]})) : {status:'disabled',items:[]}, payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
-  const preWeb = pre ? web : null;
-  // 84: the web search costs money, so it runs only when the cheap sources left this barcode without a CURRENT price in the shopper's market (or the shopper
-  // asked again). deep=1 is the app's follow-up to a search that was still running: it waits for the whole search inside its own request.
-  const webSvc = url.searchParams.get('web') === '0' ? null : fsWebService(env, ctx, url.searchParams.get('deep') === '1'); // web=0: a chip, never the paid search
-  if (webSvc && payload.summary.currentOffers === 0) {
-    web = await fsPriceWebOffers({FS_WEB_PRICES:webSvc}, code, scope, meta, forceFresh).catch(()=>({status:'unavailable',items:[]}));
-    if (preWeb && !(web.items||[]).length) web = preWeb; // 93: a live search that finds nothing never hides the prices found ahead
-    payload = fsPriceBuildPayload({code, scope, meta, open, licensed, official, web});
-  }
-  // 78: an answer with any provider down is never cached (the next scan asks again). Complete answers are kept 10 minutes. 84: nor while the web search is still running.
-  const ttl = payload.providerSummary.unavailable === 0 && payload.status !== 'temporarily_unavailable' && web.status !== 'pending' ? 600 : 0;
-  const output=fsPriceJson(payload,200,{'Cache-Control':ttl?`public, max-age=0, s-maxage=${ttl}`:'no-store','X-Price-Cache-TTL':String(ttl)});
-  if(cache&&ttl){try{const copy=output.clone();const cacheable=new Response(copy.body,{status:200,headers:{...Object.fromEntries(copy.headers),'Cache-Control':`public, max-age=${ttl}`}});ctx?.waitUntil?.(cache.put(cacheKey,cacheable).catch(()=>{}));}catch{}}
-  return output;
+  const done = await finish(first, false);
+  keep(done);
+  return fsPriceJson(done.payload, 200, {...done.headers, 'Server-Timing':timing()});
 }
+/** 105: complete answers still being finished after a quick snapshot left, by edge-cache key, so the app's follow-up joins the same shop checks. */
+const fsLiveSettling = new Map(), FS_LIVE_QUICK_MS = 700, FS_LIVE_JOIN_MS = 20000;
 
 /* END FOODSCAN PRICES 72 */
 /* ===== FoodScan 84: web price search =====
