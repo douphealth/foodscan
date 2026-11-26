@@ -107,13 +107,13 @@ test('wiring: the page loads the card, the service worker caches it, the worker 
   assert.doesNotMatch(html, /verified nutrition grades/i, 'the site never claims laboratory-verified grades');
   const sw = read('sw.js');
   for (const f of ['/daily-v98.js', '/daily-v98-core.mjs', '/daily-v98.css']) assert.ok(sw.includes(`'${f}'`), f + ' is precached');
-  assert.match(sw, /const CACHE = 'foodscan-105\.0\.0'/);
+  assert.match(sw, /const CACHE = 'foodscan-106\.0\.0'/);
   const routes = JSON.parse(read('_routes.json'));
   for (const f of ['/daily-v98.js', '/daily-v98-core.mjs', '/daily-v98.css']) assert.ok(routes.exclude.includes(f), f + ' bypasses the worker');
   assert.match(read('_headers'), /\/daily-v98-core\.mjs\n {2}Content-Type: text\/javascript/);
-  assert.match(read('fridge-core.mjs'), /from '\.\/assets\/domain-v104\.mjs'/);
+  assert.match(read('fridge-core.mjs'), /from '\.\/assets\/domain-v106\.mjs'/);
   const ui = read('daily-v98.js');
-  assert.match(ui, /from '\.\/assets\/domain-v104\.mjs'/, 'the app’s own engine instance: grades match and its messages are translated');
+  assert.match(ui, /from '\.\/assets\/domain-v106\.mjs'/, 'the app’s own engine instance: grades match and its messages are translated');
   assert.match(ui, /lastHtml/, 'it draws again only when something changed (98.0.0 rebuilt the hub 11 times a second)');
   assert.match(ui, /const ours = /, 'its own changes do not wake it up again');
 });

@@ -52,6 +52,35 @@ function safeImage(value) {
     return "";
   }
 }
+// 106: photos. Open Food Facts keeps every photo in fixed sizes: one chosen as the front of a language ("front_en.3") as .100, .200, .400 and .full;
+// an uploaded photo nobody chose ("2") as .100, .400 and full size. The app drew the 200 px file everywhere, which is soft on a sharp phone screen.
+var PHOTO_FILE = /^(https:\/\/(?:images|static)\.openfoodfacts\.org\/images\/products\/[0-9/]+\/)((?:front|packaging)_[a-z]{2}\.\d+|\d+)\.(?:100|200|400|full)\.jpg$/;
+/** What an <img> needs for one Open Food Facts photo: the small file (200 px; 100 px for an unselected upload), plus the 400 px one for the browser to take when the box needs more pixels.
+ * Any other address is passed through unchanged (after the same host check as before), with no srcset. */
+function photoSet(value) {
+  const src = safeImage(value), m = PHOTO_FILE.exec(src);
+  if (!m) return { src, srcset: "", large: src, selected: false };
+  const at = (n) => m[1] + m[2] + "." + n + ".jpg";
+  if (/^\d+$/.test(m[2])) return { src: at(400), srcset: at(100) + " 100w, " + at(400) + " 400w", large: at(400), selected: false };
+  return { src: at(200), srcset: at(200) + " 200w, " + at(400) + " 400w", large: at(400), selected: true };
+}
+/** The address of a photo from a barcode and its file part ("front_fr.3", "2"); Open Food Facts files short barcodes under 13 digits. */
+function photoURL(code, file, size = 400) {
+  const c = String(code || "").replace(/\D/g, ""), d = c.length <= 13 ? c.padStart(13, "0") : c;
+  if (!c || !/^(?:(?:front|packaging)_[a-z]{2}\.\d+|\d{1,4})$/.test(String(file || ""))) return "";
+  const p = d.length > 8 ? d.slice(0, 3) + "/" + d.slice(3, 6) + "/" + d.slice(6, 9) + "/" + d.slice(9) : d;
+  return "https://images.openfoodfacts.org/images/products/" + p + "/" + file + "." + size + ".jpg";
+}
+/** The best real photo in an Open Food Facts image list when the record has no front photo for its own language: the front chosen for another language
+ * (the record's language first, then English), else the earliest uploaded photo that is not thumbnail-sized (contributors usually start with the front),
+ * else a packaging photo. Returns the file part ("front_fr.3", "2") or "". Nothing is invented: no photo on record gives "". */
+function bestPhotoFile(images, lang = "") {
+  if (!images || typeof images !== "object") return "";
+  const sel = (k) => /^\d+$/.test(String(images[k]?.rev ?? "")) ? k + "." + images[k].rev : "";
+  const first = (re) => Object.keys(images).filter((k) => re.test(k)).sort((a, b) => (b.slice(-2) === lang) - (a.slice(-2) === lang) || (b.slice(-2) === "en") - (a.slice(-2) === "en") || a.localeCompare(b)).map(sel).find(Boolean) || "";
+  const side = (k) => Math.max(Number(images[k]?.sizes?.full?.w) || 0, Number(images[k]?.sizes?.full?.h) || 0);
+  return first(/^front_[a-z]{2}$/) || Object.keys(images).filter((k) => /^\d{1,4}$/.test(k) && (!side(k) || side(k) >= 300)).sort((a, b) => a - b)[0] || first(/^packaging_[a-z]{2}$/);
+}
 var tags = (v, limit = 100) => Array.isArray(v) ? [...new Set(v.filter((x) => typeof x === "string" && x.length < 180).slice(0, limit))] : [];
 var tagWord = (x) => x.replace(/^[a-z]{2}:/, "").replace(/-/g, " ");
 var words = (v) => [...new Set(tags(v, 50).map(tagWord))];
