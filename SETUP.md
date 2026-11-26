@@ -60,7 +60,7 @@ The next run of the *Refresh prices* workflow signs everything it publishes (`in
 Bindings and secrets apply to the **next deployment**: Deployments → the latest → **Retry deployment**. Then:
 ```bash
 curl -s https://YOUR-SITE/api/prices/status | grep -o '"webSearch":"[^"]*"'
-node verify-deploy.mjs https://YOUR-SITE 104.0.0
+node verify-deploy.mjs https://YOUR-SITE 105.0.0
 ```
 
 ## What the web search does, and what it costs

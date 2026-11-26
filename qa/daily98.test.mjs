@@ -107,7 +107,7 @@ test('wiring: the page loads the card, the service worker caches it, the worker 
   assert.doesNotMatch(html, /verified nutrition grades/i, 'the site never claims laboratory-verified grades');
   const sw = read('sw.js');
   for (const f of ['/daily-v98.js', '/daily-v98-core.mjs', '/daily-v98.css']) assert.ok(sw.includes(`'${f}'`), f + ' is precached');
-  assert.match(sw, /const CACHE = 'foodscan-104\.0\.0'/);
+  assert.match(sw, /const CACHE = 'foodscan-105\.0\.0'/);
   const routes = JSON.parse(read('_routes.json'));
   for (const f of ['/daily-v98.js', '/daily-v98-core.mjs', '/daily-v98.css']) assert.ok(routes.exclude.includes(f), f + ' bypasses the worker');
   assert.match(read('_headers'), /\/daily-v98-core\.mjs\n {2}Content-Type: text\/javascript/);

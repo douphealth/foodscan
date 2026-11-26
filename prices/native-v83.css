@@ -288,3 +288,9 @@ article.gradecard.snip>*{min-width:0}
 /* 91: shared confirmations */
 .fp82-shared{margin:6px 0 0;padding:7px 10px;border-radius:12px;font-size:.74rem;line-height:1.4;color:var(--ink2,#36463D);background:color-mix(in srgb,var(--ink,#0D1F16) 6%,transparent)}
 .fp91-comm{background:color-mix(in srgb,#8ef0b6 22%,transparent)}
+
+/* 105: a shop page is still being checked (the answer arrives in two steps) */
+.fp105-wait{display:flex;align-items:center;gap:.45rem}
+.fp105-wait::before{content:"";flex:0 0 auto;width:.5rem;height:.5rem;border-radius:50%;background:currentColor;opacity:.55;animation:fp105-pulse 1.1s ease-in-out infinite}
+@keyframes fp105-pulse{50%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.fp105-wait::before{animation:none}}

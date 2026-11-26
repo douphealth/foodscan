@@ -40,9 +40,9 @@ function recall(code) {
 }
 const timeout = (ms, outer) => { const c = new AbortController(); const id = setTimeout(() => c.abort(), ms); outer?.addEventListener?.('abort', () => c.abort()); return {signal:c.signal, done:() => clearTimeout(id)}; };
 
-async function viaService(code, signal, near, fresh, market, deep = false, cheap = false) {
+async function viaService(code, signal, near, fresh, market, deep = false, cheap = false, quick = false) {
   const pk = market && market !== 'GR' ? null : confirmedFor(code);
-  const q = (market ? `&market=${market}` : '') + (near ? `&lat=${near.lat}&lon=${near.lon}&radius_km=25` : '') + (fresh ? '&fresh=1' : '') + (pk ? `&pk=${pk.id}` : '') + (deep ? '&deep=1' : '') + (cheap ? '&web=0' : '');
+  const q = (market ? `&market=${market}` : '') + (near ? `&lat=${near.lat}&lon=${near.lon}&radius_km=25` : '') + (fresh ? '&fresh=1' : '') + (pk ? `&pk=${pk.id}` : '') + (deep ? '&deep=1' : '') + (cheap ? '&web=0' : '') + (quick ? '&quick=1' : '');
   for (const path of PATHS) {
     const t = timeout(deep ? 60000 : 12000, signal);
     try {
@@ -73,7 +73,8 @@ async function viaOpenPrices(code, signal, quantity, market) {
   } catch { return null; } finally { t.done(); }
 }
 /** @returns {Promise<object>} a checked result; status is observations_available, no_data, incomplete or temporarily_unavailable. */
-const deepAsked = new Set();
+const deepAsked = new Set(), liveAsked = new Set();
+const announce = (code, market, result, cheap) => { try { window.dispatchEvent(new CustomEvent('foodscan:prices-updated', {detail:{code, market, result, cheap}})); } catch {} };
 export function getPrices(code, {signal, quantity = '', fresh = false, near = null, market = detectMarket().code, cheap = false} = {}) {
   code = String(code || '').trim();
   if (!validBarcode(code)) return Promise.resolve({barcode:code, status:'invalid', offers:[], elsewhere:[], best:null, latest:null});
@@ -82,22 +83,34 @@ export function getPrices(code, {signal, quantity = '', fresh = false, near = nu
   if (!fresh) { const hit = recall(id); if (hit) return Promise.resolve(hit); }
   if (!fresh && inflight.has(id)) return inflight.get(id);
   const job = (async () => {
-    let r = await viaService(code, signal, near, fresh, market, false, cheap);
+    // 105: quick=1. A shop's own page can take seconds to answer (4.9 s measured), and the whole answer used to wait for it. The service now answers as soon as
+    // the fast sources are in; a shop price it is still checking comes back as "last seen" with raw.livePending, and the complete answer is asked for below.
+    // A forced re-read ("Try again", a rescan) still waits for everything in one request, so it can never be answered from an older stored copy.
+    let r = await viaService(code, signal, near, fresh, market, false, cheap, !fresh);
     // Nearby answers need the server's distance filter: no direct fallback for them.
     // 102: with no known country there is nothing to read directly (the direct read would fall back to Greece): the service's own answer stands
     if (!near && market && (!r || r.status === 'temporarily_unavailable')) r = (await viaOpenPrices(code, signal, quantity, market)) || r;
     if (!r) r = {barcode:code, status:'temporarily_unavailable', offers:[], elsewhere:[], best:null, latest:null, raw:null};
     // 84: the shops' web search was still running when this answer left: keep the answer it gave, and ask once more, waiting for the search to finish. The
     // finished answer is remembered and announced, so the price card, comparisons and the Prices page fill in by themselves.
-    const webPending = r?.raw?.providers?.webSearch?.reason === 'pending';
-    if (r.raw && !webPending) remember(id, r);
-    if (webPending && !near && !deepAsked.has(id)) {
+    const isWebPending = x => x?.raw?.providers?.webSearch?.reason === 'pending', isLivePending = x => Array.isArray(x?.raw?.livePending) && x.raw.livePending.length > 0;
+    const deepen = () => { if (near || deepAsked.has(id)) return;
       deepAsked.add(id);
       viaService(code, undefined, null, false, market, true).then(d => {
-        if (d?.raw && d.raw.providers?.webSearch?.reason !== 'pending') { remember(id, d); try { window.dispatchEvent(new CustomEvent('foodscan:prices-updated', {detail:{code, market, result:d}})); } catch {} }
+        if (d?.raw && !isWebPending(d)) { remember(id, d); announce(code, market, d, cheap); }
       }).catch(() => {}).finally(() => deepAsked.delete(id));
-    }
-    return {...r, webPending};
+    };
+    const webPending = isWebPending(r), livePending = isLivePending(r);
+    if (r.raw && !webPending && !livePending) remember(id, r); // a snapshot (a shop still being checked) is never kept
+    if (livePending && !liveAsked.has(id)) {
+      // The complete answer: the same request without quick. It joins the shop checks already running on the server, or reads the finished answer.
+      liveAsked.add(id); const first = r;
+      viaService(code, undefined, near, false, market, false, cheap, false).then(d => {
+        if (d?.raw && !isLivePending(d)) { const wp = isWebPending(d); if (!wp) remember(id, d); announce(code, market, {...d, webPending:wp, livePending:false}, cheap); if (wp) deepen(); }
+        else announce(code, market, {...first, webPending:false, livePending:false, liveUnsettled:true}, cheap); // no complete answer: the price stays "last seen", without the "checking" note
+      }).catch(() => announce(code, market, {...first, webPending:false, livePending:false, liveUnsettled:true}, cheap)).finally(() => liveAsked.delete(id));
+    } else if (webPending) deepen();
+    return {...r, webPending, livePending};
   })().finally(() => inflight.delete(id));
   inflight.set(id, job);
   return job;
