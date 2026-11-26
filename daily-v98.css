@@ -224,3 +224,87 @@
 .fs102-loc--ask .fs102-loc__sel { width: 100%; margin-top: 6px; border-radius: 10px; }
 .fs102-loc__sug { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--brand-soft, #DBEDDD); }
 .fs102-loc__sug .fs98-sub { margin: 0 0 8px; color: var(--ink, #0D1F16); }
+
+
+/* FoodScan 104: the hub as the day at a glance. One dial per limit (always on screen, empty until an amount is logged), the date in words, one line of counts
+ * instead of two boxes, the recent foods in one swipeable row on a phone, and the country row as a quiet setting under the lists. */
+@property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
+.fs98-hub {
+  --fs104-pad: 18px;
+  background-image: radial-gradient(90% 70% at 100% 0%, rgba(94, 219, 160, .09), transparent 70%);
+  background-image: radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--brand, #0A5C3C) 11%, transparent), transparent 70%);
+}
+.fs98-hub .fs98-title { font-size: clamp(1.3rem, 4.6vw, 1.7rem); line-height: 1.14; letter-spacing: -.01em; }
+.fs98-hub .fs98-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.fs98-hub .fs98-eyebrow::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--brand, #0A5C3C); box-shadow: 0 0 0 3px rgba(94, 219, 160, .2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand, #0A5C3C) 22%, transparent); }
+.fs104-streak::before { content: ''; width: 8px; height: 10px; border-radius: 60% 60% 55% 55% / 70% 70% 40% 40%; background: currentColor; transform: rotate(8deg); }
+.fs104-meta { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 14px; margin: 0; font-size: .8rem; line-height: 1.4; color: var(--ink3, #52625A); }
+.fs104-meta time { font-family: var(--font-display, Georgia, serif); font-size: 1.02rem; font-weight: 500; color: var(--ink, #0D1F16); }
+.fs104-meta time::first-letter { text-transform: uppercase; }
+
+.fs104-dials { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fs104-tile {
+  grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 1px; align-items: center; align-content: center;
+  padding: 10px 12px; border: 1px solid var(--line, #E0D8C2); border-radius: var(--radius-sm, 16px); background: var(--surface2, #F8F3E6);
+}
+.fs104-tile .fs104-ring { grid-row: 1 / span 2; }
+.fs104-tile .fs98-stat__k { align-self: end; font-size: .76rem; font-weight: 700; color: var(--ink, #0D1F16); overflow-wrap: anywhere; }
+.fs104-tile .fs99-val { align-self: start; text-align: left; font-family: var(--font-ui, system-ui, sans-serif); font-size: .74rem; font-weight: 600; line-height: 1.3; color: var(--ink3, #52625A); overflow-wrap: anywhere; }
+.fs104-ring {
+  --c: var(--brand, #0A5C3C); --track: var(--line, #E0D8C2);
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: radial-gradient(closest-side, var(--surface2, #F8F3E6) calc(100% - 6px), transparent calc(100% - 5px)), conic-gradient(var(--c) calc(var(--p, 0) * 1%), var(--track) 0);
+}
+.fs104-ring b { font-family: var(--font-mono, monospace); font-size: .8rem; font-weight: 700; color: var(--ink, #0D1F16); letter-spacing: -.02em; }
+.fs104-ring small { font-size: .62em; font-weight: 600; opacity: .7; margin-left: 1px; }
+.fs99-row--near .fs104-ring { --c: var(--warn, #8A5200); }
+.fs99-row--over .fs104-ring { --c: var(--bad, #A92A14); }
+.fs104-tile--none .fs104-ring b { color: var(--ink3, #52625A); font-weight: 500; }
+.fs104-lowline { margin: 8px 0 0; }
+@keyframes fs104-fill { from { --p: 0; } }
+@media (prefers-reduced-motion: no-preference) { .fs104-in .fs104-ring[role] { animation: fs104-fill .8s cubic-bezier(.2, .8, .2, 1) both; } }
+
+.fs98-hub .fs98-chip--log { min-height: 40px; padding: 5px 13px 5px 12px; font-size: .82rem; max-width: 240px; }
+.fs98-hub .fs98-chip--log:has(.fs98-grade) { padding-left: 6px; }
+.fs98-hub .fs98-chip--log .fs98-grade { min-width: 28px; height: 28px; border-radius: 9px; font-size: .82rem; }
+.fs98-hub .fs98-chip--log:hover { border-color: var(--brand, #0A5C3C); }
+.fs102-loc__txt { font-size: .8rem; }
+.fs102-loc__sel { flex: 0 0 auto; }
+.fs102-loc:not(.fs102-loc--ask) .fs102-loc__sel { min-height: 36px; font-size: .78rem; }
+
+@media (max-width: 599px) {
+  /* the recent foods: one row to swipe, bleeding to the card's edges, so the dials and the day's list stay on the first screen */
+  .fs104-scroller { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none;
+    margin-inline: calc(var(--fs104-pad) * -1); padding: 2px var(--fs104-pad) 4px; scroll-padding-inline: var(--fs104-pad); }
+  .fs104-scroller::-webkit-scrollbar { display: none; }
+  .fs104-scroller > * { flex: 0 0 auto; scroll-snap-align: start; }
+  .fs104-scroller > .fs98-sub { flex: 1 1 auto; margin: 0; }
+}
+@media (max-width: 520px) { .fs98-hub { --fs104-pad: 14px; } }
+@media (min-width: 600px) { .fs104-dials { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } .fs104-tile { padding: 12px 14px; } .fs104-ring { width: 58px; height: 58px; } }
+@media (min-width: 960px) { .fs98-hub > .fs104-meta { grid-column: 1 / -1; } .fs98-hub { --fs104-pad: 28px; } }
+
+/* 104: a shopper who has scanned before opens Home on their own foods. The search box and the scan button stay first, "Recently scanned" and "Your week" follow
+ * at once (they used to sit four screens down, under the introduction), and the introduction comes after. On a phone the introduction's picture, sample
+ * products and lead sentence are left out for them. Nothing is removed from the page for a first visit. */
+html[data-fs104-returning] .page.home > .top21 { display: contents; }
+html[data-fs104-returning] .page.home > .top21 > .home__hero { order: -3; }
+html[data-fs104-returning] .page.home > .block21 { order: -2; }
+html[data-fs104-returning] .page.home > .daily21 { order: -1; }
+html[data-fs104-returning] .page.home > .daily21 > .week { order: -1; }
+@media (max-width: 767px) {
+  html[data-fs104-returning] .page.home { row-gap: 34px; }
+  html[data-fs104-returning] .home__hero .hero21__stage,
+  html[data-fs104-returning] .home__hero .stg-rail,
+  html[data-fs104-returning] .home__hero .tryrow,
+  html[data-fs104-returning] .home__hero .lead { display: none; }
+  html[data-fs104-returning] .home__hero h1 { font-size: clamp(1.7rem, 8vw, 2.1rem); line-height: 1.05; }
+  html[data-fs104-returning] .home__hero { padding-block: 18px 20px; }
+}
+.fs102-loc:not(.fs102-loc--ask) .fs102-loc__sel { width: auto; }
+html[data-fs104-returning] .page.home > .top21 > .trustrow, html[data-fs104-returning] .page.home > .top21 > .gutf-ribbon { order: 0; }   /* their own phone order was relative to .top21; here it would drop them under the footer */
+@media (min-width: 960px) {
+  /* with no week card and no swap list beside it, the day's list takes the row instead of leaving half the card empty; its lines stay a readable width */
+  .fs98-hub:not(:has(.fs100-week, .fs100-list)) > .fs98-sec { grid-column: 1 / -1; }
+  .fs98-hub:not(:has(.fs100-week, .fs100-list)) .fs99-list { max-width: 620px; }
+}

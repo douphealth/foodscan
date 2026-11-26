@@ -340,7 +340,7 @@ function marketLine(r, L) {
   const note = d.source === 'device' ? tx('srcDevice') : d.source === 'language' ? tx('srcLanguage') : '';
   // 102: the network says one country, the phone's clock another (a roaming SIM, a VPN): offer the phone's country, never switch silently
   const sg = d.suggest && d.code === home ? d.suggest : '';
-  return `<p class="fp83-market"><span class="fp83-market__name">${esc(marketFlag(home))} ${esc(tx('inCountry', marketName(home, L), r?.currency || ''))}${note ? ` <small class="fp102-src">${esc(note)}</small>` : ''}</span><button type="button" class="fp83-change" data-fs-market-open>${esc(tx('change'))}</button></p>`
+  return `<p class="fp83-market"><span class="fp83-market__name">${esc(marketFlag(home))} ${esc(tx('inCountry', marketName(home, L), r?.currency || ''))}${note ? ` <small class="fp102-src">· ${esc(note)}</small>` : ''}</span><button type="button" class="fp83-change" data-fs-market-open>${esc(tx('change'))}</button></p>`
     + (sg ? `<p class="fp102-suggest"><span>${esc(tx('devHint', marketName(sg, L)))}</span><button type="button" class="fp83-change" data-fs-loc-use="${sg}">${esc(tx('devUse', marketName(sg, L)))}</button><button type="button" class="fp83-change" data-fs-loc-keep="${home}>${sg}">${esc(tx('devKeep'))}</button></p>` : '');
 }
 const typicalLine = (r, L) => { const y = r?.typical; if (!y) return '';
@@ -651,7 +651,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
  * sw.js now activates new builds immediately (skipWaiting + clients.claim). When the controlling worker changes to a
  * different build, the page reloads itself if it is in the background or idle on a non-input route; otherwise it shows a
  * small refresh bar so a scan or typing is never interrupted. */
-export const BUILD = 'foodscan-103.0.0';
+export const BUILD = 'foodscan-104.0.0';
 function updateBar() {
   if (document.querySelector('.fp75-update')) return;
   const bar = document.createElement('div'); bar.className = 'fp75-update'; bar.setAttribute('role', 'status');

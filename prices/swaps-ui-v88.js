@@ -8,7 +8,7 @@ import { detectMarket } from './market-v83.mjs';
 // 101: the bundled catalogue behind swaps and similar-product estimates is GREEK: used only for a shopper in Greece (their own choice first, else the server's answer)
 const greekMarket = res => { try { const own = detectMarket().code; if (own) return own === 'GR'; } catch {} const h = res?.headers?.get?.('x-foodscan-market'); return h === 'greece'; };   // 102: no known market is not Greece
 
-const INDEX_URL = '/assets/swaps-off-csv-2026-10-30.json?v=103'; // 103: same address as prices/reader-v85.js, so the file is fetched once
+const INDEX_URL = '/assets/swaps-off-csv-2026-10-30.json?v=104'; // 103: same address as prices/reader-v85.js, so the file is fetched once
 const T = {
   en: {
     eyebrow: 'Healthier swaps', title: 'Better Nutri-Score, same shelf',
@@ -39,7 +39,7 @@ const route = () => (location.hash.startsWith('#/') ? location.hash.slice(1) : l
 const productCode = () => route().match(/^\/p\/(\d{8}|\d{12,14})(?:[/?]|$)/)?.[1] || null;
 
 let mods = null, prepP = null;
-const load = () => mods || (mods = Promise.all([import('../assets/domain-v103.mjs'), import('./quick-grade-v85.mjs'), import('./swaps-v88.mjs')]).then(([D, Q, W]) => ({ D, Q, W })));
+const load = () => mods || (mods = Promise.all([import('../assets/domain-v104.mjs'), import('./quick-grade-v85.mjs'), import('./swaps-v88.mjs')]).then(([D, Q, W]) => ({ D, Q, W })));
 const index = W => prepP || (prepP = fetch(INDEX_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
 const results = new Map(); // code -> { state, res, target }
 

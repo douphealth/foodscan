@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** New asset generation for the browser app. /assets/* is cached for a year, so a changed module must get a NEW file name, and every file that imports it too.
- *   node tools/new-generation.mjs v8300 v8400 domain-v103.mjs=domain-v103.mjs market-catalogue-v103.mjs=market-catalogue-v103.mjs ...
+ *   node tools/new-generation.mjs v8300 v8400 domain-v104.mjs=domain-v104.mjs market-catalogue-v104.mjs=market-catalogue-v104.mjs ...
  * Copies every assets/*-<from>.js to *-<to>.js, rewrites its imports (the generation suffix and the listed module renames), and copies each listed module under
  * its new name (with the same import rewrites). The old files stay, so a tab left open on the previous release keeps working. Then update index.html, how/, demo/
  * and sw.js the same way (the script prints the replacement pairs). */

@@ -66,7 +66,22 @@ export function setMarket(code) {
 const UI_LANGS = ['el', 'en', 'fr', 'de', 'es', 'it'];   // 101: country names in the six app languages
 export const marketName = (code, lang = 'en') => { try { return new Intl.DisplayNames([UI_LANGS.includes(lang) ? lang : 'en'], {type:'region'}).of(norm(code)) || code; } catch { return code; } };
 /** Flag emoji from the two letters (regional indicator symbols); '' where the platform draws none (then the letters are shown). */
-export const marketFlag = code => { const c = norm(code); return c ? String.fromCodePoint(...[...c].map(ch => 0x1F1A5 + ch.charCodeAt(0))) : ''; };
+/* 104: a system without flag emoji (Windows) prints the two regional letters instead ("GR Greece"). One flag is drawn once on a canvas: with no coloured
+ * pixel it is letters, and the flag is left out everywhere (the country name is always shown). Outside a browser the flag is returned as before. */
+let flagEmoji = null;
+export const flagsRender = () => {
+  if (flagEmoji != null) return flagEmoji;
+  if (typeof document === 'undefined') return true;
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 24;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.textBaseline = 'top'; x.font = '18px sans-serif'; x.fillStyle = '#000'; x.fillText('🇫🇷', 0, 2);
+    const d = x.getImageData(0, 0, 24, 24).data; let colour = false;
+    for (let i = 0; i < d.length && !colour; i += 4) if (d[i + 3] > 40 && (Math.abs(d[i] - d[i + 1]) > 40 || Math.abs(d[i + 1] - d[i + 2]) > 40)) colour = true;
+    flagEmoji = colour;
+  } catch { flagEmoji = true; }
+  return flagEmoji;
+};
+export const marketFlag = code => { const c = norm(code); return c && flagsRender() ? String.fromCodePoint(...[...c].map(ch => 0x1F1A5 + ch.charCodeAt(0))) : ''; };
 export const marketsSorted = (lang = 'en') => ALL_MARKETS.map(c => ({code:c, name:marketName(c, lang)})).sort((a, b) => a.name.localeCompare(b.name, UI_LANGS.includes(lang) ? lang : 'en'));
 
 /** Country -> currencies (same table as the worker's FS_CURRENCY_COUNTRIES; qa/ checks they are identical). */

@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { ROOT, read, loadWorker, daysAgo } from './helpers.mjs';
 
 globalThis.__FS101_TEST__ = globalThis.__FS101_TEST__ && globalThis.__FS101_TEST__ !== true ? globalThis.__FS101_TEST__ : true;
-const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v103.mjs')).href);
+const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v104.mjs')).href);
 const Q = await import(pathToFileURL(path.join(ROOT, 'prices/quick-grade-v85.mjs')).href);
 const P = await import(pathToFileURL(path.join(ROOT, 'prices/price-core-v83.mjs')).href);
 await loadWorker();
@@ -95,7 +95,7 @@ test('no drink enters the swaps or the similar-products index with a letter from
 test('the new messages are translated in all five dictionaries', () => {
   const keys = [...read('src/domain/grade.js').matchAll(/t\("((?:Open Food Facts published|The fruit share|Values the record does not report)[^"]*)"/g)].map(m => m[1]);
   assert.equal(keys.length, 8);
-  for (const f of ['chunk-BQKWV521-v103.js', 'i18n-de-v103.js', 'i18n-es-v103.js', 'i18n-fr-v103.js', 'i18n-it-v103.js']) {
+  for (const f of ['chunk-BQKWV521-v104.js', 'i18n-de-v104.js', 'i18n-es-v104.js', 'i18n-fr-v104.js', 'i18n-it-v104.js']) {
     const s = read('assets/' + f);
     for (const k of keys) { const i = s.indexOf(JSON.stringify(k) + ':"'); assert.ok(i >= 0, `${f}: ${k.slice(0, 50)}`); for (const ph of k.match(/\{\w+\}/g) || []) assert.ok(s.slice(i + k.length + 4, s.indexOf('",', i + k.length + 4)).includes(ph), `${f} keeps ${ph}`); }
   }
@@ -105,15 +105,15 @@ test('year-cached files changed in this release have a new address (assets are s
   assert.match(read('_headers'), /\/assets\/\*\s*\n\s*! Cache-Control\s*\n\s*Cache-Control: public, max-age=31536000, immutable/);
   const names = fs.readdirSync(path.join(ROOT, 'assets'));
   assert.equal(names.filter(f => /-v101\.(?:js|mjs|css)$/.test(f)).length, 0, 'no file of the previous generation is left to be changed in place');
-  assert.ok(names.includes('domain-v103.mjs'));
+  assert.ok(names.includes('domain-v104.mjs'));
   for (const f of ['index.html', 'sw.js', 'daily-v98.js', 'prices/reader-v85.js', 'prices/quick-grade-v85.mjs']) assert.doesNotMatch(read(f), /-v101\.(?:js|mjs|css)/, f);
   // every asset the pages and the service worker name exists
   for (const f of ['index.html', 'how/index.html', 'demo/index.html', 'sw.js']) for (const m of read(f).matchAll(/\/assets\/([\w.-]+-v103\.(?:js|mjs|css))/g)) assert.ok(names.includes(m[1]), `${f} names ${m[1]}`);
   // the three indexes rebuilt under their old names are asked for at a new address
-  assert.match(read('prices/reader-v85.js'), /peers-off-csv-2026-10-30\.json\?v=103/);
-  assert.match(read('prices/reader-v85.js'), /swaps-off-csv-2026-10-30\.json\?v=103/);
-  assert.match(read('prices/swaps-ui-v88.js'), /swaps-off-csv-2026-10-30\.json\?v=103/);
-  assert.match(read('prices/fill-v89.js'), /estimates-\$\{REV\}\.json\?v=103/);
+  assert.match(read('prices/reader-v85.js'), /peers-off-csv-2026-10-30\.json\?v=104/);
+  assert.match(read('prices/reader-v85.js'), /swaps-off-csv-2026-10-30\.json\?v=104/);
+  assert.match(read('prices/swaps-ui-v88.js'), /swaps-off-csv-2026-10-30\.json\?v=104/);
+  assert.match(read('prices/fill-v89.js'), /estimates-\$\{REV\}\.json\?v=104/);
 });
 
 test('a pack written as "size x count" is the whole pack, and a size next to dimensions is still parsed as written', () => {
@@ -210,14 +210,14 @@ test('a container sold by what it holds gets no price per litre', () => {
 });
 
 test('the grade card names what FoodScan recalculated, with the drinks scale, and the quick-grade tile names the sweeteners', () => {
-  const card = read('assets/chunk-57E5ZLYU-v103.js'), why = read('assets/chunk-I3TRV521-v103.js'), scale = read('assets/chunk-IO4NLMGT-v103.js'), ui = read('prices/grade-ui-v85.mjs');
+  const card = read('assets/chunk-57E5ZLYU-v104.js'), why = read('assets/chunk-I3TRV521-v104.js'), scale = read('assets/chunk-IO4NLMGT-v104.js'), ui = read('prices/grade-ui-v85.mjs');
   assert.match(card, /t\.sweetenersAdded \? "Calculated with the sweeteners on the record counted/); assert.match(card, /t\.wrongTable \? "Calculated with the Nutri-Score drinks table/);
   assert.match(why, /s\.sweetenersAdded \? "/); assert.match(why, /s\.wrongTable \? "/);
   assert.match(scale, /let r=e\?\.estimated&&e\.flags\?e\.flags:a\?\.nutriScoreData\|\|e\?\.flags;/, 'a calculated grade shows the scale of the table it was calculated with');
   assert.match(ui, /part\.id === 'non_nutritive_sweeteners' \? 'sweeteners' : part\.id/); assert.match(ui, /part\.unit === 'number' \? \(part\.value \? t\.sweetYes : t\.sweetNo\)/);
   const keys = ['Calculated with the Nutri-Score drinks table: the source graded this drink with the table for solid foods.', "Calculated with the sweeteners on the record counted: the source's grade leaves them out.",
     'The source graded this drink with the table for solid foods, and the record lacks what the drinks table needs'];
-  for (const f of ['chunk-BQKWV521-v103.js', 'i18n-de-v103.js', 'i18n-es-v103.js', 'i18n-fr-v103.js', 'i18n-it-v103.js']) for (const k of keys) assert.ok(read('assets/' + f).includes(JSON.stringify(k) + ':"'), `${f}: ${k.slice(0, 40)}`);
+  for (const f of ['chunk-BQKWV521-v104.js', 'i18n-de-v104.js', 'i18n-es-v104.js', 'i18n-fr-v104.js', 'i18n-it-v104.js']) for (const k of keys) assert.ok(read('assets/' + f).includes(JSON.stringify(k) + ':"'), `${f}: ${k.slice(0, 40)}`);
 });
 
 test('the source\'s own category "artificially sweetened beverages" counts as sweeteners when the ingredient list is missing or misread', () => {
@@ -229,5 +229,5 @@ test('the source\'s own category "artificially sweetened beverages" counts as sw
   assert.match(D.assessGrade(zero()).caveats[0], /named in the ingredient list/);
   // a plain soda category says nothing about sweeteners
   assert.equal(D.ns23Sweeteners(zero({ ingredients_text: '', categories_tags: ['en:beverages', 'en:sodas'] })), null);
-  for (const f of ['chunk-BQKWV521-v103.js', 'i18n-de-v103.js', 'i18n-es-v103.js', 'i18n-fr-v103.js', 'i18n-it-v103.js']) for (const k of ['named in the ingredient list', 'filed under artificially sweetened drinks']) assert.ok(read('assets/' + f).includes(JSON.stringify(k) + ':"'), `${f}: ${k}`);
+  for (const f of ['chunk-BQKWV521-v104.js', 'i18n-de-v104.js', 'i18n-es-v104.js', 'i18n-fr-v104.js', 'i18n-it-v104.js']) for (const k of ['named in the ingredient list', 'filed under artificially sweetened drinks']) assert.ok(read('assets/' + f).includes(JSON.stringify(k) + ':"'), `${f}: ${k}`);
 });

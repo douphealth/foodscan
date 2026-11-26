@@ -14,8 +14,8 @@
   },
   {
    "file": "src/domain/model.js",
-   "lines": 210,
-   "bytes": 14474
+   "lines": 213,
+   "bytes": 14983
   },
   {
    "file": "src/domain/estimate.js",
@@ -29,8 +29,8 @@
   },
   {
    "file": "src/domain/grade.js",
-   "lines": 247,
-   "bytes": 25702
+   "lines": 250,
+   "bytes": 26297
   },
   {
    "file": "src/domain/allergens.js",
@@ -118,5 +118,5 @@
    "bytes": 12086
   }
  ],
- "sha256": "5bd628784462a7a42f7b0a05771db36b43dcce338b42a602418bbe1acbe07e4a"
+ "sha256": "95f69365009485437333ce27a6a51d2ff56b3d4a67555e17b4bd320be9970a35"
 }

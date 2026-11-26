@@ -8,7 +8,7 @@
  *  3. The grade is the same function (ns23Score) that verifies the grades of the whole app, with the table the shopper chose (general food, drink, cheese, fat/oil/nuts/seeds).
  *     What the label does not print (fibre, protein, fruit/vegetable share) is never assumed: if it can change the letter, a range is returned instead of a letter.
  * Pure functions, no DOM: tested on real Tesseract output (qa/label-reader.test.mjs, tools/label-accuracy.cjs). */
-import { ns23Score } from '../assets/domain-v103.mjs';
+import { ns23Score } from '../assets/domain-v104.mjs';
 
 const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ς/g, 'σ');
 

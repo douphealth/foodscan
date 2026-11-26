@@ -50,7 +50,7 @@ test('the Prices page uses the app design system: its tokens, light and dark, an
   assert.match(html, /prices-app-v88\.css"><\/head>/, 'loaded last');
   assert.match(html, /<nav class="dock fp-dock-expanded"[\s\S]*href="\/prices\/" aria-current="page"/);
   for (const [k, light, dark] of [['--bg', '#F4EFE2', '#050F0A'], ['--surface', '#FFFDF7', '#0D1F16'], ['--brand', '#0A5C3C', '#5EDBA0']]) { assert.ok(css.includes(`${k}:${light}`), k + ' light'); assert.ok(css.includes(`${k}:${dark}`), k + ' dark'); }
-  const app = fs.readFileSync(new URL('../assets/app-V52SOTA1-v103.css', import.meta.url), 'utf8');
+  const app = fs.readFileSync(new URL('../assets/app-V52SOTA1-v104.css', import.meta.url), 'utf8');
   assert.ok(app.includes('--bg:#050F0A') || app.toUpperCase().includes('050F0A'), 'the tokens are the app\'s own');
 });
 

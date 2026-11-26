@@ -2,8 +2,8 @@
  * comes from and the shopper's own label numbers), My Lens, a 3-product compare tray and a local backup.
  * Local-first: everything stays in this browser's localStorage, no tracking, no network. English and Greek.
  * Logic (and what was checked) lives in daily-v98-core.mjs; this file only draws it.
- * Uses the same engine module as the app (domain-v103.mjs), so grades match and the app's own translated messages are reused. */
-import { assessGrade, dataQuality } from './assets/domain-v103.mjs';
+ * Uses the same engine module as the app (domain-v104.mjs), so grades match and the app's own translated messages are reused. */
+import { assessGrade, dataQuality } from './assets/domain-v104.mjs';
 import { MAX_COMPARE, LENSES, num, r1, auditProduct, lensVerdict, computeStreak, parseBackup, BACKUP_KEY, gtin14, presetsFor, logEntry, dayIntake, LIMITS, progress, parseAmount, rememberPortion, AMOUNT_MIN, AMOUNT_MAX, labelCode, mergeLabel, provenance, weekPulse, listAdd, listRemove, gradeGain, listSummary, gtinCheckOk, weekReady } from './daily-v98-core.mjs';
 import { detectMarket, setMarket, marketName, marketFlag, marketsSorted, dismissSuggestion } from './prices/market-v83.mjs';
 
@@ -21,6 +21,8 @@ const TX = {
     todayItems: 'Logged today',
     streak: 'Streak', streakDays: n => (n === 1 ? '1 day' : `${n} days`),
     pantry: 'Saved foods', pantrySub: ab => `${ab} graded A or B`,
+    ring: { sugars: 'Sugars', salt: 'Salt', kcal: 'Energy', sat: 'Saturated fat' }, ofMax: (lim, u) => `of ${lim} ${u}`,
+    summary: (n, saved, ab) => `${n} logged today` + (saved ? ` · ${saved} saved, ${ab} graded A or B` : ''),
     quickLogLabel: 'Tap a recent food, then how much you had:',
     aboutLimits: 'About these limits', intakeTitle: 'Today against the limits', intakeNone: 'Nothing logged with an amount yet today. Tap a food below, then an amount.',
     sugarsToday: 'Sugars today', saltToday: 'Salt today', kcalToday: 'Energy today', satToday: 'Saturated fat today',
@@ -107,6 +109,8 @@ const TX = {
     todayItems: 'Καταγράφηκαν σήμερα',
     streak: 'Σερί', streakDays: n => (n === 1 ? '1 ημέρα' : `${n} ημέρες`),
     pantry: 'Αποθηκευμένα τρόφιμα', pantrySub: ab => `${ab} με βαθμό A ή B`,
+    ring: { sugars: 'Σάκχαρα', salt: 'Αλάτι', kcal: 'Ενέργεια', sat: 'Κορεσμένα λιπαρά' }, ofMax: (lim, u) => `από ${lim} ${u}`,
+    summary: (n, saved, ab) => `${n === 1 ? '1 καταγραφή' : `${n} καταγραφές`} σήμερα` + (saved ? ` · ${saved} αποθηκευμένα, ${ab} με βαθμό A ή B` : ''),
     quickLogLabel: 'Πάτα ένα πρόσφατο τρόφιμο και μετά πόσο έφαγες:',
     aboutLimits: 'Για αυτά τα όρια', intakeTitle: 'Σήμερα απέναντι στα όρια', intakeNone: 'Δεν έχει καταγραφεί ακόμη τίποτα με ποσότητα σήμερα. Πάτα ένα τρόφιμο και μετά μια ποσότητα.',
     sugarsToday: 'Σάκχαρα σήμερα', saltToday: 'Αλάτι σήμερα', kcalToday: 'Ενέργεια σήμερα', satToday: 'Κορεσμένα λιπαρά σήμερα',
@@ -380,15 +384,18 @@ function intakeHtml(t, di, aboutOpen) {
     ['kcal', t.kcalToday, LIMITS.kcal, 'kcal', v => t.ofKcal(v, LIMITS.kcal)],
     ['sat', t.satToday, LIMITS.sat, 'g', v => t.ofLimit(dec(v), LIMITS.sat, 'g')]
   ];
-  const rows = cells.map(([k, label, lim, , text]) => {
-    const v = di.totals[k], pr = progress(v, lim);
-    if (!pr) return `<div class="fs99-row"><span class="fs98-stat__k">${esc(label)}</span><span class="fs99-val">${'—'}</span></div>`;
-    const low = di.missing[k] > 0 ? `<small class="fs99-low">${esc(t.lowerBound(t.nut[k], di.missing[k]))}</small>` : '';
-    return `<div class="fs99-row fs99-row--${pr.state}"><span class="fs98-stat__k">${esc(label)}</span><span class="fs99-val">${esc(text(v))} · ${pr.pct} %</span>
-      <div class="fs98-meter fs99-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(pr.pct, 100)}" aria-valuetext="${esc(`${pr.pct} % · ${t.state[pr.state]}`)}"><i style="width:${pr.bar}%"></i></div>${low}</div>`;
+  /* 104: one dial per limit, always on screen (empty until an amount is logged) so Home opens on the day at a glance. The ring is the progress bar; "≥" marks a
+   * total that is a lower bound because a logged food does not report that nutrient, and the sentence under the dials says which. */
+  const lows = [];
+  const rows = cells.map(([k, label, lim, unit, text]) => {
+    const v = di.counted ? di.totals[k] : null, pr = progress(v, lim), name = t.ring[k], max = t.ofMax(k === 'kcal' ? lim.toLocaleString(el ? 'el' : 'en') : lim, unit);
+    if (!pr) return `<div class="fs99-row fs104-tile fs104-tile--none"><span class="fs104-ring" aria-hidden="true"><b>—</b></span><span class="fs98-stat__k">${esc(name)}</span><span class="fs99-val">${esc(max)}</span></div>`;
+    const low = di.missing[k] > 0; if (low) lows.push(t.lowerBound(t.nut[k], di.missing[k]));
+    return `<div class="fs99-row fs104-tile fs99-row--${pr.state}" style="--p:${pr.bar}"><span class="fs104-ring fs99-meter" role="progressbar" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(pr.pct, 100)}" aria-valuetext="${esc(`${text(v)} · ${pr.pct} % · ${t.state[pr.state]}`)}"><b>${pr.pct}<small>%</small></b></span><span class="fs98-stat__k">${esc(name)}</span><span class="fs99-val">${low ? '≥ ' : ''}${esc(`${k === 'kcal' ? Math.round(v).toLocaleString(el ? 'el' : 'en') : dec(v)} / ${k === 'kcal' ? lim.toLocaleString(el ? 'el' : 'en') : lim} ${unit}`)}</span></div>`;
   }).join('');
-  return `<div class="fs98-sec fs99-intake"><p class="fs98-sec__label">${esc(t.intakeTitle)}</p>
-    ${di.counted ? `<div class="fs99-rows">${rows}</div>` : `<p class="fs98-sub">${esc(t.intakeNone)}</p>`}
+  return `<div class="fs98-sec fs99-intake fs100-wide"><p class="fs98-sec__label">${esc(t.intakeTitle)}</p>
+    <div class="fs99-rows fs104-dials">${rows}</div>
+    ${di.counted ? lows.map(x => `<p class="fs99-low fs104-lowline">${esc(x)}</p>`).join('') : `<p class="fs98-sub">${esc(t.intakeNone)}</p>`}
     ${di.uncounted ? `<p class="fs98-sub fs99-low">${esc(t.uncounted(di.uncounted))}</p>` : ''}
     <details class="fs99-about"${aboutOpen ? ' open' : ''}><summary>${esc(t.aboutLimits)}</summary><ul class="fs99-notes"><li>${esc(t.whoSugars)}</li><li>${esc(t.whoSalt)}</li><li>${esc(t.whoSat)}</li><li>${esc(t.refKcal)}</li></ul></details></div>`;
 }
@@ -512,6 +519,8 @@ function renderHub(view) {
   if (!hub) { hub = document.createElement('section'); hub.className = 'fs98-hub'; view.prepend(hub); }
   hub.setAttribute('aria-label', t.hubTitle);
   hub.classList.toggle('fs100-welcome', welcome);
+  document.documentElement.toggleAttribute('data-fs104-returning', records.size > 0);   // 104: Home opens on their own foods (see daily-v98.css)
+  if (!hub.dataset.fs104) { hub.dataset.fs104 = '1'; hub.classList.add('fs104-in'); setTimeout(() => hub.classList.remove('fs104-in'), 1400); }   // the dials fill once, on arrival
   const open = hub.querySelector('details.fs98-more')?.open ? ' open' : '';
 
   // 100: a new phone or cleared storage: a compact welcome that still offers My Lens and Restore backup (before, the whole hub was removed and both were unreachable)
@@ -537,21 +546,24 @@ function renderHub(view) {
   const pickRec = picker?.where === 'hub' ? records.get(picker.gtin) : null;
   if (picker?.where === 'hub' && !pickRec) picker = null;
 
+  /* 104: the hub opens on the day itself: the date in words, the four dials, then the foods to tap. The two boxes of counts (often "0" and "0") became one line,
+   * a streak is shown once there is one, and the country row moved under the lists: it is a setting. It stays on top only while it asks a question
+   * (no country known, or the phone's clock and the connection disagree). */
+  const mk = marketNow(), locTop = !mk.code || !!mk.suggest;
+  const dateWords = new Intl.DateTimeFormat(el ? 'el' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   paint(hub, `
     <div class="fs98-head">
       <div><p class="fs98-eyebrow">${esc(t.hubEye)}</p><h2 class="fs98-title">${esc(t.hubTitle)}</h2><p class="fs98-sub">${esc(t.hubSub)}</p></div>
-      <span class="fs98-badge fs98-badge--good">${esc(t.streak)}: ${esc(t.streakDays(streak))}</span>
+      ${streak > 0 ? `<span class="fs98-badge fs98-badge--good fs104-streak">${esc(t.streak)}: ${esc(t.streakDays(streak))}</span>` : ''}
     </div>
-    <div class="fs98-stats">
-      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.todayItems)}</span><span class="fs98-stat__v">${di.entries}</span><span class="fs98-stat__s">${esc(td)}</span></div>
-      <div class="fs98-stat"><span class="fs98-stat__k">${esc(t.pantry)}</span><span class="fs98-stat__v">${savedRows.length}</span><span class="fs98-stat__s">${esc(t.pantrySub(abCount))}</span></div>
-    </div>
-    <div class="fs98-sec fs100-wide"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips">${chips}</div>${pickRec ? pickerHtml(pickRec.product) : ''}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
-    ${locHtml(t, lang())}
+    <p class="fs104-meta"><time datetime="${esc(td)}">${esc(dateWords)}</time><span>${esc(t.summary(di.entries, savedRows.length, abCount))}</span></p>
+    ${locTop ? locHtml(t, lang()) : ''}
     ${intakeHtml(t, di, aboutOpen)}
+    <div class="fs98-sec fs100-wide fs104-quick"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p><div class="fs98-chips fs104-scroller">${chips}</div>${pickRec ? pickerHtml(pickRec.product) : ''}<p class="fs98-status" id="fs98-hub-status" role="status" aria-live="polite"></p></div>
     ${todayListHtml(t, todayRows)}
     ${weekHtml(t, log)}
     ${listHtml(t, list, sum)}
+    ${locTop ? '' : locHtml(t, lang())}
     ${moreHtml(t, el, open)}`, h => {
     wireMore(h, view, t); wireLoc(h, view, t);
     const after = msg => { renderHub(view); const s = view.querySelector('#fs98-hub-status'); if (s) s.textContent = msg; };
@@ -718,7 +730,7 @@ function openCompareModal() {
 function exportBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BACKUP_KEY.test(k)) data[k] = localStorage.getItem(k); }
-  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '103.0.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '104.0.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `foodscan-backup-${todayKey()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }
