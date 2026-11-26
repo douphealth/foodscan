@@ -730,7 +730,7 @@ function openCompareModal() {
 function exportBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && BACKUP_KEY.test(k)) data[k] = localStorage.getItem(k); }
-  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '106.0.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'FoodScan', version: '106.1.0', exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `foodscan-backup-${todayKey()}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 }

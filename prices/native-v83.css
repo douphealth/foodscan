@@ -308,3 +308,8 @@ dialog.fs106-zoom img{display:block;width:100%;height:auto;max-height:72dvh;obje
 dialog.fs106-zoom p{margin:.6rem 2.4rem 0 .2rem;font-size:.74rem;line-height:1.35;color:#4b5f54}
 dialog.fs106-zoom .fs106-zoom__x{position:absolute;top:8px;right:8px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(13,31,22,.82);color:#fff;font-size:1.5rem;line-height:1;cursor:pointer}
 dialog.fs106-zoom .fs106-zoom__x:focus-visible{outline:2px solid #4ade80;outline-offset:2px}
+/* 106.1: the "new version" bar inverts the page colours (background: ink, text: surface), but its "Later" button kept the ghost button's ink colour,
+   which is the bar's own background: the label was invisible in both themes. The button now takes the bar's text colour. */
+.updatebar .btn--ghost{color:var(--surface,#fff);border-color:color-mix(in srgb,var(--surface,#fff) 45%,transparent)}
+.updatebar .btn--ghost:hover{background:color-mix(in srgb,var(--surface,#fff) 12%,transparent)}
+.updatebar .btn--ghost:focus-visible{outline:2px solid var(--surface,#fff);outline-offset:2px}

@@ -61,12 +61,12 @@ test('the hub sits in the page column and flows in two columns on a desktop; a p
 });
 
 test('100.1 is carried by every file that carries a version', () => {
-  assert.match(read('sw.js'), /const CACHE = 'foodscan-106\.0\.0'/);
-  assert.match(read('_worker.js'), /var VERSION = "106\.0\.0"/);
-  assert.match(read('src/worker/core.js'), /var VERSION = "106\.0\.0"/);
-  assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-106\.0\.0'/);
-  assert.match(read('price-refresh/tools/verify-deploy.mjs'), /'106\.0\.0'/);
-  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) assert.match(read(page), /data-foodscan-version="106\.0\.0"/, page);
-  assert.ok(src.includes("version: '106.0.0'"), 'the backup file names the version');
-  assert.ok(fs.existsSync(path.join(ROOT, 'RELEASE-106.0.0.md')), 'release notes');
+  assert.match(read('sw.js'), /const CACHE = 'foodscan-106\.1\.0'/);
+  assert.match(read('_worker.js'), /var VERSION = "106\.1\.0"/);
+  assert.match(read('src/worker/core.js'), /var VERSION = "106\.1\.0"/);
+  assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-106\.1\.0'/);
+  assert.match(read('price-refresh/tools/verify-deploy.mjs'), /'106\.1\.0'/);
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) assert.match(read(page), /data-foodscan-version="106\.1\.0"/, page);
+  assert.ok(src.includes("version: '106.1.0'"), 'the backup file names the version');
+  assert.ok(fs.existsSync(path.join(ROOT, 'RELEASE-106.1.0.md')), 'release notes');
 });
