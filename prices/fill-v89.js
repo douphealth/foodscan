@@ -6,7 +6,7 @@
  *   language, or an uploaded photo nobody selected), that photo is shown (assets/photos-<rev>.json, tools/build-photos.mjs). No photo is invented. */
 import { pageLang } from './price-core-v83.mjs';
 
-const REV = 'off-csv-2026-10-30', EST_URL = `/assets/estimates-${REV}.json`, PHOTO_URL = `/assets/photos-${REV}.json`;
+const REV = 'off-csv-2026-10-30', EST_URL = `/assets/estimates-${REV}.json?v=103`, /* 103: rebuilt under the same name; /assets/ is cached for a year, so the address changes */ PHOTO_URL = `/assets/photos-${REV}.json`;
 const TXT = {
   en: { est: (g, band) => `Estimated Nutri-Score ${g}${band ? ` (${band})` : ''}: FoodScan's estimate, not a published grade`, nr: 'Not rated: the Nutri-Score method does not cover this product', photo: 'Photo from Open Food Facts' },
   el: { est: (g, band) => `Εκτιμώμενο Nutri-Score ${g}${band ? ` (${band})` : ''}: εκτίμηση του FoodScan, όχι δημοσιευμένος βαθμός`, nr: 'Χωρίς βαθμό: η μέθοδος Nutri-Score δεν καλύπτει αυτό το προϊόν', photo: 'Φωτογραφία από το Open Food Facts' },

@@ -109,7 +109,9 @@ export function checkOffer(o, pack, now = Date.now()) {
   };
   // 82: a price for another pack size gets its unit price from the pack actually observed, never from this barcode's label
   const seen = o.packMismatch && o.observedPack && ['kg', 'l'].includes(o.observedPack.unit) && num(o.observedPack.amount) > 0 ? {unit:o.observedPack.unit, amount:num(o.observedPack.amount)} : null;
-  return {...out, ...unitPriceOf(out, seen || pack)};
+  // 103: no pack on record: the size in the shop's own listing of this barcode gives that shop's unit price (the service sends it as shopSize)
+  const own = !pack && !o.packMismatch && o.shopSize && ['kg', 'l'].includes(o.shopSize.unit) && num(o.shopSize.amount) > 0 ? {unit:o.shopSize.unit, amount:num(o.shopSize.amount)} : null;
+  return {...out, ...unitPriceOf(out, seen || pack || own)};
 }
 const order = (a, b) => Number(b.rankingEligible) - Number(a.rankingEligible) || (a.rankingEligible ? a.price - b.price : 0) || b.date.localeCompare(a.date) || a.price - b.price;
 

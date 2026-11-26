@@ -181,10 +181,21 @@ function fsPricePack(quantity, amount, unit) {
   const multi = q.match(/(\d{1,3})\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|cl|lt|l)\b/i);
   let out = multi ? conv(multi[2], multi[3]) : null;
   if (out) out = {amount:out.amount*Number(multi[1]), unit:out.unit};
+  // 103: the count written after the size ("330 ml x 6", "10gr x 200τμχ", "30ml x2") was read as one piece
+  if (!out) { const rev = q.match(/(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|cl|lt|l)\s*[x×*]\s*(\d{1,3})(?![\d.,]|\s*(?:cm|mm|kg|gr|g|ml|cl|lt|l)\b)/i); const one = rev ? conv(rev[1], rev[2]) : null; if (one) out = {amount:one.amount*Number(rev[3]), unit:one.unit}; }
   if (!out) { const one = q.match(/(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|cl|lt|l)\b/i); if (one) out = conv(one[1], one[2]); }
   if (!out && amount != null) out = conv(amount, unit);
   if (!out || out.amount < 0.005 || out.amount > 50) return null;
   return {amount:Math.round(out.amount*10000)/10000, unit:out.unit};
+}
+/** 103: the daily refresh wrote the observatory's archive link without its date (".../data//posokanei-.json", a dead link on every observatory
+ *  price). The link is rebuilt from the snapshot date the seed carries; a seed with neither falls back to the source's own page. */
+function fsSeedArchive(id, source) {
+  const a = String(source?.archive || '');
+  if (id !== 'posokanei') return a;
+  if (/\/data\/\d{4}\/posokanei-\d{4}-\d{2}-\d{2}\.json$/.test(a)) return a;
+  const d = String(source?.snapshot || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? `https://raw.githubusercontent.com/spyrosavl/posokanei/main/data/${d.slice(0, 4)}/posokanei-${d}.json` : '';
 }
 function fsPriceUnit(offer, pack) {
   if (offer.basis === 'kg' || offer.basis === 'l') return {unitPrice:offer.price, unitBasis:offer.basis};
@@ -791,6 +802,10 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
         fetchedAt:fsPriceStamp(p.f || seed.source.fetched_at), origin:'seed',
         // 79: the pack the shop lists for its item (checked against the label in the payload), how many barcodes the shop puts on
         // that item, its stock flag and any offer condition. Weight/volume unit price as the shop prints it, when it has one.
+        // 103: a title that carries dimensions (bin bags "34L 52x56cm", a basin "35,5cm/7lt") states a capacity, not a content: no unit price from it
+        // The same for an item that IS a container (bin bags "25l", paper cups "250ml 50τμχ", a bin, a flowerpot saucer): the litres are what it holds.
+        shopSizePlain:!/\d\s*(?:cm|mm|εκ)(?![\p{L}])|\d\s*[x×]\s*\d+\s*(?:cm|mm)/iu.test(fsPriceText(p.q || p.n || '', 60))
+          && !/απορριμ|(?<![\p{L}])(?:καδοσ|καδοι|γλαστρ[α-ω]*|ποτηρ[α-ω]*|φλιτζαν[α-ω]*|κουβασ|κουβαδ[α-ω]*|ταπερ|θερμοσ|παγουρ[α-ω]*|κανατ[α-ω]*|bin bags?|trash bags?|cups?)(?![\p{L}])/u.test(String(p.n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ς/g, 'σ')),
         shopPack:fsPricePack(fsPriceText(p.q || p.n || '', 60)), shopBarcodes:Number(p.nb) > 1 ? Math.min(99, Number(p.nb)) : 1,
         ...(p.a === 'out_of_stock' ? {available:false, rankingEligible:false} : {}),
         // A multi-buy / gift offer on the item: the price shown is the plain single-item price, so it still ranks; the offer is noted.
@@ -821,7 +836,7 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
     if (p && Array.isArray(p.p)) for (const [chainId, price, date, sale] of p.p) {
       // posokanei flags a temporary discount; the e-katanalotis flag means a permanent reduction, i.e. the regular price.
       const o = fsGrOffer(def, code, chainId, Number(price), fsPriceISO(date), id === 'posokanei' && sale === 1, now);
-      if (o) items.push({...o, match, evidenceURL:fsPriceSourceURL(seed.source.archive || seed.source.feed || '') || def.url, fetchedAt:fsPriceStamp(seed.source.fetched_at), origin:'seed'});
+      if (o) items.push({...o, match, evidenceURL:fsPriceSourceURL(fsSeedArchive(id, seed.source) || seed.source.feed || '') || def.url, fetchedAt:fsPriceStamp(seed.source.fetched_at), origin:'seed'});
     }
     out.items.push(...items);
     out.providers[id] = {status:items.length?'ok_with_data':'ok_empty', snapshot:seed.source.snapshot, count:items.length, linked:id === 'posokanei' ? Boolean(p) : undefined, license:def.license};
@@ -862,7 +877,9 @@ function fsPriceFlagSuspects(items) {
   return items.map(o => {
     // 102.1: every source is checked, not only community prices: a web shop listing another pack under this barcode (Lidl's e-shop had a
     // 194 g coffee at €14.85 while the official observatory recorded €4.76 at Lidl and four other chains) was shown with a €74.25/kg unit price.
-    if (o.otherCurrency || o.packMismatch || o.basis !== 'item' || o.freshness === 'historical') return o;
+    // 103: an old price is checked against what the other stores record today as well (a €0.40 entry for a 6 x 1.5 l pack that sells at €2.40-3.48
+    // was listed as an older price at €0.04 per litre); prices do not halve or grow 2.5-fold in a few months.
+    if (o.otherCurrency || o.packMismatch || o.basis !== 'item') return o;
     const peers = live.filter(x => x.storeId !== o.storeId && x.currency === o.currency).map(x => x.price);
     if (peers.length < 3) return o;
     const med = fsPriceMedian(peers);
@@ -905,10 +922,14 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   if (shopPacks.length && official.pack?.source === 'posokanei') shopPacks.push({src:'pk', pack:{amount:official.pack.amount, unit:official.pack.unit}});
   const agreed = shopPacks.length >= 2 && shopPacks.every(x => !differs(shopPacks[0].pack, x.pack)) ? shopPacks[0].pack : null;
   const resolvedBy = agreed && (!labelPack || differs(labelPack, agreed)) ? shopPacks.map(x => x.src) : null;
-  const pack = resolvedBy ? {amount:agreed.amount, unit:agreed.unit} : labelPack;
   // The observatory links a barcode to its own product by name; if its pack size disagrees with the label, the link is
   // suspect: its prices are shown with a warning and never rank.
   const obsPack = official.pack || null;
+  // 103: a label size under 50 g/ml that no shop and no observatory record confirms, and that would put EVERY recorded price above 150 per kg or
+  // litre, is a portion typed as the pack (a box of 12 stock cubes recorded as "10 g" gave €269/kg). No unit price is derived from it.
+  const homeItems = all.filter(o => o.market === home && o.basis === 'item' && o.price > 0);
+  const labelUnverified = Boolean(labelPack && !resolvedBy && !obsPack && labelPack.amount < 0.05 && homeItems.length && homeItems.every(o => o.price / labelPack.amount > 150));
+  const pack = resolvedBy ? {amount:agreed.amount, unit:agreed.unit} : labelUnverified ? null : labelPack;
   const packMismatch = Boolean(pack && obsPack && (pack.unit !== obsPack.unit || Math.abs(pack.amount - obsPack.amount) / pack.amount > 0.05));
   // 78: the observatory row is for a different pack than this barcode's label: keep it visible as evidence, never rank it,
   // and give its unit price for the pack actually observed (so it is never compared as if it were this product).
@@ -932,7 +953,11 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
     return [...groups.values()].flatMap(g => fsPriceFlagSuspects(g)).filter(o => !o.suspect); })();
   const elsewhere = abroad.filter(o => o.freshness !== 'historical').sort((a,b)=>b.date.localeCompare(a.date)).slice(0, 12)
     .map(o => ({...o, rankingEligible:false}));
-  const strip = o => { const {productName, productQuantity, productAmount, productAmountUnit, market, shopPack, ...rest} = o; return {...rest, tier:tierOf(o), sourceLicense:fsPriceLicenseOf(o), ...(o.packMismatch && o.observedPack ? fsPriceUnit(o, o.observedPack) : fsPriceUnit(o, pack))}; };
+  // 103: when the record has no pack size at all, a shop's price still gets a unit price from the size in that shop's own listing of this barcode
+  // (one barcode on the item). It describes that shop's item only: `shopSize` says so, and nothing is assumed for the other stores.
+  // The result must be a plausible food price (0.08 to 150 per kg or litre): outside it the "size" was a count, a capacity or a portion.
+  const ownSize = o => { if (pack || o.packMismatch || !o.shopPack || o.shopBarcodes !== 1 || o.shopSizePlain === false || o.basis !== 'item') return null; const u = o.price / o.shopPack.amount; return u >= 0.08 && u <= 150 ? o.shopPack : null; };
+  const strip = o => { const {productName, productQuantity, productAmount, productAmountUnit, market, shopPack, shopSizePlain, ...rest} = o, own = ownSize(o); return {...rest, tier:tierOf(o), sourceLicense:fsPriceLicenseOf(o), ...(own ? {shopSize:{amount:own.amount, unit:own.unit}} : {}), ...(o.packMismatch && o.observedPack ? fsPriceUnit(o, o.observedPack) : fsPriceUnit(o, pack || own))}; };
   const offers = greek.slice(0, 60).map(strip), others = elsewhere.map(strip);
   const eligible = offers.filter(o => o.rankingEligible);
   const best = eligible.slice().sort((a,b)=>a.price-b.price || b.date.localeCompare(a.date))[0] || null;
@@ -976,7 +1001,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
     product: meta ? {name:meta.name, brand:meta.brand, quantity:meta.quantity, nutriScore:meta.nutriScore, image:meta.image, source:meta.source} :
       (sample.productName ? {name:sample.productName, brand:'', quantity:sample.productQuantity||'', nutriScore:null, image:'', source:'open_food_facts_via_open_prices'} : null),
     productName: meta ? [meta.name, meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? meta.brand : '', meta.quantity].filter(Boolean).join(' · ') : (sample.productName || official.estimateName || ''),
-    pack, packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
+    pack, ...(labelUnverified ? {packWithheld:{label:labelPack, reason:'label_size_unverified'}} : {}), packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
     offers, elsewhere:others, estimate, related, candidates, confirmed:official.confirmed || null, community:official.community || null, data:official.estimateMeta || null, providers,
     providerSummary:{active:active.length, unavailable:down, disabled:Object.values(providers).length-active.length},
     summary:{bestOfferId:best?.id||null, lowestCurrentPrice:best?.price??null, currentOffers:eligible.length,

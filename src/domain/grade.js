@@ -98,6 +98,12 @@ function assessGrade(p, { estimate = true } = {}) {
     if (p.catalogueSnapshot) return none("missing", `${said} ${t("This is a dated catalogue copy: refresh it from the live database to see whether the label supports a calculated grade.")}`, { quality });
     return calculated(p, quality, said);
   }
+  // 103: a drink the source graded with the table for solid foods (a soda at B, a sweetened iced tea at A) is recalculated with the drinks table
+  const drinkFix = estimate ? ns23DrinkCheck(p) : null;
+  if (drinkFix) return drinkRegraded(p, quality, drinkFix);
+  // 103: a drink whose published points leave out the sweeteners its own ingredient list names gets the 4 points the rules add for them
+  const sweetFix = estimate ? ns23SweetenerCheck(p) : null;
+  if (sweetFix) return sweetenerRegraded(p, quality, sweetFix);
   if (!p.nutriScoreMethod && !p.nutriScoreData && estimate && !quality.unnamed) {
     // 62.0: every Nutri-Score table (drinks, cheese, fats, nuts and seeds as well as ordinary foods) is recomputed from the nutrition we
     // hold and compared with the POINTS the source published. Equal points reproduce the grade; a letter no table can give for those
@@ -138,6 +144,32 @@ function assessGrade(p, { estimate = true } = {}) {
   return { status: p.partial ? "preview" : "reported", missingInputs: coreMissing.length ? coreMissing : void 0, unverified: coreMissing.length > 0 || void 0, grade: p.nutriScore, score: Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null, confidence, caveats, reasons: [], anatomy, method: p.nutriScoreMethod || (anatomy ? "2023" : null), quality };
 }
 const snapshotExpired = p => Number.isFinite(p?.catalogueSnapshot?.exportedAt) && Date.now() - p.catalogueSnapshot.exportedAt > 90 * 864e5;
+function sweetenerRegraded(p, quality, d) {
+  const source = p.nutriScore, extra = { quality, sourceGrade: source, sweetenersAdded: true };
+  // a dated catalogue copy blends in estimated nutrients, so it never carries a grade FoodScan calculated itself: the live record does
+  if (p.catalogueSnapshot || p.nutritionEstimated) return { status: "withheld", grade: null, score: null, confidence: null, caveats: [], reasons: [t("Open Food Facts published {source} for this drink without counting the sweeteners its own record shows. Open the product to see the grade with them counted.", { source })], anatomy: null, method: null, ...extra };
+  const data = ns23Data(d.calc, d.input, "beverage");
+  const anatomy = explainGrade({ ...p, nutriScore: d.calc.grade, nutriScoreValue: d.calc.score, nutriScoreData: data });
+  if (anatomy) { anatomy.estimated = true; anatomy.range = [d.calc.score, d.calc.score]; anatomy.flags = { beverage: true, water: false, fatOil: false }; }
+  return { status: "estimated", grade: d.calc.grade, score: d.calc.score, scoreRange: [d.calc.score, d.calc.score], confidence: "high", caveats: [t("Open Food Facts published {source} for this drink without the 4 points the Nutri-Score 2023 rules add for sweeteners. Its own record shows it contains them ({evidence}), so the drinks table gives {grade}. This is FoodScan's calculation, not a grade printed on the pack.", { source, grade: d.calc.grade, evidence: t(d.evidence === "category" ? "filed under artificially sweetened drinks" : "named in the ingredient list") })], reasons: [], anatomy, method: "2023-calculated",
+    estimate: { ok: true, grade: d.calc.grade, score: d.calc.score, range: [d.calc.score, d.calc.score], data, assumptions: [] }, ...extra };
+}
+function drinkRegraded(p, quality, d) {
+  const source = p.nutriScore, extra = { quality, sourceGrade: source, wrongTable: true, drinkLetters: d.state === 'band' ? d.letters : d.state === 'corrected' ? [d.calc.grade] : null };
+  const held = why => ({ status: "withheld", grade: null, score: null, confidence: null, caveats: [], reasons: [why], anatomy: null, method: null, ...extra });
+  if (d.state === "impossible") return held(t("Open Food Facts published A for this drink, calculated with the table for solid foods. Under the Nutri-Score 2023 rules only water can be A among drinks, and the record lacks the values to calculate the drink's own grade. Check the package."));
+  if (d.state === "band") return held(t("Open Food Facts published {source} for this drink, calculated with the table for solid foods. With the drinks table the same values give {letters}, depending on {list}, which the record does not report.", { source, letters: d.letters.join(", "), list: d.missing.map(x => t(x)).join(", ") }));
+  // a dated catalogue copy blends in estimated nutrients, so it never carries a grade FoodScan calculated itself: the live record does
+  if (p.catalogueSnapshot || p.nutritionEstimated) return held(t("Open Food Facts published {source} for this drink, calculated with the table for solid foods. Open the product to see the grade the drinks table gives for its current label values.", { source }));
+  const data = ns23Data(d.calc, d.input, "beverage");
+  const anatomy = explainGrade({ ...p, nutriScore: d.calc.grade, nutriScoreValue: d.calc.score, nutriScoreData: data });
+  if (anatomy) { anatomy.estimated = true; anatomy.range = [d.calc.score, d.calc.score]; anatomy.flags = { beverage: true, water: false, fatOil: false }; }
+  const caveats = [t("Open Food Facts published {source} for this drink, calculated with the table for solid foods. The Nutri-Score 2023 rules score drinks with their own table, where the same label values give {grade}. This is FoodScan's calculation, not a grade printed on the pack.", { source, grade: d.calc.grade })];
+  if (d.juice) caveats.push(t("The fruit share (100 %) is read from the product name, which states a pure juice. A pure juice contains no sweeteners."));
+  if (d.tier !== "complete") caveats.push(t("Values the record does not report could change the points, but not the letter."));
+  return { status: "estimated", grade: d.calc.grade, score: d.calc.score, scoreRange: [d.calc.score, d.calc.score], confidence: d.tier === "complete" ? "high" : "medium", caveats, reasons: [], anatomy, method: "2023-calculated",
+    estimate: { ok: true, grade: d.calc.grade, score: d.calc.score, range: [d.calc.score, d.calc.score], data, assumptions: [] }, ...extra };
+}
 function reproducedByPoints(p, quality, proof) {
   const data = ns23Data(proof.calc, proof.input, proof.kind);
   const anatomy = explainGrade({ ...p, nutriScore: proof.calc.grade, nutriScoreValue: proof.calc.score, nutriScoreData: data });

@@ -11,7 +11,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v103.mjs')).href);
 const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const KIND = { general: 'g', beverage: 'b', water: 'w', cheese: 'c', fat: 'f' };
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));
@@ -26,6 +26,15 @@ export function build() {
       const p = D.parseProduct({ status: 1, product: raw }, raw.code);
       if (!p.name || p.nameMissing || D.ns23Kinds(p).exempt || raw.nutriments?.alcohol_100g > 1.2) continue;
       let grade = /^[A-E]$/.test(p.nutriScore || '') ? p.nutriScore : '', pts = Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null, how = 'p';
+      // 103: a drink the source graded with the table for solid foods (a soda at B, an iced tea at A) never enters the swaps with that letter:
+      // the letter the drinks table gives is used when it is a single one, otherwise the product is left out
+      const fix = D.ns23DrinkCheck(p);
+      if (fix) { if (fix.state !== 'corrected') continue; grade = fix.calc.grade; pts = fix.calc.score; how = 'c'; }
+      // the same for a drink whose published points leave out the sweeteners its ingredient list names (a zero-sugar cola at B)
+      const sweet = fix ? null : D.ns23SweetenerCheck(p);
+      if (sweet) { grade = sweet.calc.grade; pts = sweet.calc.score; how = 'c'; }
+      // a product whose grade the app itself holds back (impossible values, a record that contradicts itself) is never offered as the better choice
+      if (D.assessGrade(p).status === 'withheld') continue;
       const kinds = D.ns23Kinds(p), q = Q.quickGrade(p, { alcohol: raw.nutriments?.alcohol_100g });
       if (!grade) { if (!(q.ok && q.letters.length === 1 && q.confidence === 'high')) continue; grade = q.letters[0]; pts = q.data?.score ?? null; how = 'c'; }
       const kind = kinds.kinds?.length ? kinds.kinds[0] : q.kinds?.[0] || Q.inferKinds(p).kinds[0];

@@ -10,14 +10,14 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href), Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href), S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href), P = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v103.mjs')).href), Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href), S = await import(pathToFileURL(path.join(here, '../prices/similar-v86.mjs')).href), P = await import(pathToFileURL(path.join(here, 'build-peers.mjs')).href);
 const W = await import(pathToFileURL(path.join(here, '../prices/swaps-v88.mjs')).href), SW = await import(pathToFileURL(path.join(here, 'build-swaps.mjs')).href);
 const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json')));
 export const fileFor = rev => path.join(here, `../assets/estimates-${rev}.json`);
 
 /** The page's verdict for one parsed product (p.family set): null when the page shows nothing, else { letters, likely, tier }. */
 export function verdict(p, alcohol, prep, raw = null, swaps = null) {
-  const a = D.assessGrade(p); if (a.grade || a.status === 'withheld') return null;
+  const a = D.assessGrade(p); if (a.grade || (a.status === 'withheld' && !(a.wrongTable && a.drinkLetters))) return null; // 103: same exception as the page (prices/reader-v85.js)
   const q = Q.quickGrade(p, { alcohol });
   if (q.ok) return { letters: q.letters, likely: q.likely || (q.letters.length === 1 ? q.letters[0] : ''), tier: 'q' };
   if (q.reason === 'exempt' || q.reason === 'excluded') return { letters: [], likely: '', tier: 'x' };

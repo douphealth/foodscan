@@ -9,7 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), dir = path.join(here, '../assets/greece-r20261030');
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v103.mjs')).href);
 const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const KIND = { general: 'g', beverage: 'b', water: 'w', cheese: 'c', fat: 'f' };
 const r = (v, d = 1) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 10 ** d) / 10 ** d : null);
@@ -20,7 +20,7 @@ export function build() {
   for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-')).sort()) {
     const shard = JSON.parse(fs.readFileSync(path.join(dir, f)));
     for (const raw of shard.products) {
-      const p = D.parseProduct({ status: 1, product: raw }, raw.code), grade = /^[A-E]$/.test(p.nutriScore || '') ? p.nutriScore : '', complete = Boolean(D.ns23Inputs(p));
+      const p = D.parseProduct({ status: 1, product: raw }, raw.code), fix = D.ns23DrinkCheck(p), sweet = fix ? null : D.ns23SweetenerCheck(p), grade = fix ? (fix.state === 'corrected' ? fix.calc.grade : '') : sweet ? sweet.calc.grade : /^[A-E]$/.test(p.nutriScore || '') ? p.nutriScore : '', complete = Boolean(D.ns23Inputs(p));
       if (!grade && !complete) continue;
       if (D.ns23Kinds(p).exempt || raw.nutriments?.alcohol_100g > 1.2) continue;
       const n = p.nutrition || {}, where = D.ns23Kinds(p), inf = where.kinds.length ? where.kinds[0] : Q.inferKinds(p).kinds[0];

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, read } from './helpers.mjs';
-const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v101.mjs')).href);
+const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v103.mjs')).href);
 const C = await import(pathToFileURL(path.join(ROOT, 'daily-v98-core.mjs')).href);
 
 const product = (raw, code = '3017620422003') => D.parseProduct({ status: 1, product: { code, product_name: 'x', quantity: '400 g', ...raw } }, code);

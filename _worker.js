@@ -405,7 +405,48 @@ const NS23_NAME = {
 // categories whose fruit/vegetable/legume share the source fixes at 100 whatever the ingredient estimate says
 const NS23_FVL_OVERRIDE = ['en:olive-oils', 'en:rapeseed-oils', 'en:colza-oils', 'en:walnut-oils'];
 const NS23_SWEETENER_E = /^e(?:950|951|952|954|955|957|959|960[a-d]?|961|962|969)$/;
-const NS23_SWEETENER_WORDS = /acesulfam|aspartam|cyclamat|saccharin|sucralos|thaumatin|neohesperidin|steviol|stevia|neotam|advantam|ασπαρταμ|ακεσουλφαμ|σουκραλοζ|στεβια|γλυκαντικ|sweetener|edulcorant|dolcificant|edulcorante|sussstoff|zoetstof/;
+// 103: the sweetener component counts the intense sweeteners the Nutri-Score 2023 rules list (E950-E962, E969), named or by number. Polyols (erythritol, xylitol,
+// sorbitol...) are not on that list. The bare word "sweetener" does not say which kind is meant, and "without sweeteners" or "sweetening apple concentrate" names none.
+const NS23_SWEETENER_WORDS = /acesulfam|aspartam|cyclamat|saccharin|sucralos|thaumatin|neohesperidin|steviol|stevia|neotam|advantam|ασπαρταμ|ακεσουλφαμ|σουκραλοζ|στεβια|στεβιολ|σακχαριν|κυκλαμικ|θαυματιν|νεοεσπεριδιν|(?<![a-zα-ω0-9])[eε] ?(?:950|951|952|954|955|957|959|960[a-d]?|961|962|969)(?![0-9])/;
+// 103: a named sweetener after a negation ("without aspartame", "χωρίς ασπαρτάμη", "aspartame-free") is not an ingredient
+const NS23_SWEETENER_NAMED = 'acesulfam|aspartam|cyclamat|saccharin|sucralos|thaumatin|neohesperidin|steviol|stevia|neotam|advantam|ασπαρταμ|ακεσουλφαμ|σουκραλοζ|στεβια|στεβιολ|σακχαριν|κυκλαμικ|θαυματιν|νεοεσπεριδιν';
+const NS23_SWEETENER_NEG = new RegExp(`(?<![a-zα-ω])(?:without|no|free of|free from|sans|ohne|senza|sin|sem|zonder|χωρισ|δεν περιεχει)(?: [a-zα-ω0-9]+){0,3}? (?:${NS23_SWEETENER_NAMED})[a-zα-ω]*(?:(?: (?:or|and|ou|et|oder|und|o|y|e|η|και) | ?, ?)(?:${NS23_SWEETENER_NAMED})[a-zα-ω]*)*|(?:${NS23_SWEETENER_NAMED})[a-zα-ω]*[ -]free(?![a-zα-ω])`, 'g');
+const NS23_SWEETENER_GENERIC = /sweetener|γλυκαντικ|edulcorant|dolcificant|sussstoff|sussungsmittel|zoetstof/;
+const NS23_POLYOLS = /erythrit|xylit|sorbit|maltit|isomalt|mannit|lactit|polyol|ερυθριτ|ξυλιτ|σορβιτ|μαλτιτ|ισομαλτ|μαννιτ|λακτιτ|πολυολ|(?<![a-zα-ω0-9])[eε] ?(?:420|421|953|965|966|967|968)(?![0-9])/;
+const NS23_SWEETENER_NOT = /(?:without|no|sans|ohne|senza|sin|sem|zonder|χωρισ)(?: (?:added|ajout[a-z]*|zusatz|προσθηκη|προσθετα|τεχνητα|artificial|artificiels?))?(?: [a-zα-ω]+)? (?:sweeteners?|γλυκαντικ[α-ω]*|edulcorants?|dolcificant[a-z]*|edulcorantes?|sussstoff[a-z]*|sussungsmittel[a-z]*|zoetstof[a-z]*)|γλυκαντικ[α-ω]* συμπυκνωμα[α-ω]*|sweetening (?:concentrate|juice)/g;
+
+/* ---- 103: a drink the source graded as a solid food ----
+ * Open Food Facts chooses the drinks table from its own English category tags. A record whose category is free text ("el:Αναψυκτικά", "el:Χυμός") or missing is
+ * scored with the table for solid foods, where a soda reaches B and a sweetened iced tea A. Under the Nutri-Score 2023 rules only water is A among drinks.
+ * A record counts as a drink here only when BOTH hold: its values are per 100 ml (declared, or read from a volume on the pack), and its name or one of its
+ * categories, in any language, names a drink, while nothing names a liquid food (sauce, soup, cream, condensed milk, vinegar, oil, syrup, ice cream, yogurt)
+ * or alcohol. Anything less clear is left to the source's own table. */
+const NS23_DRINK_TEXT = NS23_WORD('drinks?|beverages?|juices?|nectars?|sodas?|colas?|lemonades?|orangeades?|tonic|iced? teas?|teas?|kombuchas?|smoothies?|kefirs?|ayran|milks?|milkshakes?|shakes?|isotonic|latte|cappuccino|frappe|cold brew|boissons?|jus|limonades?|laits?|the glace|getrank|getranke|saft|safte|schorle|eistee|milch|bebidas?|zumos?|refrescos?|leche|batidos?|bevanda|bevande|succo|succhi|bibita|bibite|aranciata|sumos?|refrigerantes?|leite|dranken|drank|sap|melk|frisdrank|napoj|napoje|sok|soki|mleko|icecek|ayrani|sut|сок|сокове|напиток|напитка|молоко|мляко|лимонад|чай|кефир|айран|αναψυκτικ[α-ω]*|χυμ(?:οσ|ου|οι|ων|ουσ|ο)|νεκταρ|φρουτοποτ[α-ω]*|λεμοναδ[α-ω]*|πορτοκαλαδ[α-ω]*|βυσσιναδ[α-ω]*|γκαζοζ[α-ω]*|ροφημα[α-ω]*|γαλα|γαλακτοσ|τσαι|κεφιρ|αριανι|ξινογαλ[α-ω]*|ποτο|ποτα');
+const NS23_LIQUID_FOOD = NS23_WORD('sauces?|salsa|ketchup|mayonnaise|mayo|mustard|dressings?|vinaigrette|marinade|soups?|broth|bouillon|stock|creams?|creme|cremes|crema|whipping|sahne|schlagcreme|schlagsahne|panna|nata|condensed|evaporated|concentre|concentrated|concentrate|vinegars?|vinaigre|essig|aceto|balsamic[oa]?|oils?|huile|olio|aceite|syrups?|sirop|sirup|sciroppo|cordial|squash|ice cream|glace|gelato|sorbet|yogh?urts?|yaourts?|desserts?|puddings?|custard|purees?|passata|jam|eggs?|powder|capsules?|tea bags?|instant|ground|beans|κρεμ[α-ω]*|συμπυκνωμεν[α-ω]*|εβαπορε|ξ[ιυ]δ[ιη][α-ω]*|βαλσαμικ[α-ω]*|ελαιολαδ[α-ω]*|λαδι|ελαιο|σιροπ[α-ω]*|παγωτ[α-ω]*|γιαουρτ[α-ω]*|επιδορπι[α-ω]*|σαλτσ[α-ω]*|σουπ[α-ω]*|ζωμ[α-ω]*|μαγιονεζ[α-ω]*|μουσταρδ[α-ω]*|κετσαπ|μαρμελαδ[α-ω]*|αυγ[α-ω]*|σκονη|καψουλ[α-ω]*|φακελακια|στιγμιαι[α-ω]*|φιλτρου|αλεσμεν[α-ω]*|μακαρον[α-ω]*');
+const NS23_ALCOHOL_TEXT = NS23_WORD('wines?|beers?|biere|bier|birra|cerveza|vodka|whisky|whiskey|gin|rum|tequila|brandy|cognac|liqueurs?|spirits?|champagne|prosecco|cider|radler|ouzo|tsipouro|raki|vin|wein|vino|μπυρ[α-ω]*|κρασ[α-ω]*|οιν[α-ω]*|βοτκα|ουισκι|λικερ|ουζο|τσιπουρο|ρακι|αλκοολ[α-ω]*');
+const NS23_JUICE = 'juices?|jus|saft|zumos?|succo|sumos?|sap|sok|сок|χυμ(?:οσ|ου|οι|ο)';
+const NS23_PURE_JUICE = new RegExp(`(?<![\\p{L}\\d])100 ?%[^,;()]{0,24}(?<![\\p{L}])(?:${NS23_JUICE})(?![\\p{L}])|(?<![\\p{L}])(?:${NS23_JUICE})(?![\\p{L}])[^,;()]{0,24}100 ?%|(?<![\\p{L}])φυσικ(?:οσ|ου|οι) χυμ(?:οσ|ου|οι)(?![\\p{L}])`, 'u');
+const NS23_FRUIT_DRINK = NS23_WORD(NS23_JUICE + '|χυμων|χυμουσ|nectars?|νεκταρ|smoothies?|φρουτοποτ[α-ω]*');
+const NS23_NOT_PURE =NS23_WORD('nectars?|νεκταρ|drinks?|φρουτοποτ[α-ω]*|αναψυκτικ[α-ω]*|boissons?|getrank|bebidas?|bevanda|sodas?');
+const ns23Text = p => ns23Fold(`${p?.name || ''} ${(p?.categories || []).join(' ')}`).replace(/[-_:]+/g, ' ');
+/** 'beverage' | 'water' when the record is clearly a drink by its own unit and words, else null. */
+function ns23DrinkEvidence(p) {
+  if (p?.basis !== 'ml' || p.basisSource === 'assumed') return null;
+  const text = ns23Text(p), n = p.nutrition || {};
+  if (NS23_LIQUID_FOOD.test(text) || NS23_ALCOHOL_TEXT.test(text) || (ns23Known(n.alcohol) && n.alcohol > 1.2)) return null;
+  // a pack sold by weight is not taken for a drink, whatever the record's unit says
+  const q = ns23Fold(p.quantity || '');
+  if (/\d\s*(?:g|gr|kg|γρ|γραμμαρ[α-ω]*)(?![\p{L}])/u.test(q) && !/\d\s*(?:ml|cl|dl|l|lt|lit|litres?|liters?|λιτρ[α-ω]*|fl)(?![\p{L}])/u.test(q)) return null;
+  if (NS23_DRINK_TEXT.test(text)) return 'beverage';
+  if (!NS23_NAME.water.test(text)) return null;
+  return (n.sugars ?? 0) === 0 && (n.kcal ?? (ns23Known(n.kj) ? n.kj / 4.184 : 0)) < 5 && !ns23Sweeteners(p) ? 'water' : 'beverage';
+}
+/** True when the name or a category states a pure fruit juice ("100 % juice", "φυσικός χυμός"): its fruit share is then 100 by definition of the name. */
+function ns23PureJuice(p) {
+  if (p?.basis !== 'ml' || p.basisSource === 'assumed') return false;
+  const text = ns23Text(p);
+  return NS23_PURE_JUICE.test(text) && !NS23_NOT_PURE.test(text) && !NS23_LIQUID_FOOD.test(text);
+}
 
 /** Tables that remain possible for the record, how that was settled, and the red-meat state ('certain' | 'maybe' | false).
  * `exempt` is true when the method does not apply (alcohol, baby food, spices, salt...). */
@@ -421,6 +462,7 @@ function ns23Kinds(p) {
     const cheese = ns23Has(cats, 'en:cheeses') && !ns23Has(cats, 'fr:fromages-blancs');
     const fat = !ns23Has(cats, 'en:chestnuts') && (ns23Has(cats, 'en:fats', 'en:creams', 'en:seeds') || cats.some(c => NS23_NUT_TAGS.test(c)));
     const kind = beverage ? (water ? 'water' : 'beverage') : cheese ? 'cheese' : fat ? 'fat' : 'general';
+    if (kind === 'general') { const drink = ns23DrinkEvidence(p); if (drink) return { kinds: [drink], via: 'evidence', red: false, exempt: false }; }
     return { kinds: [kind], via: 'category', red, exempt: false };
   }
   const group = ns23Fold(p?.pnns || '');
@@ -430,16 +472,29 @@ function ns23Kinds(p) {
     if (kinds.includes('water') && !(NS23_NAME.water.test(name) && !NS23_NAME.drink.test(name))) kinds = kinds.filter(k => k !== 'water');
     return { kinds, via: 'pnns', red, exempt: false };
   }
+  const drink = ns23DrinkEvidence(p);
+  if (drink) return { kinds: [drink], via: 'evidence', red: false, exempt: false };
   return { kinds: [], via: 'none', exempt: false, unknown: true };
 }
 
 /** Number of non-nutritive sweeteners the record shows; `null` when the record has neither ingredients nor additives to tell. */
+const ns23SweetenerCategory = p => (Array.isArray(p?.categories) ? p.categories : []).some(c => c === 'en:artificially-sweetened-beverages' || /^en:[a-z0-9-]+-with-sweeteners$/.test(c));
+/** Where the sweeteners are on the record: 'named' (additive tag or ingredient list) | 'category' | null. */
+function ns23SweetenerEvidence(p) {
+  const additives = Array.isArray(p?.additives) ? p.additives : [];
+  if (additives.some(a => NS23_SWEETENER_E.test(String(a).toLowerCase())) || NS23_SWEETENER_WORDS.test(ns23Fold(p?.ingredients || '').replace(NS23_SWEETENER_NEG, ' '))) return 'named';
+  return ns23SweetenerCategory(p) ? 'category' : null;
+}
 function ns23Sweeteners(p) {
   const additives = Array.isArray(p?.additives) ? p.additives : [];
   const hits = new Set(additives.filter(a => NS23_SWEETENER_E.test(String(a).toLowerCase())));
   const text = ns23Fold(p?.ingredients || '');
-  if (NS23_SWEETENER_WORDS.test(text)) hits.add('named');
+  if (NS23_SWEETENER_WORDS.test(text.replace(NS23_SWEETENER_NEG, ' '))) hits.add('named');
   if (hits.size) return hits.size;
+  // the source's own category says so, whatever the ingredient list (missing, or misread by a scanner) leaves open
+  if (ns23SweetenerCategory(p)) return 1;
+  // "sweetener" with none of the counted ones named: polyols are not counted; with nothing named it is not known which kind it is
+  if (NS23_SWEETENER_GENERIC.test(text.replace(NS23_SWEETENER_NOT, ' '))) return NS23_POLYOLS.test(text) ? 0 : null;
   return text.length > 3 || additives.length ? 0 : null;
 }
 
@@ -519,6 +574,64 @@ function ns23Verify(p) {
     }
   }
   return { status: 'consistent', kinds: fits, via: where.via, tried, reason: 'points-differ' };
+}
+
+/**
+ * 103: did the source grade a drink with the table for solid foods? Returns null when there is nothing to say (not clearly a drink, the source used the drinks
+ * table, or its letter is one the drinks table can give for these values). Otherwise:
+ *   corrected  - the drinks table gives exactly one letter for the reported values, and it is not the published one: { calc, input, tier }
+ *   band       - the drinks table gives several letters (fruit share or sweeteners not reported), none of them the published one: { letters, missing }
+ *   impossible - the published letter is A, which only water can have, and the values needed for the drinks table are missing
+ */
+/** Inputs for the drinks table. A name that states a pure juice ("100 % juice", "φυσικός χυμός") fixes the fruit share at 100: the source's own share is an
+ * estimate from the ingredient list, and it reads 0 whenever that list is missing or not in a language its parser knows. */
+function ns23DrinkInputs(p) {
+  const input = ns23Inputs(p);
+  if (!input) return input;
+  if (ns23PureJuice(p)) return { ...input, fvl: 100, fvl_known: true, fvl_from_name: true };
+  // a share of 0 on a juice, nectar or smoothie is that estimate failing, not a fact, unless an ingredient list is there and names no plant
+  if (input.fvl_known && input.fvl === 0 && NS23_FRUIT_DRINK.test(ns23Text(p)) && !ns23NoPlantEvidence(p)) return { ...input, fvl_known: false };
+  return input;
+}
+function ns23DrinkCheck(p) {
+  const letter = typeof p?.nutriScore === 'string' ? p.nutriScore : null;
+  if (!/^[A-E]$/.test(letter || '') || p.nutriScoreExcluded) return null;
+  const d = p.nutriScoreData;
+  if (d && (d.beverage || d.water)) return null; // the source already used the drinks table
+  const where = ns23Kinds(p);
+  if (where.exempt || where.via !== 'evidence') return null;
+  if (where.kinds[0] === 'water') return null; // plain water is A under either table
+  const input = ns23DrinkInputs(p);
+  if (!input) return letter === 'A' ? { state: 'impossible' } : null;
+  // a name that states a pure juice also settles the sweeteners: the law allows none in a fruit juice, so a missing ingredient list leaves nothing open
+  const sweet = ns23Sweeteners(p) ?? (input.fvl_from_name ? 0 : null), calc = ns23Score({ ...input, sweeteners: sweet ? 1 : 0, redMeat: false }, 'beverage');
+  const tier = ns23Tier(p, input, 'beverage', false, sweet, calc);
+  if (tier.letters.includes(letter)) return null;
+  if (tier.letters.length === 1) return { state: 'corrected', calc, input, tier: tier.tier, juice: Boolean(input.fvl_from_name) };
+  return { state: 'band', letters: tier.letters, missing: tier.missing, calc, input };
+}
+
+/**
+ * 103: did the source leave out the sweeteners its own record names? Open Food Facts finds sweeteners with its ingredient parser, which reads few Greek lists:
+ * a zero-sugar cola then keeps B, where the Nutri-Score 2023 rules add 4 points for any intense sweetener and give C. Returns null unless ALL hold: the record
+ * is a drink by the source's own category, its values are per 100 ml as declared, the ingredient list names an intense sweetener (or the record tags one),
+ * the published points equal the drinks-table points WITHOUT the sweetener component (so that component is the only difference), and the letter changes.
+ */
+function ns23SweetenerCheck(p) {
+  const letter = typeof p?.nutriScore === 'string' ? p.nutriScore : null, points = p?.nutriScoreValue;
+  if (!/^[A-E]$/.test(letter || '') || p.nutriScoreExcluded || !Number.isFinite(points) || p.basis !== 'ml' || p.basisSource === 'assumed') return null;
+  const d = p.nutriScoreData;
+  if (d && (d.water || (d.negative || []).some(x => x.id === 'non_nutritive_sweeteners' && x.points > 0))) return null; // the source counted them
+  const where = ns23Kinds(p);
+  if (where.exempt || where.via === 'evidence' || where.kinds.length !== 1 || where.kinds[0] !== 'beverage') return null;
+  if (!(ns23Sweeteners(p) > 0)) return null;
+  const input = ns23Inputs(p);
+  if (!input) return null;
+  const without = ns23Score({ ...input, sweeteners: 0, redMeat: false }, 'beverage');
+  if (without.score !== points || without.grade !== letter) return null;
+  const calc = ns23Score({ ...input, sweeteners: 1, redMeat: false }, 'beverage');
+  if (calc.grade === letter) return null;
+  return { calc, input, without, evidence: ns23SweetenerEvidence(p) };
 }
 
 /** The point-by-point breakdown (the shape the report's "why this grade" reads) for a reproduced grade. */
@@ -634,6 +747,12 @@ function assessGrade(p, { estimate = true } = {}) {
     if (p.catalogueSnapshot) return none("missing", `${said} ${t("This is a dated catalogue copy: refresh it from the live database to see whether the label supports a calculated grade.")}`, { quality });
     return calculated(p, quality, said);
   }
+  // 103: a drink the source graded with the table for solid foods (a soda at B, a sweetened iced tea at A) is recalculated with the drinks table
+  const drinkFix = estimate ? ns23DrinkCheck(p) : null;
+  if (drinkFix) return drinkRegraded(p, quality, drinkFix);
+  // 103: a drink whose published points leave out the sweeteners its own ingredient list names gets the 4 points the rules add for them
+  const sweetFix = estimate ? ns23SweetenerCheck(p) : null;
+  if (sweetFix) return sweetenerRegraded(p, quality, sweetFix);
   if (!p.nutriScoreMethod && !p.nutriScoreData && estimate && !quality.unnamed) {
     // 62.0: every Nutri-Score table (drinks, cheese, fats, nuts and seeds as well as ordinary foods) is recomputed from the nutrition we
     // hold and compared with the POINTS the source published. Equal points reproduce the grade; a letter no table can give for those
@@ -674,6 +793,32 @@ function assessGrade(p, { estimate = true } = {}) {
   return { status: p.partial ? "preview" : "reported", missingInputs: coreMissing.length ? coreMissing : void 0, unverified: coreMissing.length > 0 || void 0, grade: p.nutriScore, score: Number.isFinite(p.nutriScoreValue) ? p.nutriScoreValue : null, confidence, caveats, reasons: [], anatomy, method: p.nutriScoreMethod || (anatomy ? "2023" : null), quality };
 }
 const snapshotExpired = p => Number.isFinite(p?.catalogueSnapshot?.exportedAt) && Date.now() - p.catalogueSnapshot.exportedAt > 90 * 864e5;
+function sweetenerRegraded(p, quality, d) {
+  const source = p.nutriScore, extra = { quality, sourceGrade: source, sweetenersAdded: true };
+  // a dated catalogue copy blends in estimated nutrients, so it never carries a grade FoodScan calculated itself: the live record does
+  if (p.catalogueSnapshot || p.nutritionEstimated) return { status: "withheld", grade: null, score: null, confidence: null, caveats: [], reasons: [t("Open Food Facts published {source} for this drink without counting the sweeteners its own record shows. Open the product to see the grade with them counted.", { source })], anatomy: null, method: null, ...extra };
+  const data = ns23Data(d.calc, d.input, "beverage");
+  const anatomy = explainGrade({ ...p, nutriScore: d.calc.grade, nutriScoreValue: d.calc.score, nutriScoreData: data });
+  if (anatomy) { anatomy.estimated = true; anatomy.range = [d.calc.score, d.calc.score]; anatomy.flags = { beverage: true, water: false, fatOil: false }; }
+  return { status: "estimated", grade: d.calc.grade, score: d.calc.score, scoreRange: [d.calc.score, d.calc.score], confidence: "high", caveats: [t("Open Food Facts published {source} for this drink without the 4 points the Nutri-Score 2023 rules add for sweeteners. Its own record shows it contains them ({evidence}), so the drinks table gives {grade}. This is FoodScan's calculation, not a grade printed on the pack.", { source, grade: d.calc.grade, evidence: t(d.evidence === "category" ? "filed under artificially sweetened drinks" : "named in the ingredient list") })], reasons: [], anatomy, method: "2023-calculated",
+    estimate: { ok: true, grade: d.calc.grade, score: d.calc.score, range: [d.calc.score, d.calc.score], data, assumptions: [] }, ...extra };
+}
+function drinkRegraded(p, quality, d) {
+  const source = p.nutriScore, extra = { quality, sourceGrade: source, wrongTable: true, drinkLetters: d.state === 'band' ? d.letters : d.state === 'corrected' ? [d.calc.grade] : null };
+  const held = why => ({ status: "withheld", grade: null, score: null, confidence: null, caveats: [], reasons: [why], anatomy: null, method: null, ...extra });
+  if (d.state === "impossible") return held(t("Open Food Facts published A for this drink, calculated with the table for solid foods. Under the Nutri-Score 2023 rules only water can be A among drinks, and the record lacks the values to calculate the drink's own grade. Check the package."));
+  if (d.state === "band") return held(t("Open Food Facts published {source} for this drink, calculated with the table for solid foods. With the drinks table the same values give {letters}, depending on {list}, which the record does not report.", { source, letters: d.letters.join(", "), list: d.missing.map(x => t(x)).join(", ") }));
+  // a dated catalogue copy blends in estimated nutrients, so it never carries a grade FoodScan calculated itself: the live record does
+  if (p.catalogueSnapshot || p.nutritionEstimated) return held(t("Open Food Facts published {source} for this drink, calculated with the table for solid foods. Open the product to see the grade the drinks table gives for its current label values.", { source }));
+  const data = ns23Data(d.calc, d.input, "beverage");
+  const anatomy = explainGrade({ ...p, nutriScore: d.calc.grade, nutriScoreValue: d.calc.score, nutriScoreData: data });
+  if (anatomy) { anatomy.estimated = true; anatomy.range = [d.calc.score, d.calc.score]; anatomy.flags = { beverage: true, water: false, fatOil: false }; }
+  const caveats = [t("Open Food Facts published {source} for this drink, calculated with the table for solid foods. The Nutri-Score 2023 rules score drinks with their own table, where the same label values give {grade}. This is FoodScan's calculation, not a grade printed on the pack.", { source, grade: d.calc.grade })];
+  if (d.juice) caveats.push(t("The fruit share (100 %) is read from the product name, which states a pure juice. A pure juice contains no sweeteners."));
+  if (d.tier !== "complete") caveats.push(t("Values the record does not report could change the points, but not the letter."));
+  return { status: "estimated", grade: d.calc.grade, score: d.calc.score, scoreRange: [d.calc.score, d.calc.score], confidence: d.tier === "complete" ? "high" : "medium", caveats, reasons: [], anatomy, method: "2023-calculated",
+    estimate: { ok: true, grade: d.calc.grade, score: d.calc.score, range: [d.calc.score, d.calc.score], data, assumptions: [] }, ...extra };
+}
 function reproducedByPoints(p, quality, proof) {
   const data = ns23Data(proof.calc, proof.input, proof.kind);
   const anatomy = explainGrade({ ...p, nutriScore: proof.calc.grade, nutriScoreValue: proof.calc.score, nutriScoreData: data });
@@ -1716,7 +1861,7 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "102.1.0";
+var VERSION = "103.0.0";
 var BUILD = "9900-daily-portions";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";
@@ -2575,10 +2720,21 @@ function fsPricePack(quantity, amount, unit) {
   const multi = q.match(/(\d{1,3})\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|cl|lt|l)\b/i);
   let out = multi ? conv(multi[2], multi[3]) : null;
   if (out) out = {amount:out.amount*Number(multi[1]), unit:out.unit};
+  // 103: the count written after the size ("330 ml x 6", "10gr x 200τμχ", "30ml x2") was read as one piece
+  if (!out) { const rev = q.match(/(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|cl|lt|l)\s*[x×*]\s*(\d{1,3})(?![\d.,]|\s*(?:cm|mm|kg|gr|g|ml|cl|lt|l)\b)/i); const one = rev ? conv(rev[1], rev[2]) : null; if (one) out = {amount:one.amount*Number(rev[3]), unit:one.unit}; }
   if (!out) { const one = q.match(/(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|cl|lt|l)\b/i); if (one) out = conv(one[1], one[2]); }
   if (!out && amount != null) out = conv(amount, unit);
   if (!out || out.amount < 0.005 || out.amount > 50) return null;
   return {amount:Math.round(out.amount*10000)/10000, unit:out.unit};
+}
+/** 103: the daily refresh wrote the observatory's archive link without its date (".../data//posokanei-.json", a dead link on every observatory
+ *  price). The link is rebuilt from the snapshot date the seed carries; a seed with neither falls back to the source's own page. */
+function fsSeedArchive(id, source) {
+  const a = String(source?.archive || '');
+  if (id !== 'posokanei') return a;
+  if (/\/data\/\d{4}\/posokanei-\d{4}-\d{2}-\d{2}\.json$/.test(a)) return a;
+  const d = String(source?.snapshot || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? `https://raw.githubusercontent.com/spyrosavl/posokanei/main/data/${d.slice(0, 4)}/posokanei-${d}.json` : '';
 }
 function fsPriceUnit(offer, pack) {
   if (offer.basis === 'kg' || offer.basis === 'l') return {unitPrice:offer.price, unitBasis:offer.basis};
@@ -3185,6 +3341,10 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
         fetchedAt:fsPriceStamp(p.f || seed.source.fetched_at), origin:'seed',
         // 79: the pack the shop lists for its item (checked against the label in the payload), how many barcodes the shop puts on
         // that item, its stock flag and any offer condition. Weight/volume unit price as the shop prints it, when it has one.
+        // 103: a title that carries dimensions (bin bags "34L 52x56cm", a basin "35,5cm/7lt") states a capacity, not a content: no unit price from it
+        // The same for an item that IS a container (bin bags "25l", paper cups "250ml 50τμχ", a bin, a flowerpot saucer): the litres are what it holds.
+        shopSizePlain:!/\d\s*(?:cm|mm|εκ)(?![\p{L}])|\d\s*[x×]\s*\d+\s*(?:cm|mm)/iu.test(fsPriceText(p.q || p.n || '', 60))
+          && !/απορριμ|(?<![\p{L}])(?:καδοσ|καδοι|γλαστρ[α-ω]*|ποτηρ[α-ω]*|φλιτζαν[α-ω]*|κουβασ|κουβαδ[α-ω]*|ταπερ|θερμοσ|παγουρ[α-ω]*|κανατ[α-ω]*|bin bags?|trash bags?|cups?)(?![\p{L}])/u.test(String(p.n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/ς/g, 'σ')),
         shopPack:fsPricePack(fsPriceText(p.q || p.n || '', 60)), shopBarcodes:Number(p.nb) > 1 ? Math.min(99, Number(p.nb)) : 1,
         ...(p.a === 'out_of_stock' ? {available:false, rankingEligible:false} : {}),
         // A multi-buy / gift offer on the item: the price shown is the plain single-item price, so it still ranks; the offer is noted.
@@ -3215,7 +3375,7 @@ async function fsGrSeedOffers(request, env, code, now=Date.now()) {
     if (p && Array.isArray(p.p)) for (const [chainId, price, date, sale] of p.p) {
       // posokanei flags a temporary discount; the e-katanalotis flag means a permanent reduction, i.e. the regular price.
       const o = fsGrOffer(def, code, chainId, Number(price), fsPriceISO(date), id === 'posokanei' && sale === 1, now);
-      if (o) items.push({...o, match, evidenceURL:fsPriceSourceURL(seed.source.archive || seed.source.feed || '') || def.url, fetchedAt:fsPriceStamp(seed.source.fetched_at), origin:'seed'});
+      if (o) items.push({...o, match, evidenceURL:fsPriceSourceURL(fsSeedArchive(id, seed.source) || seed.source.feed || '') || def.url, fetchedAt:fsPriceStamp(seed.source.fetched_at), origin:'seed'});
     }
     out.items.push(...items);
     out.providers[id] = {status:items.length?'ok_with_data':'ok_empty', snapshot:seed.source.snapshot, count:items.length, linked:id === 'posokanei' ? Boolean(p) : undefined, license:def.license};
@@ -3256,7 +3416,9 @@ function fsPriceFlagSuspects(items) {
   return items.map(o => {
     // 102.1: every source is checked, not only community prices: a web shop listing another pack under this barcode (Lidl's e-shop had a
     // 194 g coffee at €14.85 while the official observatory recorded €4.76 at Lidl and four other chains) was shown with a €74.25/kg unit price.
-    if (o.otherCurrency || o.packMismatch || o.basis !== 'item' || o.freshness === 'historical') return o;
+    // 103: an old price is checked against what the other stores record today as well (a €0.40 entry for a 6 x 1.5 l pack that sells at €2.40-3.48
+    // was listed as an older price at €0.04 per litre); prices do not halve or grow 2.5-fold in a few months.
+    if (o.otherCurrency || o.packMismatch || o.basis !== 'item') return o;
     const peers = live.filter(x => x.storeId !== o.storeId && x.currency === o.currency).map(x => x.price);
     if (peers.length < 3) return o;
     const med = fsPriceMedian(peers);
@@ -3299,10 +3461,14 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
   if (shopPacks.length && official.pack?.source === 'posokanei') shopPacks.push({src:'pk', pack:{amount:official.pack.amount, unit:official.pack.unit}});
   const agreed = shopPacks.length >= 2 && shopPacks.every(x => !differs(shopPacks[0].pack, x.pack)) ? shopPacks[0].pack : null;
   const resolvedBy = agreed && (!labelPack || differs(labelPack, agreed)) ? shopPacks.map(x => x.src) : null;
-  const pack = resolvedBy ? {amount:agreed.amount, unit:agreed.unit} : labelPack;
   // The observatory links a barcode to its own product by name; if its pack size disagrees with the label, the link is
   // suspect: its prices are shown with a warning and never rank.
   const obsPack = official.pack || null;
+  // 103: a label size under 50 g/ml that no shop and no observatory record confirms, and that would put EVERY recorded price above 150 per kg or
+  // litre, is a portion typed as the pack (a box of 12 stock cubes recorded as "10 g" gave €269/kg). No unit price is derived from it.
+  const homeItems = all.filter(o => o.market === home && o.basis === 'item' && o.price > 0);
+  const labelUnverified = Boolean(labelPack && !resolvedBy && !obsPack && labelPack.amount < 0.05 && homeItems.length && homeItems.every(o => o.price / labelPack.amount > 150));
+  const pack = resolvedBy ? {amount:agreed.amount, unit:agreed.unit} : labelUnverified ? null : labelPack;
   const packMismatch = Boolean(pack && obsPack && (pack.unit !== obsPack.unit || Math.abs(pack.amount - obsPack.amount) / pack.amount > 0.05));
   // 78: the observatory row is for a different pack than this barcode's label: keep it visible as evidence, never rank it,
   // and give its unit price for the pack actually observed (so it is never compared as if it were this product).
@@ -3326,7 +3492,11 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
     return [...groups.values()].flatMap(g => fsPriceFlagSuspects(g)).filter(o => !o.suspect); })();
   const elsewhere = abroad.filter(o => o.freshness !== 'historical').sort((a,b)=>b.date.localeCompare(a.date)).slice(0, 12)
     .map(o => ({...o, rankingEligible:false}));
-  const strip = o => { const {productName, productQuantity, productAmount, productAmountUnit, market, shopPack, ...rest} = o; return {...rest, tier:tierOf(o), sourceLicense:fsPriceLicenseOf(o), ...(o.packMismatch && o.observedPack ? fsPriceUnit(o, o.observedPack) : fsPriceUnit(o, pack))}; };
+  // 103: when the record has no pack size at all, a shop's price still gets a unit price from the size in that shop's own listing of this barcode
+  // (one barcode on the item). It describes that shop's item only: `shopSize` says so, and nothing is assumed for the other stores.
+  // The result must be a plausible food price (0.08 to 150 per kg or litre): outside it the "size" was a count, a capacity or a portion.
+  const ownSize = o => { if (pack || o.packMismatch || !o.shopPack || o.shopBarcodes !== 1 || o.shopSizePlain === false || o.basis !== 'item') return null; const u = o.price / o.shopPack.amount; return u >= 0.08 && u <= 150 ? o.shopPack : null; };
+  const strip = o => { const {productName, productQuantity, productAmount, productAmountUnit, market, shopPack, shopSizePlain, ...rest} = o, own = ownSize(o); return {...rest, tier:tierOf(o), sourceLicense:fsPriceLicenseOf(o), ...(own ? {shopSize:{amount:own.amount, unit:own.unit}} : {}), ...(o.packMismatch && o.observedPack ? fsPriceUnit(o, o.observedPack) : fsPriceUnit(o, pack || own))}; };
   const offers = greek.slice(0, 60).map(strip), others = elsewhere.map(strip);
   const eligible = offers.filter(o => o.rankingEligible);
   const best = eligible.slice().sort((a,b)=>a.price-b.price || b.date.localeCompare(a.date))[0] || null;
@@ -3370,7 +3540,7 @@ function fsPriceBuildPayload({code, scope, meta, open, licensed, official={items
     product: meta ? {name:meta.name, brand:meta.brand, quantity:meta.quantity, nutriScore:meta.nutriScore, image:meta.image, source:meta.source} :
       (sample.productName ? {name:sample.productName, brand:'', quantity:sample.productQuantity||'', nutriScore:null, image:'', source:'open_food_facts_via_open_prices'} : null),
     productName: meta ? [meta.name, meta.brand && !meta.name.toLowerCase().includes(meta.brand.toLowerCase()) ? meta.brand : '', meta.quantity].filter(Boolean).join(' · ') : (sample.productName || official.estimateName || ''),
-    pack, packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
+    pack, ...(labelUnverified ? {packWithheld:{label:labelPack, reason:'label_size_unverified'}} : {}), packCheck: obsPack || resolvedBy ? {label:labelPack, ...(obsPack ? {observatory:{amount:obsPack.amount, unit:obsPack.unit}, consistent:!packMismatch} : {}), ...(resolvedBy ? {resolvedBy, shops:{amount:agreed.amount, unit:agreed.unit}} : {})} : null,
     offers, elsewhere:others, estimate, related, candidates, confirmed:official.confirmed || null, community:official.community || null, data:official.estimateMeta || null, providers,
     providerSummary:{active:active.length, unavailable:down, disabled:Object.values(providers).length-active.length},
     summary:{bestOfferId:best?.id||null, lowestCurrentPrice:best?.price??null, currentOffers:eligible.length,
@@ -5696,7 +5866,7 @@ async function fscPublicRoute(request,env,ctx){
 }
 
 // 101: internals the unit tests call directly (tests/v101.test.mjs). Pages only uses the default export.
-const fs101Testing = {fsRemoteJSON, fsRemoteManifest, fsRemoteState, fsPriceNormalizeLicensed, fsPriceFreshness, fsConfirmMin, FS_PRICE_SOURCE_REGISTRY,
+const fs101Testing = {fsRemoteJSON, fsRemoteManifest, fsRemoteState, fsPriceNormalizeLicensed, fsPriceFreshness, fsConfirmMin, FS_PRICE_SOURCE_REGISTRY, fsPricePack, fsSeedArchive, fsPriceFlagSuspects,
   resetRemote(){ fsRemoteManifestEntry = null; Object.assign(fsRemoteState, {status:'not_checked', built:null, files:0, mismatches:0, checkedAt:null, reason:null}); }};
 // handed over only when a test asks for it (no extra module export, so Pages sees exactly one: the default handler)
 if (globalThis.__FS101_TEST__ === true) globalThis.__FS101_TEST__ = fs101Testing;

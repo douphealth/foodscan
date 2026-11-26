@@ -5,14 +5,14 @@
  * category tags (rare tags count more), the same PNNS group, a similar name (Greek and Greeklish spellings count as the same), the same catalogue family, and always
  * the same Nutri-Score table (a drink is never offered for a food). Measured on the catalogue: tools/swaps-validate.mjs, qa/swaps.test.mjs. Pure functions, no DOM. */
 import { tokens } from './similar-v86.mjs';
-import { ns23Fold } from '../assets/domain-v101.mjs';
+import { ns23Fold } from '../assets/domain-v103.mjs';
 
 const KIND = { g: 'general', b: 'beverage', w: 'water', c: 'cheese', f: 'fat' };
 export const RANK = { A: 0, B: 1, C: 2, D: 3, E: 4 };
 /** weights of the signals; a signal the TARGET lacks is left out and the rest are rescaled, so a record with no category is judged on what it has */
 const W = { cats: 0.5, pnns: 0.15, name: 0.25, family: 0.1 };
 /** Printed on the card: floors of tools/swaps-validate.mjs (qa/swaps.test.mjs fails if a figure exceeds the measurement). */
-export const SWAP_RELIABILITY = { aisle: 89, shelf: 75, aisleInferred: 70, shelfInferred: 56, sample: 3037 };
+export const SWAP_RELIABILITY = { aisle: 89, shelf: 75, aisleInferred: 69, shelfInferred: 55, sample: 3037 };
 export const PARAMS = { minSim: 0.42, minCats: 0.34, limit: 6, gain: 0.07, requireCats: true };
 
 export function prepare(json) {

@@ -24,13 +24,13 @@
   },
   {
    "file": "src/domain/nutriscore2023.js",
-   "lines": 219,
-   "bytes": 20393
+   "lines": 332,
+   "bytes": 33480
   },
   {
    "file": "src/domain/grade.js",
-   "lines": 215,
-   "bytes": 20720
+   "lines": 247,
+   "bytes": 25702
   },
   {
    "file": "src/domain/allergens.js",
@@ -84,8 +84,8 @@
   },
   {
    "file": "src/worker/prices.js",
-   "lines": 1649,
-   "bytes": 159203
+   "lines": 1674,
+   "bytes": 162732
   },
   {
    "file": "src/worker/webprices.js",
@@ -100,7 +100,7 @@
   {
    "file": "src/worker/catalog-extension.js",
    "lines": 400,
-   "bytes": 41383
+   "bytes": 41432
   },
   {
    "file": "src/worker/og-render.js",
@@ -118,5 +118,5 @@
    "bytes": 12086
   }
  ],
- "sha256": "c4488b064d309cff4fce5c62278dcd7eb02aeaaaacc3afa8c2dbd8a683777c69"
+ "sha256": "5bd628784462a7a42f7b0a05771db36b43dcce338b42a602418bbe1acbe07e4a"
 }
