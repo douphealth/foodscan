@@ -136,6 +136,9 @@ function per100(n, suffix) {
   const out = Object.fromEntries(NUTRIENTS.map(([key, , , field]) => [key, nutrientNumber(n[`${field}_${suffix}`])]));
   const kj = nutrientNumber(n[`energy-kj_${suffix}`]) ?? nutrientNumber(n[`energy_${suffix}`]);
   let converted = false, reconciled = false;
+  // 104: a kcal and a kJ value that differ by no more than 17 kJ (4 kcal, the level the EU rules let a label call energy-free) are label rounding, not a
+  // contradiction: "1 kcal / 1.3 kJ" on a zero-sugar cola made the database flag the record, and the app then held back its published grade.
+  const energyNoise = out.kcal !== null && kj !== null && Math.abs(out.kcal * 4.184 - kj) <= 17;
   if (out.kcal === null && kj !== null) {
     out.kcal = kj / 4.184;
     converted = true;
@@ -153,7 +156,7 @@ function per100(n, suffix) {
   const derived = out.sodium === null && out.salt !== null;
   out.sodium = out.sodium !== null ? out.sodium * 1e3 : derived ? out.salt * 400 : null;
   if (out.salt === null && out.sodium !== null && !derived) out.salt = out.sodium / 400;
-  return { values: out, converted, reconciled, sodiumDerived: derived };
+  return { values: out, converted, reconciled, energyNoise, sodiumDerived: derived };
 }
 function parseProduct(payload, requestedCode, now = Date.now()) {
   if (!payload || typeof payload !== "object" || payload.status === 0 || payload.status === "failure" || payload.result?.id === "product_not_found") return null;
@@ -212,7 +215,7 @@ function parseProduct(payload, requestedCode, now = Date.now()) {
     additivesCount: nutrientNumber(p.additives_n),
     additives: tags(p.additives_tags, 40).map((t2) => t2.replace(/^[a-z]{2}:/, "")),
     addedSugars: nutrientNumber(n["added-sugars_100g"]),
-    qualityWarnings: tags(p.data_quality_errors_tags).filter((t2) => !/^foodscan:/i.test(t2) && !(total.reconciled && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)|energy-value-in-kcal-does-not-match-value-computed/i.test(t2))),
+    qualityWarnings: tags(p.data_quality_errors_tags).filter((t2) => !/^foodscan:/i.test(t2) && !(total.reconciled && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)|energy-value-in-kcal-does-not-match-value-computed/i.test(t2)) && !(total.energyNoise && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)/i.test(t2))),
     energyReconciled: total.reconciled,
     pnns: text(p.pnns_groups_2, 60),
     basis: basis.basis,
@@ -748,11 +751,14 @@ function assessGrade(p, { estimate = true } = {}) {
     return calculated(p, quality, said);
   }
   // 103: a drink the source graded with the table for solid foods (a soda at B, a sweetened iced tea at A) is recalculated with the drinks table
-  const drinkFix = estimate ? ns23DrinkCheck(p) : null;
-  if (drinkFix) return drinkRegraded(p, quality, drinkFix);
+  // 104: the check also runs for callers that want published grades only (estimate:false: the week bar, the public pages, swap candidates).
+  // They never get the letter back as "reported": it is withheld, and correctedGrade carries the single letter the drinks table gives, if any.
+  const unpublished = r => none("withheld", r.caveats?.[0] || r.reasons?.[0] || "", { quality, sourceGrade: p.nutriScore, wrongTable: r.wrongTable === true, sweetenersAdded: r.sweetenersAdded === true, correctedGrade: isGrade(r.grade) ? r.grade : null });
+  const drinkFix = ns23DrinkCheck(p);
+  if (drinkFix) { const r = drinkRegraded(p, quality, drinkFix); return estimate ? r : unpublished(r); }
   // 103: a drink whose published points leave out the sweeteners its own ingredient list names gets the 4 points the rules add for them
-  const sweetFix = estimate ? ns23SweetenerCheck(p) : null;
-  if (sweetFix) return sweetenerRegraded(p, quality, sweetFix);
+  const sweetFix = ns23SweetenerCheck(p);
+  if (sweetFix) { const r = sweetenerRegraded(p, quality, sweetFix); return estimate ? r : unpublished(r); }
   if (!p.nutriScoreMethod && !p.nutriScoreData && estimate && !quality.unnamed) {
     // 62.0: every Nutri-Score table (drinks, cheese, fats, nuts and seeds as well as ordinary foods) is recomputed from the nutrition we
     // hold and compared with the POINTS the source published. Equal points reproduce the grade; a letter no table can give for those
@@ -1861,7 +1867,7 @@ var INDEXABLE = [
 
 // worker/_worker.js
 /* FoodScan 79.0.0: ONE release number for the HTML, /api/health, /api/prices/health, the price files, the service worker and the release notes. */
-var VERSION = "103.0.0";
+var VERSION = "104.0.0";
 var BUILD = "9900-daily-portions";
 var CACHE_SCHEMA = "p23-greece-catalogue";
 var SITE = "https://food-scan.gearuptofit.com".startsWith("__") ? "" : "https://food-scan.gearuptofit.com";

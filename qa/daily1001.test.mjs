@@ -55,18 +55,18 @@ test('the hub sits in the page column and flows in two columns on a desktop; a p
   assert.match(block, /@media \(min-width: 960px\) \{\s*\.fs98-hub \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(block, /\.fs98-hub > \.fs98-head, \.fs98-hub > \.fs98-stats, \.fs98-hub > \.fs100-wide, \.fs98-hub > \.fs98-more, \.fs98-hub > \.fs98-status \{ grid-column: 1 \/ -1; \}/);
   assert.ok(wide > 0 && !block.slice(0, wide).includes('display: grid'), 'below 960 px nothing becomes a grid: one column on a phone');
-  assert.ok(src.includes('<div class="fs98-sec fs100-wide"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p>'), 'the quick-log row spans both columns');
+  assert.ok(src.includes('<div class="fs98-sec fs100-wide fs104-quick"><p class="fs98-sec__label">${esc(t.quickLogLabel)}</p>'), 'the quick-log row spans both columns');
   assert.ok(!block.includes('.fs98-trust'), 'the product-page card is not touched');
   assert.ok(css.includes('.fs100-hint') && src.includes('class="fs100-hint"'));
 });
 
 test('100.1 is carried by every file that carries a version', () => {
-  assert.match(read('sw.js'), /const CACHE = 'foodscan-103\.0\.0'/);
-  assert.match(read('_worker.js'), /var VERSION = "103\.0\.0"/);
-  assert.match(read('src/worker/core.js'), /var VERSION = "103\.0\.0"/);
-  assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-103\.0\.0'/);
-  assert.match(read('price-refresh/tools/verify-deploy.mjs'), /'103\.0\.0'/);
-  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) assert.match(read(page), /data-foodscan-version="103\.0\.0"/, page);
-  assert.ok(src.includes("version: '103.0.0'"), 'the backup file names the version');
-  assert.ok(fs.existsSync(path.join(ROOT, 'RELEASE-103.0.0.md')), 'release notes');
+  assert.match(read('sw.js'), /const CACHE = 'foodscan-104\.0\.0'/);
+  assert.match(read('_worker.js'), /var VERSION = "104\.0\.0"/);
+  assert.match(read('src/worker/core.js'), /var VERSION = "104\.0\.0"/);
+  assert.match(read('prices/native-v83.js'), /BUILD = 'foodscan-104\.0\.0'/);
+  assert.match(read('price-refresh/tools/verify-deploy.mjs'), /'104\.0\.0'/);
+  for (const page of ['index.html', 'how/index.html', 'demo/index.html', 'prices/index.html']) assert.match(read(page), /data-foodscan-version="104\.0\.0"/, page);
+  assert.ok(src.includes("version: '104.0.0'"), 'the backup file names the version');
+  assert.ok(fs.existsSync(path.join(ROOT, 'RELEASE-104.0.0.md')), 'release notes');
 });

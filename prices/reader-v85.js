@@ -152,12 +152,12 @@ const bump = st => { st.rev = (st.rev || 0) + 1; };
 /* ---------- the quick grade: no photo, no typing ---------- */
 const quick = new Map(); // code -> { state: 'loading' | 'ready' | 'none', q }
 globalThis.__fs85quick = quick; // read by prices/swaps-ui-v88.js, so the swaps use the same table and estimate as the grade card (88)
-const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json?v=103'; // 103: rebuilt under the same name; /assets/ is cached for a year, so the address changes
+const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json?v=104'; // 103: rebuilt under the same name; /assets/ is cached for a year, so the address changes
 let peersPromise = null; // the similar-products index, fetched only when a product needs it
 const peers = S => peersPromise || (peersPromise = fetch(PEERS_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? S.prepare(j) : null)).catch(() => null));
 // 89: the last step before "no grade": products that share the record's Open Food Facts categories (prices/swaps-v88.mjs categoryGrade)
 let swapsPromise = null;
-const swapsIndex = W => swapsPromise || (swapsPromise = fetch('/assets/swaps-off-csv-2026-10-30.json?v=103').then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
+const swapsIndex = W => swapsPromise || (swapsPromise = fetch('/assets/swaps-off-csv-2026-10-30.json?v=104').then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
 async function categoryEstimate(D, Q, p, body) {
   const cats = body?.product?.categories_tags || []; if (!cats.length) return null;
   const W = await import('./swaps-v88.mjs'), prep = await swapsIndex(W); if (!prep) return null;
@@ -169,7 +169,7 @@ const inputsOf = p => { const n = p?.nutrition || {}; return { kj: n.kj ?? (n.kc
 async function loadQuick(code) {
   quick.set(code, { state: 'loading' });
   try {
-    const [D, Q, S] = await Promise.all([import('../assets/domain-v103.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
+    const [D, Q, S] = await Promise.all([import('../assets/domain-v104.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
     const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error('http ' + res.status);
     const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p), alcohol = body?.product?.nutriments?.alcohol_100g;

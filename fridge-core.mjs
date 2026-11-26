@@ -1,5 +1,5 @@
 /** FoodScan Fridge Core v58. Local-only; never sends product lists to a server. */
-import { assessGrade } from './assets/domain-v103.mjs';
+import { assessGrade } from './assets/domain-v104.mjs';
 export const STORAGE_KEY = 'foodscan.fridge.v1';
 export const CHALLENGE_LIMIT = 30;
 export const TARGET = 7;

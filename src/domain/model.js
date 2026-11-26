@@ -117,6 +117,9 @@ function per100(n, suffix) {
   const out = Object.fromEntries(NUTRIENTS.map(([key, , , field]) => [key, nutrientNumber(n[`${field}_${suffix}`])]));
   const kj = nutrientNumber(n[`energy-kj_${suffix}`]) ?? nutrientNumber(n[`energy_${suffix}`]);
   let converted = false, reconciled = false;
+  // 104: a kcal and a kJ value that differ by no more than 17 kJ (4 kcal, the level the EU rules let a label call energy-free) are label rounding, not a
+  // contradiction: "1 kcal / 1.3 kJ" on a zero-sugar cola made the database flag the record, and the app then held back its published grade.
+  const energyNoise = out.kcal !== null && kj !== null && Math.abs(out.kcal * 4.184 - kj) <= 17;
   if (out.kcal === null && kj !== null) {
     out.kcal = kj / 4.184;
     converted = true;
@@ -134,7 +137,7 @@ function per100(n, suffix) {
   const derived = out.sodium === null && out.salt !== null;
   out.sodium = out.sodium !== null ? out.sodium * 1e3 : derived ? out.salt * 400 : null;
   if (out.salt === null && out.sodium !== null && !derived) out.salt = out.sodium / 400;
-  return { values: out, converted, reconciled, sodiumDerived: derived };
+  return { values: out, converted, reconciled, energyNoise, sodiumDerived: derived };
 }
 function parseProduct(payload, requestedCode, now = Date.now()) {
   if (!payload || typeof payload !== "object" || payload.status === 0 || payload.status === "failure" || payload.result?.id === "product_not_found") return null;
@@ -193,7 +196,7 @@ function parseProduct(payload, requestedCode, now = Date.now()) {
     additivesCount: nutrientNumber(p.additives_n),
     additives: tags(p.additives_tags, 40).map((t2) => t2.replace(/^[a-z]{2}:/, "")),
     addedSugars: nutrientNumber(n["added-sugars_100g"]),
-    qualityWarnings: tags(p.data_quality_errors_tags).filter((t2) => !/^foodscan:/i.test(t2) && !(total.reconciled && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)|energy-value-in-kcal-does-not-match-value-computed/i.test(t2))),
+    qualityWarnings: tags(p.data_quality_errors_tags).filter((t2) => !/^foodscan:/i.test(t2) && !(total.reconciled && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)|energy-value-in-kcal-does-not-match-value-computed/i.test(t2)) && !(total.energyNoise && /energy-value-in-(?:kcal|kj)-does-not-match-value-in-(?:kj|kcal)/i.test(t2))),
     energyReconciled: total.reconciled,
     pnns: text(p.pnns_groups_2, 60),
     basis: basis.basis,

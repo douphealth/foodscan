@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT } from './helpers.mjs';
-const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v103.mjs')).href), Q = await import(pathToFileURL(path.join(ROOT, 'prices/quick-grade-v85.mjs')).href);
+const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v104.mjs')).href), Q = await import(pathToFileURL(path.join(ROOT, 'prices/quick-grade-v85.mjs')).href);
 const dir = path.join(ROOT, 'assets/greece-r20261030'), byCode = new Map();
 for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-'))) for (const r of JSON.parse(fs.readFileSync(path.join(dir, f))).products) byCode.set(String(r.code), r);
 /** what the page shows when the record carries no grade of its own: the engine's grade, else the quick grade (a letter, or the band) */

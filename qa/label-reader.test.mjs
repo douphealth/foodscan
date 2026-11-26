@@ -7,7 +7,7 @@ import path from 'node:path';
 import { ROOT } from './helpers.mjs';
 
 const L = await import(pathToFileURL(path.join(ROOT, 'prices/label-reader-v85.mjs')).href);
-const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v103.mjs')).href);
+const D = await import(pathToFileURL(path.join(ROOT, 'assets/domain-v104.mjs')).href);
 
 // published values of three real products (the same golden cases as score.test.mjs)
 const NUTELLA = { kj: 2252, kcal: 538, fat: 30.9, sat: 10.6, carbs: 57.5, sugars: 56.3, fibre: 3.4, protein: 6.3, salt: 0.107 };

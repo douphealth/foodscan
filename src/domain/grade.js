@@ -99,11 +99,14 @@ function assessGrade(p, { estimate = true } = {}) {
     return calculated(p, quality, said);
   }
   // 103: a drink the source graded with the table for solid foods (a soda at B, a sweetened iced tea at A) is recalculated with the drinks table
-  const drinkFix = estimate ? ns23DrinkCheck(p) : null;
-  if (drinkFix) return drinkRegraded(p, quality, drinkFix);
+  // 104: the check also runs for callers that want published grades only (estimate:false: the week bar, the public pages, swap candidates).
+  // They never get the letter back as "reported": it is withheld, and correctedGrade carries the single letter the drinks table gives, if any.
+  const unpublished = r => none("withheld", r.caveats?.[0] || r.reasons?.[0] || "", { quality, sourceGrade: p.nutriScore, wrongTable: r.wrongTable === true, sweetenersAdded: r.sweetenersAdded === true, correctedGrade: isGrade(r.grade) ? r.grade : null });
+  const drinkFix = ns23DrinkCheck(p);
+  if (drinkFix) { const r = drinkRegraded(p, quality, drinkFix); return estimate ? r : unpublished(r); }
   // 103: a drink whose published points leave out the sweeteners its own ingredient list names gets the 4 points the rules add for them
-  const sweetFix = estimate ? ns23SweetenerCheck(p) : null;
-  if (sweetFix) return sweetenerRegraded(p, quality, sweetFix);
+  const sweetFix = ns23SweetenerCheck(p);
+  if (sweetFix) { const r = sweetenerRegraded(p, quality, sweetFix); return estimate ? r : unpublished(r); }
   if (!p.nutriScoreMethod && !p.nutriScoreData && estimate && !quality.unnamed) {
     // 62.0: every Nutri-Score table (drinks, cheese, fats, nuts and seeds as well as ordinary foods) is recomputed from the nutrition we
     // hold and compared with the POINTS the source published. Equal points reproduce the grade; a letter no table can give for those

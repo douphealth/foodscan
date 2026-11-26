@@ -154,7 +154,7 @@ test('the Home hub shows where the shopper is, and everything that depends on th
   const hub = read('daily-v98.js'), css = read('daily-v98.css'), sw = read('sw.js');
   assert.match(hub, /import \{[^}]*detectMarket[^}]*setMarket[^}]*dismissSuggestion[^}]*\} from '\.\/prices\/market-v83\.mjs'/);
   // shown in both hub states: a brand-new phone is exactly where the country matters most
-  assert.equal((hub.match(/\$\{locHtml\(t, lang\(\)\)\}/g) || []).length, 2); assert.equal((hub.match(/; wireLoc\(h, view, t\)/g) || []).length, 2);   // two calls (the definition has no "; " before it)
+  assert.equal((hub.match(/locHtml\(t, lang\(\)\)/g) || []).length, 3); assert.equal((hub.match(/; wireLoc\(h, view, t\)/g) || []).length, 2);   // two calls (the definition has no "; " before it)
   // the amounts, the change detection and the price cache all follow the country
   assert.match(hub, /presetsFor\(p, marketNow\(\)\.code\)/); assert.match(hub, /\$\{mk\.code\}:\$\{mk\.source\}:\$\{mk\.suggest \|\| ''\}/);
   assert.match(hub, /addEventListener\('foodscan:market'/); assert.match(hub, /priceBook\.clear\(\)/);
