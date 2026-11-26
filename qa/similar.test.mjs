@@ -8,7 +8,7 @@ import path from 'node:path';
 import { ROOT } from './helpers.mjs';
 
 const imp = f => import(pathToFileURL(path.join(ROOT, f)).href);
-const D = await imp('assets/domain-v101.mjs'), Q = await imp('prices/quick-grade-v85.mjs'), S = await imp('prices/similar-v86.mjs'), U = await imp('prices/grade-ui-v85.mjs');
+const D = await imp('assets/domain-v103.mjs'), Q = await imp('prices/quick-grade-v85.mjs'), S = await imp('prices/similar-v86.mjs'), U = await imp('prices/grade-ui-v85.mjs');
 const V = await imp('tools/similar-validate.mjs'), B = await imp('tools/build-peers.mjs');
 const peersFile = path.join(ROOT, 'assets/peers-off-csv-2026-10-30.json');
 const prep = S.prepare(JSON.parse(fs.readFileSync(peersFile, 'utf8')));

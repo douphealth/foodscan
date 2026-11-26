@@ -388,7 +388,7 @@ async function fscPublicRoute(request,env,ctx){
 }
 
 // 101: internals the unit tests call directly (tests/v101.test.mjs). Pages only uses the default export.
-const fs101Testing = {fsRemoteJSON, fsRemoteManifest, fsRemoteState, fsPriceNormalizeLicensed, fsPriceFreshness, fsConfirmMin, FS_PRICE_SOURCE_REGISTRY,
+const fs101Testing = {fsRemoteJSON, fsRemoteManifest, fsRemoteState, fsPriceNormalizeLicensed, fsPriceFreshness, fsConfirmMin, FS_PRICE_SOURCE_REGISTRY, fsPricePack, fsSeedArchive, fsPriceFlagSuspects,
   resetRemote(){ fsRemoteManifestEntry = null; Object.assign(fsRemoteState, {status:'not_checked', built:null, files:0, mismatches:0, checkedAt:null, reason:null}); }};
 // handed over only when a test asks for it (no extra module export, so Pages sees exactly one: the default handler)
 if (globalThis.__FS101_TEST__ === true) globalThis.__FS101_TEST__ = fs101Testing;

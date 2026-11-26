@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v103.mjs')).href);
 const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const blank = () => ({ n: 0, inside: 0, likely: 0, likelyN: 0 });
 const add = (b, q, truth) => { b.n++; if (q.letters.includes(truth)) b.inside++; if (q.likely) { b.likelyN++; if (q.likely === truth) b.likely++; } };
@@ -18,8 +18,10 @@ const add = (b, q, truth) => { b.n++; if (q.letters.includes(truth)) b.inside++;
 export function validate(dir = path.join(here, '../assets/greece-r20261030')) {
   const items = [];
   for (const f of fs.readdirSync(dir).filter(f => f.startsWith('part-'))) for (const raw of JSON.parse(fs.readFileSync(path.join(dir, f))).products) items.push({ raw, p: D.parseProduct({ status: 1, product: raw }, raw.code) });
-  const graded = items.filter(x => /^[A-E]$/.test(x.p.nutriScore || '') && D.ns23Inputs(x.p) && Number.isFinite(x.p.nutriScoreValue));
-  const r = { catalogue: items.length, published: items.filter(x => /^[A-E]$/.test(x.p.nutriScore || '')).length, graded: graded.length, width: { 1: blank(), 2: blank(), 3: blank() }, none: 0, off: 0, by: {}, hidden: {} };
+  // 103: a drink Open Food Facts graded with the table for solid foods (a soda at B) is not a valid reference letter; those are counted apart
+  const wrongTable = items.filter(x => D.ns23DrinkCheck(x.p)), noSweet = items.filter(x => !D.ns23DrinkCheck(x.p) && D.ns23SweetenerCheck(x.p));
+  const graded = items.filter(x => /^[A-E]$/.test(x.p.nutriScore || '') && D.ns23Inputs(x.p) && Number.isFinite(x.p.nutriScoreValue) && !D.ns23DrinkCheck(x.p) && !D.ns23SweetenerCheck(x.p));
+  const r = { catalogue: items.length, published: items.filter(x => /^[A-E]$/.test(x.p.nutriScore || '')).length, graded: graded.length, wrongTable: wrongTable.length, noSweeteners: noSweet.length, width: { 1: blank(), 2: blank(), 3: blank() }, none: 0, off: 0, by: {}, hidden: {} };
   for (const x of graded) {
     const q = Q.quickGrade(x.p, { ignoreCategories: true, alcohol: x.raw.nutriments?.alcohol_100g });
     if (!q.ok) { r.none++; continue; }
@@ -43,7 +45,7 @@ export function validate(dir = path.join(here, '../assets/greece-r20261030')) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const r = validate(), pct = (a, b) => (b ? (100 * a / b).toFixed(1) : '0') + ' %';
   console.log(`Catalogue ${r.catalogue} products; ${r.published} have a published grade; ${r.noGrade} do not.`);
-  console.log(`Graded products with all four core values, categories hidden: ${r.graded}`);
+  console.log(`Graded products with all four core values, categories hidden: ${r.graded} (left out: ${r.wrongTable} drinks the source graded with the table for solid foods, ${r.noSweeteners} whose published points leave out the sweeteners on their own record)`);
   for (const w of [1, 2, 3]) { const b = r.width[w]; console.log(`  ${w} letter${w > 1 ? 's' : ' '} shown: ${String(b.n).padStart(4)} (${pct(b.n, r.graded).padStart(7)}); Open Food Facts' letter inside: ${pct(b.inside, b.n).padStart(7)}; the "most likely" letter equals it: ${pct(b.likely, b.likelyN)}`); }
   console.log(`  nothing shown (letters span four or five grades): ${r.none} (${pct(r.none, r.graded)}); a single letter two or more steps from the published one: ${r.off}`);
   for (const [k, b] of Object.entries(r.by)) console.log(`    by ${k.padEnd(18)} n ${String(b.n).padStart(4)} inside ${pct(b.inside, b.n).padStart(7)} | most likely exact ${pct(b.likely, b.likelyN).padStart(7)}`);

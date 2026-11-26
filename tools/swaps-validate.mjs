@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const D = await import(pathToFileURL(path.join(here, '../assets/domain-v101.mjs')).href);
+const D = await import(pathToFileURL(path.join(here, '../assets/domain-v103.mjs')).href);
 const Q = await import(pathToFileURL(path.join(here, '../prices/quick-grade-v85.mjs')).href);
 const W = await import(pathToFileURL(path.join(here, '../prices/swaps-v88.mjs')).href);
 const B = await import(pathToFileURL(path.join(here, 'build-swaps.mjs')).href);

@@ -152,12 +152,12 @@ const bump = st => { st.rev = (st.rev || 0) + 1; };
 /* ---------- the quick grade: no photo, no typing ---------- */
 const quick = new Map(); // code -> { state: 'loading' | 'ready' | 'none', q }
 globalThis.__fs85quick = quick; // read by prices/swaps-ui-v88.js, so the swaps use the same table and estimate as the grade card (88)
-const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json';
+const PEERS_URL = '/assets/peers-off-csv-2026-10-30.json?v=103'; // 103: rebuilt under the same name; /assets/ is cached for a year, so the address changes
 let peersPromise = null; // the similar-products index, fetched only when a product needs it
 const peers = S => peersPromise || (peersPromise = fetch(PEERS_URL).then(r => (r.ok ? r.json() : null)).then(j => (j ? S.prepare(j) : null)).catch(() => null));
 // 89: the last step before "no grade": products that share the record's Open Food Facts categories (prices/swaps-v88.mjs categoryGrade)
 let swapsPromise = null;
-const swapsIndex = W => swapsPromise || (swapsPromise = fetch('/assets/swaps-off-csv-2026-10-30.json').then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
+const swapsIndex = W => swapsPromise || (swapsPromise = fetch('/assets/swaps-off-csv-2026-10-30.json?v=103').then(r => (r.ok ? r.json() : null)).then(j => (j ? W.prepare(j) : null)).catch(() => null));
 async function categoryEstimate(D, Q, p, body) {
   const cats = body?.product?.categories_tags || []; if (!cats.length) return null;
   const W = await import('./swaps-v88.mjs'), prep = await swapsIndex(W); if (!prep) return null;
@@ -169,14 +169,15 @@ const inputsOf = p => { const n = p?.nutrition || {}; return { kj: n.kj ?? (n.kc
 async function loadQuick(code) {
   quick.set(code, { state: 'loading' });
   try {
-    const [D, Q, S] = await Promise.all([import('../assets/domain-v101.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
+    const [D, Q, S] = await Promise.all([import('../assets/domain-v103.mjs'), import('./quick-grade-v85.mjs'), import('./similar-v86.mjs'), needGrade() || Promise.resolve()]);
     const res = await fetch(`/api/product/${encodeURIComponent(code)}`, { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error('http ' + res.status);
     const body = await res.json(), p = D.parseProduct(body, code), a = D.assessGrade(p), alcohol = body?.product?.nutriments?.alcohol_100g;
     p.family = body?.catalogueSnapshot?.family || ''; // the catalogue's product family, used to find similar products (87.2)
     const modified = Number(body?.product?.last_modified_t) > 0 ? Number(body.product.last_modified_t) * 1000 : null, meta = { modified, snapshot: Boolean(body?.catalogueSnapshot) };
     // the app's own verdict always wins: a grade, or a grade held back for review, is never replaced by an estimate
-    if (a.grade || a.status === 'withheld') { quick.set(code, { state: 'ready', ...meta, kind: 'none', q: { ok: false, reason: 'app-has-grade' } }); schedule(); return; }
+    // 103: one exception: a drink whose published letter came from the table for solid foods and whose own letter is a range (fruit share or sweeteners not on record) gets the range
+    if (a.grade || (a.status === 'withheld' && !(a.wrongTable && a.drinkLetters))) { quick.set(code, { state: 'ready', ...meta, kind: 'none', q: { ok: false, reason: 'app-has-grade' } }); schedule(); return; }
     let q = Q.quickGrade(p, { alcohol }), entry = { state: 'ready', ...meta, kind: q.ok ? 'quick' : 'none', q };
     if (!q.ok && (q.reason === 'exempt' || q.reason === 'excluded')) entry = { ...entry, kind: 'exempt', exempt: { why: q.why || 'other', inputs: inputsOf(p) } };
     else if (!q.ok && ['inputs-missing', 'too-uncertain', 'no-table'].includes(q.reason) && greekMarket(res)) {

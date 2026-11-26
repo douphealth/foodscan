@@ -5,8 +5,8 @@
 import { esc } from './price-core-v83.mjs';
 
 /** Percent of graded Greek products (categories hidden) for which the published letter was inside the shown band, and for which the "most likely" letter equalled it. */
-export const RELIABILITY = { inside: { high: 96, medium: 93, low: 76 }, likely: { high: 94, medium: 89, low: 63 }, sample: 4103,
-  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 }, typicalMaker: { inside: 87, likely: 56 }, typicalCategory: { inside: 90, likely: 56 } } };
+export const RELIABILITY = { inside: { high: 96, medium: 93, low: 76 }, likely: { high: 94, medium: 87, low: 63 }, sample: 4042,
+  similar: { imputed: { inside: 87, likely: 71 }, imputedOne: { inside: 83, likely: 67 }, typical: { inside: 92, likely: 58 }, typicalMaker: { inside: 87, likely: 56 }, typicalCategory: { inside: 88, likely: 56 } } };
 
 const T = {
   en: {
@@ -21,7 +21,7 @@ const T = {
     gaugeTitle: 'Nutri-Score points (lower is better)', gaugeMark: s => `${s} points`,
     couldBe: 'What could change it', reasonsTitle: 'Why this is an estimate', factsTitle: 'Nutritional facts used', factsSub: u => `per 100 ${u}`, pointsTitle: 'How the points add up',
     against: 'Points against (unfavourable)', infavour: 'Points in favour', scoreIs: 'Score = points against − points in favour', ladderTitle: 'Letter ranges for this table',
-    reported: 'On record', notReported: 'Not reported', notScored: 'not scored', counted: 'counted', notCounted: n => `not counted: ${n} or more points against it`, upTo: n => `up to ${n} points`,
+    reported: 'On record', sweetYes: 'On the ingredient list', sweetNo: 'None listed', notReported: 'Not reported', notScored: 'not scored', counted: 'counted', notCounted: n => `not counted: ${n} or more points against it`, upTo: n => `up to ${n} points`,
     fields: { energy: 'Energy', sugars: 'Sugars', saturated_fat: 'Saturated fat', salt: 'Salt', sweeteners: 'Sweeteners', fiber: 'Fibre', proteins: 'Protein', fruits_vegetables_legumes: 'Fruit, vegetables, legumes and nuts',
       energy_from_saturated_fat: 'Energy from saturated fat', saturated_fat_ratio: 'Saturated fat as share of fat', fat: 'Fat', carbs: 'Carbohydrate', kcal: 'Energy' },
     against1: 'unfavourable', favour1: 'favourable',
@@ -82,7 +82,7 @@ const T = {
     gaugeTitle: 'Βαθμοί Nutri-Score (χαμηλότερα = καλύτερα)', gaugeMark: s => `${s} βαθμοί`,
     couldBe: 'Τι μπορεί να το αλλάξει', reasonsTitle: 'Γιατί είναι εκτίμηση', factsTitle: 'Διατροφικά στοιχεία που χρησιμοποιήθηκαν', factsSub: u => `ανά 100 ${u}`, pointsTitle: 'Πώς προκύπτουν οι βαθμοί',
     against: 'Βαθμοί εναντίον (δυσμενείς)', infavour: 'Βαθμοί υπέρ', scoreIs: 'Σκορ = βαθμοί εναντίον − βαθμοί υπέρ', ladderTitle: 'Εύρη γραμμάτων σε αυτόν τον πίνακα',
-    reported: 'Καταγεγραμμένο', notReported: 'Δεν αναγράφεται', notScored: 'δεν βαθμολογείται', counted: 'μετράει', notCounted: n => `δεν μετράει: ${n} ή περισσότεροι βαθμοί εναντίον`, upTo: n => `έως ${n} βαθμούς`,
+    reported: 'Καταγεγραμμένο', sweetYes: 'Στα συστατικά', sweetNo: 'Κανένα στα συστατικά', notReported: 'Δεν αναγράφεται', notScored: 'δεν βαθμολογείται', counted: 'μετράει', notCounted: n => `δεν μετράει: ${n} ή περισσότεροι βαθμοί εναντίον`, upTo: n => `έως ${n} βαθμούς`,
     fields: { energy: 'Ενέργεια', sugars: 'Σάκχαρα', saturated_fat: 'Κορεσμένα λιπαρά', salt: 'Αλάτι', sweeteners: 'Γλυκαντικά', fiber: 'Φυτικές ίνες', proteins: 'Πρωτεΐνες', fruits_vegetables_legumes: 'Φρούτα, λαχανικά, όσπρια και ξηροί καρποί',
       energy_from_saturated_fat: 'Ενέργεια από κορεσμένα λιπαρά', saturated_fat_ratio: 'Κορεσμένα ως ποσοστό των λιπαρών', fat: 'Λιπαρά', carbs: 'Υδατάνθρακες', kcal: 'Ενέργεια' },
     against1: 'δυσμενές', favour1: 'ευνοϊκό',
@@ -179,10 +179,10 @@ export function gradeHTML(m, o = {}) {
   const tile = (part, side) => {
     const isBound = Boolean(m.bound && ((m.bound.key === 'salt' && part.id === 'salt') || (m.bound.key === 'sugars' && part.id === 'sugars') || (m.bound.key === 'saturatedFat' && part.id === 'saturated_fat')));
     const unr = reportedKey[part.id] === false || isBound;
-    const frac = part.max ? Math.min(1, part.points / part.max) : 0, val = unr ? t.notReported : part.id === 'fruits_vegetables_legumes' && inp.fvlText ? inp.fvlText : `${fmt(part.value, L)} ${part.unit}`;
+    const frac = part.max ? Math.min(1, part.points / part.max) : 0, val = unr ? t.notReported : part.id === 'fruits_vegetables_legumes' && inp.fvlText ? inp.fvlText : part.unit === 'number' ? (part.value ? t.sweetYes : t.sweetNo) : `${fmt(part.value, L)} ${part.unit}`; // 103: the sweetener tile said "0 number"
     const counted = part.id === 'proteins' && d && !d.countProteins && m.kind !== 'cheese' && m.kind !== 'beverage' && m.kind !== 'water' ? t.notCounted(11) : '';
     const bar = unr ? '<span class="fg85__bar is-unknown" aria-hidden="true"></span>' : `<span class="fg85__bar ${side}" data-fs-style="--f:${frac}" aria-hidden="true"><i></i></span>`;
-    return `<li class="fg85__tile ${side}${unr ? ' is-unreported' : ''}${part.id === 'fruits_vegetables_legumes' ? ' is-wide' : ''}"><span class="fg85__tl">${esc(t.fields[part.id] || part.id)}</span><b class="fg85__tv">${esc(val)}</b>${bar}<span class="fg85__tp">${unr ? esc(isBound ? t.assumedAtMost(fmt(m.bound.max, L)) : t.assumed0) : `${part.points}<small> / ${part.max} ${esc(t.pts)}</small>`}</span>${counted ? `<small class="fg85__note">${esc(counted)}</small>` : ''}</li>`;
+    return `<li class="fg85__tile ${side}${unr ? ' is-unreported' : ''}${part.id === 'fruits_vegetables_legumes' ? ' is-wide' : ''}"><span class="fg85__tl">${esc(t.fields[part.id === 'non_nutritive_sweeteners' ? 'sweeteners' : part.id] || part.id)}</span><b class="fg85__tv">${esc(val)}</b>${bar}<span class="fg85__tp">${unr ? esc(isBound ? t.assumedAtMost(fmt(m.bound.max, L)) : t.assumed0) : `${part.points}<small> / ${part.max} ${esc(t.pts)}</small>`}</span>${counted ? `<small class="fg85__note">${esc(counted)}</small>` : ''}</li>`;
   };
   const negRows = d ? d.negative.map(p => tile(p, 'neg')).join('') : '', posRows = d ? d.positive.map(p => tile(p, 'pos')).join('') : '';
   const extraLine = [['kcal', inp.kcal, 'kcal'], ['fat', inp.fat, 'g'], ['carbs', inp.carbs, 'g']].filter(x => x[1] != null).map(([k, v, u]) => `${t.fields[k]} ${fmt(v, L)} ${u}`).join(' · ');

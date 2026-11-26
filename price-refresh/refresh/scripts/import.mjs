@@ -26,7 +26,7 @@ const label = id => Object.values(MERCHANTS).find(m => m[0] === id)?.[1] || id;
 const UA = { 'User-Agent': 'FoodScan-ingest/72 (+https://food-scan.gearuptofit.com/how/)' };
 
 async function snapshotStream() {
-  if (opt('file')) return { stream: fs.createReadStream(opt('file'), { highWaterMark: 1 << 16 }), archive: archiveURL(path.basename(opt('file')).match(/\d{4}-\d{2}-\d{2}/)?.[0] || '') };
+  if (opt('file')) return { stream: fs.createReadStream(opt('file'), { highWaterMark: 1 << 16 }), archive: (d => (d ? archiveURL(d) : ''))(path.basename(opt('file')).match(/\d{4}-\d{2}-\d{2}/)?.[0]) }; // 103: a file name without a date gave ".../data//posokanei-.json"; '' lets each record use the snapshot's own date
   const days = opt('date') ? [opt('date')] : [0, 1, 2, 3, 4].map(d => new Date(now - d * 86400000).toISOString().slice(0, 10));
   for (const d of days) {
     const url = archiveURL(d), res = await fetch(url, { headers: UA });
@@ -43,7 +43,7 @@ console.log(`posokanei ${pk.meta.date}: scanned ${pk.stats.scanned} products, ${
 for (const r of pk.stats.renamed) console.log('  skipped (renamed since review):', r.ean, '|', r.was, '→', r.now);
 
 fs.mkdirSync(seedDir, { recursive: true });
-const pkSeed = { schema: 1, source: { ...PK, archive, snapshot: pk.meta.date, fetched_at: pk.meta.fetched_at, api: pk.meta.source },
+const pkSeed = { schema: 1, source: { ...PK, archive: archive || archiveURL(pk.meta.date), snapshot: pk.meta.date, fetched_at: pk.meta.fetched_at, api: pk.meta.source },
   link_file: { file: path.basename(linkFile), built: linkDoc.built, links: linkDoc.links.length, hand: linkDoc.links.filter(l => (l.method || 'hand') === 'hand').length, auto_exact: linkDoc.links.filter(l => l.method === 'auto-exact').length, auto_price: linkDoc.links.filter(l => l.method === 'auto-price').length }, generated: nowISO, products: pk.products };
 fs.writeFileSync(path.join(seedDir, 'posokanei-latest.json'), JSON.stringify(pkSeed));
 // 81: chain prices left out as outliers (see quarantineOutliers), for review

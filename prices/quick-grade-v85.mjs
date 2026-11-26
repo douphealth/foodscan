@@ -10,7 +10,7 @@
  *   (96 % of graded products are below it); with a missing unfavourable nutrient there is no "most likely" letter, only the band.
  * The result is an ESTIMATE, labelled as such, and never feeds rankings or "better choice". It is measured against Open Food Facts' own published letters on
  * every graded Greek product (tools/quick-grade-validate.mjs, qa/quick-grade.test.mjs). Pure functions, no DOM. */
-import { ns23Tier, ns23Inputs, ns23Kinds, ns23Sweeteners, ns23Fold, ns23Score, ns23GradeOfScore, ns23Data, ns23NoPlantEvidence } from '../assets/domain-v101.mjs';
+import { ns23Tier, ns23Inputs, ns23Kinds, ns23Sweeteners, ns23Fold, ns23Score, ns23GradeOfScore, ns23Data, ns23NoPlantEvidence, ns23DrinkInputs } from '../assets/domain-v103.mjs';
 
 const fold = ns23Fold;
 const L = words => new RegExp(`(?<![\\p{L}])(?:${words})(?![\\p{L}])`, 'u');
@@ -113,7 +113,9 @@ export function quickGrade(p, { ignoreCategories = false, alcohol = null, forced
   let kinds = where.kinds, via = where.via, reds = where.red === 'certain' ? [true] : where.red === 'maybe' ? [false, true] : [false];
   if (!kinds.length) { const inf = inferKinds(probe); kinds = inf.kinds; via = inf.via; reds = inf.red ? [false, true] : [false]; }
   if (kindsOverride && !forced && !where.kinds.length) { kinds = kindsOverride; via = 'peers'; }
-  const sweet = forced ? (forced.kind === 'beverage' ? (forced.sweeteners ? 1 : 0) : 0) : ns23Sweeteners(probe), letters = new Set(), used = [], missing = new Set();
+  // 103: for a drink, a name that states a pure juice fixes the fruit share, and a share of 0 on a juice, nectar or smoothie is not taken as a fact
+  if (!forced && kinds.length && kinds.every(k => k === 'beverage' || k === 'water')) { const di = ns23DrinkInputs(probe); if (di) { input.fvl = di.fvl; input.fvl_known = di.fvl_known; input.fvlFromName = Boolean(di.fvl_from_name); } }
+  const sweet = forced ? (forced.kind === 'beverage' ? (forced.sweeteners ? 1 : 0) : 0) : ns23Sweeteners(probe) ?? (input.fvlFromName ? 0 : null) /* 103: a pure juice has none */, letters = new Set(), used = [], missing = new Set();
   const hi = missingKey === 'salt' ? SALT_CAP : missingKey === 'sugars' ? Math.min(100, carbs ?? Math.min(100, input.kj / 17)) : missingKey === 'saturatedFat' ? Math.min(100, fat ?? Math.min(100, input.kj / 37)) : 0;
   const samples = missingKey ? grid(hi, missingKey === 'salt' ? 0.05 : 0.25) : [0];
   for (const kind of kinds) {
@@ -131,9 +133,9 @@ export function quickGrade(p, { ignoreCategories = false, alcohol = null, forced
   if (list.length > 3) return NO('too-uncertain', { letters: list, kinds: used });
   const basisAssumed = p.basisSource === 'assumed';
   // measured against Open Food Facts' letters (tools/quick-grade-validate.mjs): foods settled by default or by name 96-99 %, composition and drinks 58-86 %
-  let confidence = via === 'unit' || via === 'composition' ? 'low' : 'high';
+  let confidence = via === 'unit' || via === 'composition' ? 'low' : via === 'evidence' ? 'medium' : 'high'; // 103: 'evidence' = sold by volume and named as a drink
   if (missingKey || list.length === 3) confidence = confidence === 'low' ? 'low' : 'medium';
-  const base = { source: forced ? 'label' : 'estimate', ok: true, letters: list, kinds: used, via, missing: [...missing], missingKey, basisAssumed, confidence, inferredKind: ['name', 'unit', 'composition', 'default', 'peers'].includes(via) };
+  const base = { source: forced ? 'label' : 'estimate', ok: true, letters: list, kinds: used, via, missing: [...missing], missingKey, basisAssumed, confidence, inferredKind: ['name', 'unit', 'composition', 'default', 'peers', 'evidence'].includes(via), fvlFromName: Boolean(input.fvlFromName) };
   const kind0 = used[0] === 'water' ? used[1] || 'water' : used[0], inputsOf = () => ({ kj: Math.round(input.kj), kcal: known(n.kcal) ? n.kcal : Math.round(input.kj / 4.184), fat: input.fat, saturatedFat: missingKey === 'saturatedFat' ? null : input.saturatedFat, carbs, sugars: missingKey === 'sugars' ? null : input.sugars, fibre: input.fibre_known ? input.fibre : null, protein: input.protein_known ? input.protein : null, salt: missingKey === 'salt' ? null : input.salt, fvl: input.fvl_known ? input.fvl : null, fvlText: forced?.fvlText || null });
   if (missingKey) {
     // the numbers that are on record are scored exactly; the missing one is not scored, so the totals are partial and only the band is shown
