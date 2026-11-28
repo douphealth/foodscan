@@ -1,0 +1,19 @@
+{
+ "built": "2026-11-28",
+ "snapshot": "2026-11-18",
+ "added": 0,
+ "stats": {
+  "bazaar": {
+   "shop": 6291,
+   "considered": 47,
+   "candidates": 0
+  },
+  "lidl": {
+   "shop": 1617,
+   "considered": 1,
+   "candidates": 0
+  }
+ },
+ "links": [],
+ "refused": []
+}
